@@ -130,7 +130,7 @@ h1, h2, h3, h4, .font-serif {
 
 .reveal-on-scroll {
   opacity: 0;
-  transform: translateY(32px);
+  transform: translateX(-40px);
   transition: opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1), transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: opacity, transform;
 }
@@ -231,6 +231,35 @@ h1, h2, h3, h4, .font-serif {
 }
 
 .arch-frame:hover img {
+  transform: scale(1.08);
+}
+
+/* Oval Editorial Framing — clearly an ellipse, not a circle */
+.oval-frame {
+  position: relative;
+  border-radius: 50%;
+  overflow: hidden;
+  aspect-ratio: 3 / 4;
+  width: 100%;
+  max-width: 21rem;
+  margin-inline: auto;
+  border: 6px solid #FFF7F0;
+  box-shadow:
+    inset 0 0 0 2px rgba(212, 175, 55, 0.55),
+    0 24px 60px -12px rgba(192, 24, 56, 0.35);
+}
+
+.oval-frame img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.oval-frame:hover img {
   transform: scale(1.08);
 }
 

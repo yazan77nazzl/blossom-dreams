@@ -289,7 +289,7 @@ class BookingWizard {
       const isSunday = d.getDay() === 0;
 
       html += `
-        <button data-date="${dateStr}" class="cal-date-btn flex-shrink-0 w-15 py-3 rounded-2xl flex flex-col items-center justify-center text-center ${isSelected ? 'selected' : 'bg-white'} ${isSunday ? 'opacity-40' : ''}">
+        <button data-date="${dateStr}" ${isSunday ? 'disabled aria-disabled="true" title="Salon closed on Sundays"' : ''} class="cal-date-btn flex-shrink-0 w-15 py-3 rounded-2xl flex flex-col items-center justify-center text-center ${isSelected ? 'selected' : 'bg-white'} ${isSunday ? 'opacity-40 cursor-not-allowed' : ''}">
           <span class="text-[10px] uppercase font-bold ${isSelected ? 'text-pink-100' : 'text-slate-400'}">${dayName}</span>
           <span class="text-sm font-extrabold mt-0.5 ${isSelected ? 'text-white' : 'text-gray-900'}">${dayNum}</span>
           ${isSunday ? '<span class="text-[8px] text-rose-500 font-bold mt-0.5">Closed</span>' : ''}
@@ -321,6 +321,7 @@ class BookingWizard {
       btn.addEventListener("click", () => {
         const d = btn.dataset.date;
         this.state.selectedDate = d;
+        this.state.selectedTime = null;
         document.querySelectorAll(".cal-date-btn").forEach(b => b.classList.remove("selected"));
         btn.classList.add("selected");
         document.getElementById("wizard-date-input").value = d;
@@ -330,6 +331,7 @@ class BookingWizard {
 
     document.getElementById("wizard-date-input").addEventListener("change", (e) => {
       this.state.selectedDate = e.target.value;
+      this.state.selectedTime = null;
       document.querySelectorAll(".cal-date-btn").forEach(b => {
         b.classList.toggle("selected", b.dataset.date === e.target.value);
       });
@@ -391,6 +393,7 @@ class BookingWizard {
     content.innerHTML = html;
 
     document.getElementById("wizard-back-to-date").addEventListener("click", () => {
+      this.state.selectedTime = null;
       this.state.step = 2;
       this.renderCurrentStep();
     });
@@ -615,12 +618,23 @@ class BookingWizard {
       this.renderCurrentStep();
     });
 
+    const detailsForm = document.getElementById("wizard-details-form");
+    detailsForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      this.submitBooking();
+    });
+
     document.getElementById("step4-submit-btn").addEventListener("click", () => {
       this.submitBooking();
     });
   }
 
   async submitBooking() {
+    const submitBtn = document.getElementById("step4-submit-btn");
+    if (!submitBtn || submitBtn.disabled) {
+      return;
+    }
+
     const nameInput = document.getElementById("cust-name");
     const phoneInput = document.getElementById("cust-phone");
     const emailInput = document.getElementById("cust-email");
@@ -631,13 +645,13 @@ class BookingWizard {
     const email = emailInput ? emailInput.value.trim() : "";
     const notes = notesInput ? notesInput.value.trim() : "";
 
-    if (!name) {
-      showToast("Please enter your full name.", "error");
+    if (!name || name.length < 2) {
+      showToast("Please enter a valid full name (at least 2 characters).", "error");
       nameInput.focus();
       return;
     }
-    if (!phone) {
-      showToast("Please enter your phone number.", "error");
+    if (!phone || phone.replace(/[^0-9]/g, "").length < 5) {
+      showToast("Please enter a valid phone number (at least 5 digits).", "error");
       phoneInput.focus();
       return;
     }
@@ -647,7 +661,6 @@ class BookingWizard {
     this.state.customerEmail = email;
     this.state.customerNotes = notes;
 
-    const submitBtn = document.getElementById("step4-submit-btn");
     submitBtn.disabled = true;
     submitBtn.innerHTML = `<span>Reserving Slot...</span> <span class="animate-spin">🌸</span>`;
 

@@ -24,12 +24,21 @@ class BlossomApp {
       this.startOfferCountdowns();
     } catch (e) {
       console.error("Initialization error:", e);
+      this.forceRevealAll();
       showToast("Unable to load salon details. Please refresh the page.", "error");
     }
   }
 
+  forceRevealAll() {
+    document.querySelectorAll('.reveal-on-scroll:not(.is-revealed)').forEach(el => el.classList.add('is-revealed'));
+  }
+
   setupIntersectionObserver() {
-    if (!('IntersectionObserver' in window)) return;
+    if (!('IntersectionObserver' in window)) {
+      // No observer support: never hide the content.
+      document.querySelectorAll('.reveal-on-scroll').forEach(el => el.classList.add('is-revealed'));
+      return;
+    }
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
@@ -47,10 +56,13 @@ class BlossomApp {
   }
 
   observeNewElements() {
-    if (!this.scrollObserver) return;
-    document.querySelectorAll('.reveal-on-scroll:not(.is-revealed)').forEach(el => {
-      this.scrollObserver.observe(el);
-    });
+    const els = document.querySelectorAll('.reveal-on-scroll:not(.is-revealed)');
+    if (!this.scrollObserver) {
+      // No IntersectionObserver support: keep everything visible.
+      els.forEach(el => el.classList.add('is-revealed'));
+      return;
+    }
+    els.forEach(el => this.scrollObserver.observe(el));
   }
 
   async loadInitialData() {
@@ -416,7 +428,7 @@ class BlossomApp {
     let html = "";
     this.gallery.forEach((g, idx) => {
       html += `
-        <div data-index="${idx}" class="gallery-item-card relative h-56 sm:h-64 rounded-3xl overflow-hidden cursor-pointer group shadow-sm border border-pink-100/60">
+        <div data-index="${idx}" class="gallery-item-card relative h-56 sm:h-64 rounded-3xl overflow-hidden cursor-pointer group shadow-sm border border-pink-100/60 reveal-on-scroll delay-${(idx % 4) * 100}">
           <img src="${g.image_url}" alt="${escapeHtml(g.title || 'Salon Gallery')}"
             class="w-full h-full object-cover group-hover:scale-110 transition duration-700 ease-out" />
           <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition duration-300 flex flex-col justify-end p-4 text-white">
@@ -429,6 +441,7 @@ class BlossomApp {
     });
 
     container.innerHTML = html;
+    this.observeNewElements();
   }
 
   bindGalleryEvents() {

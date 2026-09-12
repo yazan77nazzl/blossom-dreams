@@ -53,6 +53,11 @@ class Settings:
         # Public base URL (e.g. https://blossom-dreams-lb.onrender.com)
         self.PUBLIC_BASE_URL: str = os.environ.get("PUBLIC_BASE_URL", "").rstrip("/")
 
+        # Salon wall-clock timezone. Availability, "can I book today" and the
+        # admin dashboard are computed against the salon's local day, so a UTC
+        # container on Render does not shift the "today" boundary for Beirut.
+        self.SALON_TIMEZONE: str = os.environ.get("SALON_TIMEZONE", "Asia/Beirut")
+
         # Upload storage backend: "local" (default, dev/ephemeral) or "supabase"
         # (production — persistent free object storage for salon images).
         self.UPLOAD_STORAGE: str = os.environ.get("UPLOAD_STORAGE", "local").lower()

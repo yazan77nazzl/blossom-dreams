@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional, List, Literal
 from pydantic import BaseModel, EmailStr, Field
 
 # --- Auth Schemas ---
@@ -115,15 +115,20 @@ class OfferResponse(OfferBase):
 # --- Booking Schemas ---
 class BookingCreate(BaseModel):
     service_id: int
-    customer_name: str
-    customer_phone: str
-    customer_email: Optional[str] = None
-    notes: Optional[str] = None
-    appointment_date: str  # YYYY-MM-DD
-    appointment_time: str  # HH:MM (24h)
+    customer_name: str = Field(..., min_length=2, max_length=120, description="Full name of the client")
+    customer_phone: str = Field(..., min_length=5, max_length=30, description="Phone / WhatsApp number")
+    customer_email: Optional[str] = Field(
+        None,
+        max_length=120,
+        pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$",
+        description="Optional email address",
+    )
+    notes: Optional[str] = Field(None, max_length=1000)
+    appointment_date: str = Field(..., pattern=r"^\d{4}-\d{2}-\d{2}$", description="YYYY-MM-DD")
+    appointment_time: str = Field(..., pattern=r"^\d{2}:\d{2}$", description="HH:MM (24h)")
 
 class BookingStatusUpdate(BaseModel):
-    status: str  # pending, confirmed, completed, cancelled, no_show
+    status: Literal["pending", "confirmed", "completed", "cancelled", "no_show"]
 
 class BookingResponse(BaseModel):
     id: int

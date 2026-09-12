@@ -1,11 +1,11 @@
 import random
 import string
-from datetime import datetime, date
+from datetime import datetime
 from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, HTTPException, Depends, Query, status
-from app.database import get_db
+from app.database import get_db, IS_POSTGRES
 from app.auth import get_current_admin
-from app.availability_engine import is_slot_available, time_str_to_minutes, check_intervals_overlap
+from app.availability_engine import is_slot_available_for_booking, time_str_to_minutes, local_now
 from app.models import BookingCreate, BookingResponse, BookingStatusUpdate
 
 router = APIRouter(prefix="/api/bookings", tags=["bookings"])
@@ -18,11 +18,50 @@ def format_booking_row(row) -> dict:
     d = dict(row)
     return d
 
+def _validate_date_time(date_str: str, time_str: str) -> None:
+    """Validates the client-supplied date/time format before touching the database."""
+    try:
+        datetime.strptime(date_str, "%Y-%m-%d")
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=400, detail="Invalid appointment date. Expected YYYY-MM-DD.")
+    try:
+        time_str_to_minutes(time_str)
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=400, detail="Invalid appointment time. Expected HH:MM (24h).")
+
+def _acquire_write_lock(conn, cursor, date_str: str) -> None:
+    """
+    Serializes concurrent booking writes for the same date so the conflict check +
+    insert below is atomic:
+      - PostgreSQL: transaction-scoped advisory lock keyed by the appointment date.
+      - SQLite:     explicit BEGIN IMMEDIATE reserves the write lock up front.
+    Any concurrent duplicate attempt blocks here until the transaction commits,
+    then re-reads the (now updated) bookings table and correctly receives a conflict.
+    """
+    if IS_POSTGRES:
+        cursor.execute("SELECT pg_advisory_xact_lock(hashtext(?))", (f"blossom_booking:{date_str}",))
+    else:
+        cursor.execute("BEGIN IMMEDIATE")
+
 @router.post("", response_model=BookingResponse, status_code=status.HTTP_201_CREATED)
 def create_booking(booking_in: BookingCreate):
-    # 1. Fetch service info
+    # 0. Basic customer info sanitation before any DB work
+    customer_name = (booking_in.customer_name or "").strip()
+    customer_phone = (booking_in.customer_phone or "").strip()
+    if len(customer_name) < 2:
+        raise HTTPException(status_code=400, detail="Please provide a valid full name.")
+    if len(customer_phone) < 5:
+        raise HTTPException(status_code=400, detail="Please provide a valid phone number.")
+
+    _validate_date_time(booking_in.appointment_date, booking_in.appointment_time)
+
     with get_db() as conn:
         cursor = conn.cursor()
+
+        # Serialize concurrent writes for this date — the lock is held until commit.
+        _acquire_write_lock(conn, cursor, booking_in.appointment_date)
+
+        # 1. Fetch service info
         cursor.execute("SELECT id, name, price, discount_price, duration_minutes, is_active FROM services WHERE id = ?", (booking_in.service_id,))
         service = cursor.fetchone()
         if not service or not service["is_active"]:
@@ -32,35 +71,48 @@ def create_booking(booking_in: BookingCreate):
         price = service["discount_price"] if service["discount_price"] and service["discount_price"] > 0 else service["price"]
         duration = service["duration_minutes"]
 
-        # 2. Check for slot conflicts atomically
-        # Validate that the slot is open in availability settings and no conflicting booking exists
-        if not is_slot_available(booking_in.appointment_date, booking_in.appointment_time, duration):
+        # 2. Atomically validate the slot against schedule, breaks, closed days,
+        #    past dates and existing bookings — inside the SAME locked transaction
+        #    that performs the insert (prevents the double-booking race).
+        available, reason = is_slot_available_for_booking(
+            cursor,
+            booking_in.appointment_date,
+            booking_in.appointment_time,
+            duration
+        )
+        if not available:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="Sorry, this appointment slot is no longer available. Please select another time or date."
+                detail=reason or "Sorry, this appointment slot is no longer available. Please select another time or date."
             )
 
-        # 3. Double-check direct overlaps within existing non-cancelled bookings
-        req_start = time_str_to_minutes(booking_in.appointment_time)
-        req_end = req_start + duration
+        # 3. Duplicate-submission guard: the exact same phone + service + slot
+        #    booked within the last few minutes is almost certainly a double
+        #    click / retried request, so reject it instead of double-booking.
+        duplicate_sql = """
+        SELECT id FROM bookings
+        WHERE customer_phone = ? AND service_id = ? AND appointment_date = ? AND appointment_time = ?
+          AND status != 'cancelled'
+          AND created_at >= {recent_window}
+        LIMIT 1
+        """
+        recent_window = "NOW() - INTERVAL '5 minutes'" if IS_POSTGRES else "datetime('now', '-5 minutes')"
+        cursor.execute(
+            duplicate_sql.format(recent_window=recent_window),
+            (
+                customer_phone,
+                booking_in.service_id,
+                booking_in.appointment_date,
+                booking_in.appointment_time,
+            )
+        )
+        if cursor.fetchone():
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="This appointment was already submitted. Please check your booking code for confirmation."
+            )
 
-        cursor.execute("""
-        SELECT appointment_time, duration_minutes 
-        FROM bookings 
-        WHERE appointment_date = ? AND status != 'cancelled'
-        """, (booking_in.appointment_date,))
-        existing = cursor.fetchall()
-
-        for b in existing:
-            b_start = time_str_to_minutes(b["appointment_time"])
-            b_end = b_start + b["duration_minutes"]
-            if check_intervals_overlap(req_start, req_end, b_start, b_end):
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail="This slot was just reserved by another client. Please select a different time."
-                )
-
-        # 4. Generate unique booking code
+        # 4. Generate a unique booking code
         booking_code = generate_booking_code()
         # Verify code uniqueness
         cursor.execute("SELECT id FROM bookings WHERE booking_code = ?", (booking_code,))
@@ -76,8 +128,8 @@ def create_booking(booking_in: BookingCreate):
             duration_minutes, status, price
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'confirmed', ?)
         """, (
-            booking_code, booking_in.service_id, booking_in.customer_name.strip(),
-            booking_in.customer_phone.strip(), booking_in.customer_email.strip() if booking_in.customer_email else None,
+            booking_code, booking_in.service_id, customer_name,
+            customer_phone, booking_in.customer_email.strip() if booking_in.customer_email else None,
             booking_in.notes.strip() if booking_in.notes else None,
             booking_in.appointment_date, booking_in.appointment_time,
             duration, price
@@ -196,7 +248,7 @@ def cancel_or_delete_booking(booking_id: int, current_admin: dict = Depends(get_
 
 @router.get("/stats/overview")
 def get_dashboard_stats(current_admin: dict = Depends(get_current_admin)):
-    today_str = date.today().isoformat()
+    today_str = local_now().date().isoformat()
     with get_db() as conn:
         cursor = conn.cursor()
 
