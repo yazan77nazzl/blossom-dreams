@@ -40,7 +40,7 @@ def get_services(
         params = []
 
         if not include_inactive:
-            query += " AND s.is_active = 1 AND c.is_active = 1"
+            query += " AND s.is_active = TRUE AND c.is_active = TRUE"
 
         if category_id:
             query += " AND s.category_id = ?"
@@ -51,7 +51,7 @@ def get_services(
             params.append(category_slug)
 
         if featured_only:
-            query += " AND s.is_featured = 1"
+            query += " AND s.is_featured = TRUE"
 
         if search:
             query += " AND (s.name LIKE ? OR s.description LIKE ?)"
@@ -92,8 +92,8 @@ def create_service(srv: ServiceCreate, current_admin: dict = Depends(get_current
             """, (
                 srv.category_id, srv.name, slug, srv.description, srv.duration_minutes,
                 srv.price, srv.discount_price, srv.image_url,
-                1 if srv.is_active else 0,
-                1 if srv.is_featured else 0
+                bool(srv.is_active),
+                bool(srv.is_featured)
             ))
             new_id = cursor.lastrowid
         except Exception as e:
@@ -146,10 +146,10 @@ def update_service(service_id: int, srv: ServiceUpdate, current_admin: dict = De
             params.append(srv.image_url)
         if srv.is_active is not None:
             updates.append("is_active = ?")
-            params.append(1 if srv.is_active else 0)
+            params.append(srv.is_active)
         if srv.is_featured is not None:
             updates.append("is_featured = ?")
-            params.append(1 if srv.is_featured else 0)
+            params.append(srv.is_featured)
 
         if updates:
             params.append(service_id)

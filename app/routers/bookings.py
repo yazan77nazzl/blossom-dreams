@@ -213,11 +213,11 @@ def get_dashboard_stats(current_admin: dict = Depends(get_current_admin)):
         pending_count = cursor.fetchone()["count"]
 
         # Total services
-        cursor.execute("SELECT COUNT(*) as count FROM services WHERE is_active = 1")
+        cursor.execute("SELECT COUNT(*) as count FROM services WHERE is_active = TRUE")
         services_count = cursor.fetchone()["count"]
 
         # Active offers
-        cursor.execute("SELECT COUNT(*) as count FROM offers WHERE is_active = 1 AND end_date >= ?", (today_str,))
+        cursor.execute("SELECT COUNT(*) as count FROM offers WHERE is_active = TRUE AND end_date >= ?", (today_str,))
         active_offers_count = cursor.fetchone()["count"]
 
         # Total completed bookings & estimated revenue

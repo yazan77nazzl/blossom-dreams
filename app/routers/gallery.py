@@ -18,7 +18,7 @@ def get_gallery_images(category: Optional[str] = None, featured_only: bool = Fal
             params.append(category)
 
         if featured_only:
-            query += " AND is_featured = 1"
+            query += " AND is_featured = TRUE"
 
         query += " ORDER BY display_order ASC, created_at DESC"
         cursor.execute(query, params)
@@ -35,7 +35,7 @@ def add_gallery_image(item: GalleryImageCreate, current_admin: dict = Depends(ge
         """, (
             item.title, item.caption, item.image_url,
             item.category or "All",
-            1 if item.is_featured else 0,
+            bool(item.is_featured),
             item.display_order or 0
         ))
         new_id = cursor.lastrowid

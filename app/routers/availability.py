@@ -51,7 +51,7 @@ def update_day_schedule(day_of_week: int, schedule: DaySchedule, current_admin: 
         UPDATE availability_settings 
         SET is_open = ?, open_time = ?, close_time = ?, slot_interval_minutes = ?
         WHERE day_of_week = ?
-        """, (1 if schedule.is_open else 0, schedule.open_time, schedule.close_time, schedule.slot_interval_minutes, day_of_week))
+        """, (schedule.is_open, schedule.open_time, schedule.close_time, schedule.slot_interval_minutes, day_of_week))
     return {"status": "success", "message": f"Updated schedule for {schedule.day_name}"}
 
 @router.post("/breaks")

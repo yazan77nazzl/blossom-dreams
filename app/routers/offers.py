@@ -32,11 +32,11 @@ def get_offers(include_inactive: bool = False, featured_only: bool = False):
 
         if not include_inactive:
             # Public view: must be active and not expired
-            query += " AND o.is_active = 1 AND o.start_date <= ? AND o.end_date >= ?"
+            query += " AND o.is_active = TRUE AND o.start_date <= ? AND o.end_date >= ?"
             params.extend([today_str, today_str])
 
         if featured_only:
-            query += " AND o.is_featured = 1"
+            query += " AND o.is_featured = TRUE"
 
         query += " ORDER BY o.is_featured DESC, o.created_at DESC"
         cursor.execute(query, params)
@@ -75,8 +75,8 @@ def create_offer(off: OfferCreate, current_admin: dict = Depends(get_current_adm
         """, (
             off.service_id, off.title, off.description, off.original_price, off.discounted_price,
             percent, off.start_date, off.end_date, off.image_url,
-            1 if off.is_active else 0,
-            1 if off.is_featured else 0
+            bool(off.is_active),
+            bool(off.is_featured)
         ))
         new_id = cursor.lastrowid
 
@@ -128,10 +128,10 @@ def update_offer(offer_id: int, off: OfferUpdate, current_admin: dict = Depends(
             params.append(off.image_url)
         if off.is_active is not None:
             updates.append("is_active = ?")
-            params.append(1 if off.is_active else 0)
+            params.append(off.is_active)
         if off.is_featured is not None:
             updates.append("is_featured = ?")
-            params.append(1 if off.is_featured else 0)
+            params.append(off.is_featured)
 
         if updates:
             params.append(offer_id)

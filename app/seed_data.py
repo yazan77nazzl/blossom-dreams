@@ -66,7 +66,7 @@ def seed_database():
                 cursor.execute("""
                 INSERT INTO availability_settings (day_of_week, day_name, is_open, open_time, close_time, slot_interval_minutes)
                 VALUES (?, ?, ?, ?, ?, ?)
-                """, day)
+                """, (day[0], day[1], bool(day[2]), day[3], day[4], day[5]))
 
         # 4. Break times (Monday - Saturday 13:30 to 14:30)
         cursor.execute("SELECT COUNT(*) as count FROM break_times")
@@ -95,7 +95,7 @@ def seed_database():
             if not row:
                 cursor.execute("""
                 INSERT INTO categories (name, slug, description, display_order, icon, is_active)
-                VALUES (?, ?, ?, ?, ?, 1)
+                VALUES (?, ?, ?, ?, ?, TRUE)
                 """, cat)
                 category_id_map[cat[1]] = cursor.lastrowid
             else:
@@ -226,7 +226,7 @@ def seed_database():
                 cursor.execute("""
                 INSERT INTO services (category_id, name, slug, description, duration_minutes, price, discount_price, image_url, is_active, is_featured)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """, (cat_id, name, slug, desc, duration, price, disc_price, img, active, feat))
+                """, (cat_id, name, slug, desc, duration, price, disc_price, img, bool(active), bool(feat)))
                 service_id_map[slug] = cursor.lastrowid
             else:
                 service_id_map[slug] = row["id"]
@@ -271,7 +271,7 @@ def seed_database():
                     title, description, original_price, discounted_price, discount_percent,
                     start_date, end_date, image_url, is_active, is_featured, service_id
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """, offer)
+                """, offer[:8] + (bool(offer[8]), bool(offer[9])) + offer[10:])
 
         # 8. Gallery Images
         gallery_data = [
@@ -289,6 +289,6 @@ def seed_database():
                 cursor.execute("""
                 INSERT INTO gallery_images (title, caption, image_url, category, is_featured, display_order)
                 VALUES (?, ?, ?, ?, ?, ?)
-                """, item)
+                """, (item[0], item[1], item[2], item[3], bool(item[4]), item[5]))
 
         print("[Seed] Seed data successfully applied!")

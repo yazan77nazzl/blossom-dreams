@@ -18,7 +18,7 @@ def get_categories(include_inactive: bool = False):
         if include_inactive:
             cursor.execute("SELECT * FROM categories ORDER BY display_order ASC, name ASC")
         else:
-            cursor.execute("SELECT * FROM categories WHERE is_active = 1 ORDER BY display_order ASC, name ASC")
+            cursor.execute("SELECT * FROM categories WHERE is_active = TRUE ORDER BY display_order ASC, name ASC")
         rows = cursor.fetchall()
         return [dict(row) for row in rows]
 
@@ -31,7 +31,7 @@ def create_category(cat: CategoryCreate, current_admin: dict = Depends(get_curre
             cursor.execute("""
             INSERT INTO categories (name, slug, description, display_order, icon, is_active)
             VALUES (?, ?, ?, ?, ?, ?)
-            """, (cat.name, slug, cat.description, cat.display_order or 0, cat.icon or 'sparkles', 1 if cat.is_active else 0))
+            """, (cat.name, slug, cat.description, cat.display_order or 0, cat.icon or 'sparkles', bool(cat.is_active)))
             new_id = cursor.lastrowid
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"Failed to create category: {str(e)}")
@@ -70,7 +70,7 @@ def update_category(cat_id: int, cat: CategoryUpdate, current_admin: dict = Depe
             params.append(cat.icon)
         if cat.is_active is not None:
             updates.append("is_active = ?")
-            params.append(1 if cat.is_active else 0)
+            params.append(cat.is_active)
 
         if updates:
             params.append(cat_id)

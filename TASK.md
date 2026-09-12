@@ -1,7 +1,5 @@
-Convert the existing Blossom Dreams website into a production-ready PWA.
-
-Add a proper web app manifest, app icons, theme colors, installability, standalone mobile experience, and an appropriate service worker/offline strategy.
-
-Make sure it works well on Android and iPhone and does not break the existing booking system, admin dashboard, API, authentication, database, gallery, or other functionality.
-
-Do not create a separate mobile app. Implement this directly in the existing project and test it.
+The PostgreSQL server is already running on localhost port 54329.
+Continue from the current state. Do not initialize PostgreSQL again.
+Inspect and fix the PostgreSQL boolean default error for is_active.
+Then run the tests and verify app.main:app starts successfully.
+Do not push or commit yet. Report the exact result when finished.

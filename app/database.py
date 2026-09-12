@@ -248,7 +248,7 @@ def init_db():
             announcement_text TEXT DEFAULT '✨ Welcome to Blossom Dreams. Pamper yourself with our signature treatments. Book online today!'
         );
         """
-    ]
+]
 
     with get_db() as conn:
         cursor = conn.cursor()
@@ -256,6 +256,10 @@ def init_db():
             statement = ddl
             if IS_POSTGRES:
                 statement = re.sub(r'INTEGER\s+PRIMARY\s+KEY\s+AUTOINCREMENT', 'SERIAL PRIMARY KEY', statement, flags=re.IGNORECASE)
+                # PostgreSQL requires TRUE/FALSE boolean defaults; SQLite keeps
+                # its valid INTEGER (1/0) equivalents untouched.
+                statement = re.sub(r'\bBOOLEAN\s+DEFAULT\s+1\b', 'BOOLEAN DEFAULT TRUE', statement, flags=re.IGNORECASE)
+                statement = re.sub(r'\bBOOLEAN\s+DEFAULT\s+0\b', 'BOOLEAN DEFAULT FALSE', statement, flags=re.IGNORECASE)
             cursor.execute(statement)
 
         cursor.execute("""
