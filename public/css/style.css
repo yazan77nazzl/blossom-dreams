@@ -1,0 +1,803 @@
+/* ==========================================================================
+   BLOSSOM DREAMS — HAUTE BEAUTÉ LUXURY DESIGN SYSTEM & MOTION
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Playfair+Display:ital,wght@0,500;0,600;0,700;0,800;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  --font-serif: 'Playfair Display', Georgia, serif;
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  /* Haute Palette — derived from the salon's rose-velvet campaign photography:
+     raspberry crimson + warm copper / rose-gold over a cream porcelain ground. */
+  --color-porcelain: #FBEDE6;
+  --color-cream: #FFF7F0;
+  --color-blush-50: #FDEDE8;
+  --color-blush-100: #F6D9D0;
+  --color-blush-200: #EDBBAE;
+  --color-blush-300: #E08F88;
+  --color-rose-500: #D82850;
+  --color-rose-600: #C01838;
+  --color-rose-700: #8F102D;
+  --color-wine-800: #6B1332;
+  --color-wine-950: #470F24;
+  --color-velvet: #2E0810;
+  --color-crimson: #E03058;
+  --color-copper-400: #D06848;
+  --color-copper-500: #C36B4F;
+  --color-copper-600: #A2492D;
+
+  --color-gold-300: #F3CE7D;
+  --color-gold-400: #E2B54E;
+  --color-gold-500: #D4AF37;
+  --color-gold-600: #B8860B;
+
+  --color-charcoal: #2E0810;
+  --color-muted: #6E7A86;
+
+  --shadow-subtle: 0 4px 20px -2px rgba(192, 24, 56, 0.06);
+  --shadow-card: 0 10px 30px -4px rgba(192, 24, 56, 0.10), 0 4px 12px -2px rgba(0, 0, 0, 0.04);
+  --shadow-hover: 0 22px 45px -6px rgba(192, 24, 56, 0.28), 0 10px 18px -4px rgba(0, 0, 0, 0.08);
+  --shadow-gold: 0 6px 20px -2px rgba(212, 175, 55, 0.4);
+}
+
+/* Base Body Styling */
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-porcelain);
+  color: var(--color-charcoal);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, .font-serif {
+  font-family: var(--font-serif);
+  letter-spacing: -0.015em;
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+/* Custom Silk Scrollbar */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-blush-50);
+}
+::-webkit-scrollbar-thumb {
+  background: #E08F88;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-rose-600);
+}
+
+
+@keyframes heroSlideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(32px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes heroScaleIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.92) rotate(-1deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0);
+  }
+}
+
+.hero-animate-badge {
+  animation: heroSlideUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
+}
+
+.hero-animate-title {
+  animation: heroSlideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.25s both;
+}
+
+.hero-animate-subtitle {
+  animation: heroSlideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.4s both;
+}
+
+.hero-animate-cta {
+  animation: heroSlideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.55s both;
+}
+
+.hero-animate-stats {
+  animation: heroSlideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.7s both;
+}
+
+.hero-animate-artwork {
+  animation: heroScaleIn 1s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both;
+}
+
+/* ==========================================================================
+   ELEGANT SCROLL ENTRANCE REVEALS
+   ========================================================================== */
+
+.reveal-on-scroll {
+  opacity: 0;
+  transform: translateY(32px);
+  transition: opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1), transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.reveal-on-scroll.is-revealed {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+}
+
+.delay-100 { transition-delay: 120ms; }
+.delay-200 { transition-delay: 220ms; }
+.delay-300 { transition-delay: 320ms; }
+.delay-400 { transition-delay: 420ms; }
+
+/* ==========================================================================
+   FLOATING AMBIENT BLOSSOM PETALS & GLOW ORBS
+   ========================================================================== */
+
+@keyframes floatPetal1 {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 0.7; }
+  50% { transform: translate(25px, -45px) rotate(18deg); opacity: 0.9; }
+  100% { transform: translate(0, 0) rotate(0deg); opacity: 0.7; }
+}
+
+@keyframes floatPetal2 {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 0.6; }
+  50% { transform: translate(-30px, -55px) rotate(-22deg); opacity: 0.85; }
+  100% { transform: translate(0, 0) rotate(0deg); opacity: 0.6; }
+}
+
+.floating-blossom-petal-1 {
+  animation: floatPetal1 6.5s ease-in-out infinite;
+}
+
+.floating-blossom-petal-2 {
+  animation: floatPetal2 8s ease-in-out infinite;
+}
+
+/* Floating Badges Motion */
+@keyframes gentle-float {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-12px) rotate(1.2deg);
+  }
+}
+
+.animate-float {
+  animation: gentle-float 4.2s ease-in-out infinite;
+}
+
+.animate-float-delayed {
+  animation: gentle-float 4.8s ease-in-out 2s infinite;
+}
+
+/* ==========================================================================
+   LUXURY CARDS & HOVER ELEVATIONS
+   ========================================================================== */
+
+.luxury-card {
+  background: #FFFFFF;
+  border-radius: 1.5rem;
+  border: 1px solid var(--color-blush-100);
+  box-shadow: var(--shadow-card);
+  transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), 
+              box-shadow 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.luxury-card:hover {
+  transform: translateY(-8px) scale(1.01);
+  border-color: var(--color-blush-300);
+  box-shadow: var(--shadow-hover);
+}
+
+.luxury-card:hover img {
+  transform: scale(1.08);
+}
+
+.luxury-card img {
+  transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Arched Editorial Framing */
+.arch-frame {
+  border-radius: 9999px 9999px 1.75rem 1.75rem;
+  overflow: hidden;
+  box-shadow: 0 24px 60px -12px rgba(192, 24, 56, 0.35);
+  border: 6px solid #FFFFFF;
+  position: relative;
+}
+
+.arch-frame img {
+  transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.arch-frame:hover img {
+  transform: scale(1.08);
+}
+
+/* Gold Corner Bracket Motifs */
+.gold-corner-box {
+  position: relative;
+}
+.gold-corner-box::before,
+.gold-corner-box::after {
+  content: '';
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  border-color: var(--color-gold-500);
+  pointer-events: none;
+  z-index: 15;
+}
+.gold-corner-box::before {
+  top: 14px;
+  left: 14px;
+  border-top: 2.5px solid var(--color-gold-500);
+  border-left: 2.5px solid var(--color-gold-500);
+}
+.gold-corner-box::after {
+  bottom: 14px;
+  right: 14px;
+  border-bottom: 2.5px solid var(--color-gold-500);
+  border-right: 2.5px solid var(--color-gold-500);
+}
+
+/* ==========================================================================
+   BUTTON SHIMMER & HOVER MICRO-INTERACTIONS
+   ========================================================================== */
+
+.btn-primary {
+  position: relative;
+  background: linear-gradient(135deg, #D82850 0%, #C01838 55%, #6B1332 100%);
+  color: #FFFFFF;
+  font-weight: 700;
+  box-shadow: 0 8px 24px -4px rgba(192, 24, 56, 0.45);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+/* Automatic Periodic Light Sweep */
+@keyframes periodicShine {
+  0%, 75% { left: -70%; }
+  100% { left: 140%; }
+}
+
+.btn-primary::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -70%;
+  width: 45%;
+  height: 200%;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.45) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: rotate(25deg);
+  animation: periodicShine 4s infinite ease-in-out;
+  pointer-events: none;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #C01838 0%, #7A1330 55%, #2E0810 100%);
+  transform: translateY(-2.5px);
+  box-shadow: 0 14px 34px -4px rgba(192, 24, 56, 0.6);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-secondary {
+  background: #FFFFFF;
+  color: var(--color-rose-700);
+  border: 1.5px solid var(--color-blush-300);
+  font-weight: 700;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-secondary:hover {
+  background: var(--color-blush-50);
+  border-color: var(--color-rose-600);
+  color: var(--color-rose-600);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px -2px rgba(192, 24, 56, 0.15);
+}
+
+/* Floating WhatsApp Pulse */
+@keyframes whatsapp-glow {
+  0% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.7); }
+  70% { box-shadow: 0 0 0 20px rgba(37, 211, 102, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); }
+}
+
+.whatsapp-pulse-btn {
+  animation: whatsapp-glow 2.2s infinite;
+}
+
+/* Glowing Discount Badge */
+@keyframes badgeBreathing {
+  0%, 100% {
+    box-shadow: 0 4px 10px rgba(192, 24, 56, 0.35);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 6px 18px rgba(192, 24, 56, 0.65);
+    transform: scale(1.04);
+  }
+}
+
+.badge-discount {
+  background: linear-gradient(135deg, #D82850 0%, #7A1330 100%);
+  color: #FFFFFF;
+  font-weight: 800;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  padding: 0.35rem 0.7rem;
+  border-radius: 9999px;
+  animation: badgeBreathing 3s ease-in-out infinite;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.badge-featured {
+  background: linear-gradient(135deg, #F59E0B, #D4AF37);
+  color: #FFFFFF;
+  font-weight: 700;
+  font-size: 0.68rem;
+  letter-spacing: 0.05em;
+  padding: 0.25rem 0.65rem;
+  border-radius: 9999px;
+  box-shadow: 0 3px 8px rgba(212, 175, 55, 0.35);
+}
+
+/* Live Countdown Pill */
+.countdown-pill {
+  background: rgba(24, 21, 18, 0.88);
+  backdrop-filter: blur(10px);
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0.75rem;
+  padding: 0.35rem 0.7rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+/* Ambient Radial Aura Orbs — warm rose-velvet glow */
+.hero-aura-pink {
+  position: absolute;
+  width: 700px;
+  height: 700px;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(224, 48, 88, 0.55) 0%, rgba(71, 15, 36, 0) 70%);
+  filter: blur(50px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.hero-aura-gold {
+  position: absolute;
+  width: 550px;
+  height: 550px;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(211, 122, 92, 0.45) 0%, rgba(71, 15, 36, 0) 70%);
+  filter: blur(55px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Rose-Velvet Hero Canvas — matches the campaign's crimson/copper photography */
+.hero-velvet {
+  position: relative;
+  background:
+    radial-gradient(1100px 560px at 85% -12%, rgba(224, 48, 88, 0.75) 0%, rgba(192, 24, 56, 0.22) 46%, rgba(71, 15, 36, 0) 72%),
+    radial-gradient(900px 620px at -12% 112%, rgba(211, 122, 92, 0.55) 0%, rgba(192, 24, 56, 0.16) 42%, rgba(71, 15, 36, 0) 66%),
+    radial-gradient(1400px 950px at 50% 122%, rgba(224, 48, 88, 0.38) 0%, rgba(71, 15, 36, 0) 55%),
+    linear-gradient(160deg, #7A1330 0%, #5C0E26 46%, #470F24 74%, #2E0810 100%);
+}
+
+/* ==========================================================================
+   5-STEP BOOKING WIZARD STYLING & ANIMATIONS
+   ========================================================================== */
+
+.booking-progress-track {
+  position: relative;
+  height: 4px;
+  background: var(--color-blush-100);
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.booking-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #C01838, #D82850);
+  transition: width 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Step Entrance Slide */
+.step-slide-in {
+  animation: stepIn 0.38s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes stepIn {
+  from {
+    opacity: 0;
+    transform: translateX(24px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+/* Date Selector Buttons */
+.cal-date-btn {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1.5px solid #F3E8EC;
+}
+.cal-date-btn:hover:not(:disabled) {
+  border-color: var(--color-rose-600);
+  background-color: var(--color-blush-50);
+  transform: translateY(-2px);
+}
+.cal-date-btn.selected {
+  background: linear-gradient(135deg, #D82850, #C01838) !important;
+  color: #FFFFFF !important;
+  border-color: var(--color-rose-600) !important;
+  box-shadow: 0 6px 16px rgba(192, 24, 56, 0.4) !important;
+  transform: translateY(-2px) scale(1.05);
+}
+
+/* Time Slot Chips */
+.slot-btn {
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1.5px solid #F3E8EC;
+  background-color: #FFFFFF;
+}
+.slot-btn:hover:not(:disabled) {
+  border-color: var(--color-rose-600);
+  color: var(--color-rose-600);
+  background-color: var(--color-blush-50);
+  transform: translateY(-1.5px);
+}
+.slot-btn.selected {
+  background: linear-gradient(135deg, #D82850, #7A1330) !important;
+  color: #FFFFFF !important;
+  border-color: var(--color-rose-600) !important;
+  box-shadow: 0 6px 16px rgba(192, 24, 56, 0.4);
+  transform: scale(1.05);
+}
+
+/* Success Blossom Celebration Animation */
+@keyframes blossomBurst {
+  0% { transform: scale(0.2) rotate(-25deg); opacity: 0; }
+  60% { transform: scale(1.2) rotate(6deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+.animate-blossom-success {
+  animation: blossomBurst 0.75s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Perforated Luxury Receipt Ticket */
+.ticket-receipt {
+  position: relative;
+  background: #FFFFFF;
+  border: 1px solid var(--color-blush-200);
+  border-radius: 1.5rem;
+}
+.ticket-receipt::before,
+.ticket-receipt::after {
+  content: '';
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  background-color: var(--color-porcelain);
+  border-radius: 9999px;
+  top: 72px;
+  border: 1px solid var(--color-blush-200);
+  z-index: 5;
+}
+.ticket-receipt::before {
+  left: -11px;
+  clip-path: polygon(50% 0, 100% 0, 100% 100%, 50% 100%);
+}
+.ticket-receipt::after {
+  right: -11px;
+  clip-path: polygon(0 0, 50% 0, 50% 100%, 0 100%);
+}
+
+/* Modal Smooth Spring Popup */
+.modal-overlay {
+  background: rgba(24, 21, 18, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  animation: fadeIn 0.25s ease forwards;
+}
+
+.modal-content-anim {
+  animation: modalSpring 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modalSpring {
+  from {
+    opacity: 0;
+    transform: scale(0.94) translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Toast Notification */
+#toast-container {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  pointer-events: none;
+}
+.toast-msg {
+  pointer-events: auto;
+  min-width: 280px;
+  max-width: 400px;
+  padding: 0.85rem 1.25rem;
+  border-radius: 0.75rem;
+  font-size: 0.9rem;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+  animation: toastSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+@keyframes toastSlideIn {
+  from { opacity: 0; transform: translateY(20px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Shimmer Skeleton Loader */
+@keyframes shimmer-loading {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton-box {
+  background: linear-gradient(90deg, var(--color-blush-100) 25%, var(--color-blush-50) 50%, var(--color-blush-100) 75%);
+  background-size: 200% 100%;
+  animation: shimmer-loading 1.6s infinite ease-in-out;
+  border-radius: 0.75rem;
+}
+
+/* Accessibility Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .reveal-on-scroll {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .animate-float,
+  .animate-float-delayed,
+  .floating-blossom-petal-1,
+  .floating-blossom-petal-2,
+  .whatsapp-pulse-btn,
+  .skeleton-box {
+    animation: none !important;
+  }
+}
+
+/* ==========================================================================
+   BLOSSOM DREAMS — PREMIUM POLISH v6
+   Responsive utility fallbacks, refined motion, elegance details & mobile UX
+   ========================================================================== */
+
+:root {
+  --ease-lux: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  text-rendering: optimizeLegibility;
+  overscroll-behavior-y: contain;
+}
+
+/* Tailwind Play CDN legacy utility fallbacks (non-standard spacing/shadows) */
+.shadow-xs { box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.05), 0 1px 3px 0 rgba(15, 23, 42, 0.06); }
+.shadow-2xs { box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.04); }
+.w-13 { width: 3.25rem; }
+.h-13 { height: 3.25rem; }
+.w-15 { width: 3.75rem; }
+.w-18 { width: 4.5rem; }
+.h-18 { height: 4.5rem; }
+.h-22 { height: 5.5rem; }
+.h-88 { height: 22rem; }
+.w-4\.5 { width: 1.125rem; }
+.h-4\.5 { height: 1.125rem; }
+.py-4\.5 { padding-top: 1.125rem; padding-bottom: 1.125rem; }
+
+/* Hide horizontal scrollbars on strip carousels (kept touch-scrollable) */
+.scrollbar-none { scrollbar-width: none; -ms-overflow-style: none; }
+.scrollbar-none::-webkit-scrollbar { display: none; }
+
+/* Silky touch scrolling */
+#categories-pills-container,
+#date-scroll-strip,
+.overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Luxury dot-flourish pattern overlay */
+.luxury-pattern::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(rgba(192, 24, 56, 0.06) 1.2px, transparent 1.2px),
+    radial-gradient(rgba(212, 175, 55, 0.12) 1.2px, transparent 1.2px);
+  background-size: 26px 26px, 26px 26px;
+  background-position: 0 0, 13px 13px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Gold gradient display text */
+.gold-gradient-text {
+  background: linear-gradient(120deg, #B8860B 0%, #D4AF37 38%, #FDE68A 52%, #D4AF37 66%, #B8860B 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Elegant hairline crown on luxury cards */
+.luxury-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 14%;
+  right: 14%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.75) 30%, rgba(192, 24, 56, 0.5) 70%, transparent);
+  opacity: 0.85;
+  z-index: 2;
+}
+
+.luxury-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.5), rgba(255, 245, 247, 0));
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Section flourish divider */
+.section-flourish {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.85rem;
+  color: var(--color-gold-500);
+}
+.section-flourish::before,
+.section-flourish::after {
+  content: '';
+  height: 1px;
+  width: 3.25rem;
+  background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.85));
+}
+.section-flourish::after {
+  background: linear-gradient(90deg, rgba(212, 175, 55, 0.85), transparent);
+}
+
+/* Focus visibility for keyboard users */
+.btn-primary:focus-visible,
+.btn-secondary:focus-visible,
+.btn-open-booking:focus-visible {
+  outline: 2px solid var(--color-gold-500);
+  outline-offset: 3px;
+}
+
+/* Sticky header refinement on scroll */
+.site-header { transition: background 0.35s var(--ease-lux), box-shadow 0.35s var(--ease-lux), backdrop-filter 0.35s var(--ease-lux); }
+.site-header.scrolled {
+  background: rgba(71, 15, 36, 0.96);
+  box-shadow: 0 12px 32px -12px rgba(20, 4, 10, 0.5);
+}
+
+/* Category pill & date strip snap + breathing micro-interaction */
+#categories-pills-container { scroll-snap-type: x proximity; }
+.category-pill-btn { scroll-snap-align: start; transition: transform 0.3s var(--ease-lux), box-shadow 0.3s var(--ease-lux), background 0.3s var(--ease-lux); }
+.category-pill-btn:active { transform: scale(0.96); }
+#date-scroll-strip { scroll-snap-type: x proximity; padding-bottom: 0.75rem; }
+.cal-date-btn { scroll-snap-align: center; touch-action: manipulation; }
+.cal-date-btn.selected { animation: heroScaleIn 0.4s var(--ease-lux); }
+
+/* Larger touch targets in the time selector */
+.slot-btn { min-height: 42px; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+
+/* Booking modal: refined mobile bottom-sheet */
+#booking-modal .booking-sheet {
+  background: #FFFFFF;
+  box-shadow: 0 -18px 50px -12px rgba(107, 19, 50, 0.28);
+}
+@media (max-width: 640px) {
+  #booking-modal .booking-sheet { border-radius: 1.75rem 1.75rem 0 0; max-height: 94vh; }
+  #booking-modal .booking-sheet::before {
+    content: '';
+    display: block;
+    width: 44px;
+    height: 5px;
+    border-radius: 9999px;
+    background: #F3E8EC;
+    margin: -0.5rem auto 0.4rem;
+    flex-shrink: 0;
+  }
+  #wizard-footer { gap: 0.6rem; padding-left: 1rem; padding-right: 1rem; }
+  #wizard-footer button { flex: 1; }
+  .step-indicator { font-size: 10px; letter-spacing: -0.02em; }
+}
+
+/* Safe-area padding for mobile chrome */
+#booking-modal .wizard-footer-safe { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
+nav[aria-label="Mobile Navigation"] { padding-bottom: max(0.625rem, env(safe-area-inset-bottom)); }
+aside[aria-label="WhatsApp Contact"] { bottom: max(6rem, calc(env(safe-area-inset-bottom) + 5.5rem)); }
+@media (min-width: 768px) {
+  aside[aria-label="WhatsApp Contact"] { bottom: 1.75rem; }
+}
+
+/* Admin: allow tables & calendar to scroll gracefully on small screens */
+#bookings-table-view table,
+#admin-services-table-container table,
+#admin-offers-table-container table,
+#today-agenda-container table {
+  min-width: 680px;
+}
+#admin-calendar-grid { min-width: 640px; }

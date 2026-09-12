@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Admin Executive Suite | Blossom Dreams</title>
+  <meta name="robots" content="noindex, nofollow" />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              blush: '#FFF5F7',
+              rose: '#BE185D',
+              wine: '#831843',
+              porcelain: '#FAF8F5',
+              gold: '#D4AF37'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  
+  <link rel="stylesheet" href="/static/css/style.css?v=5.0" />
+</head>
+<body class="bg-[#F8FAFC] text-slate-800 antialiased font-sans">
+
+  <!-- 1. AUTH / LOGIN VIEW (Visible if not authenticated) -->
+  <div id="admin-login-view" class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-[#FFF5F7] via-[#FDF2F8] to-[#FAF8F5]">
+    <div class="w-full max-w-md bg-white rounded-3xl p-8 shadow-2xl border border-pink-100 modal-content-anim relative overflow-hidden">
+      
+      <!-- Top Decorative Accent -->
+      <div class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#BE185D] via-[#E11D48] to-[#D4AF37]"></div>
+
+      <div class="text-center mb-8">
+        <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-pink-600 to-rose-400 flex items-center justify-center text-white text-2xl mx-auto mb-3 shadow-md shadow-pink-500/20">
+          🌸
+        </div>
+        <h2 class="font-serif text-2xl font-bold text-gray-900">Blossom Dreams</h2>
+        <p class="text-[10px] text-pink-700 font-extrabold tracking-widest uppercase mt-0.5">Salon Management & Analytics</p>
+      </div>
+
+      <form id="admin-login-form" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Username or Email</label>
+          <input type="text" id="login-username" required placeholder="admin or admin@blossomdreams.com"
+            class="w-full text-xs px-4 py-3 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-500 bg-pink-50/20" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Password</label>
+          <input type="password" id="login-password" required placeholder="••••••••"
+            class="w-full text-xs px-4 py-3 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-500 bg-pink-50/20" />
+        </div>
+
+        <div id="login-error-msg" class="hidden p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium"></div>
+
+        <button type="submit" id="btn-submit-login" class="w-full btn-primary py-3 rounded-xl text-xs font-bold shadow-lg shadow-pink-600/25 transition flex items-center justify-center gap-2">
+          <span>Sign In to Executive Suite</span>
+          <span>→</span>
+        </button>
+      </form>
+
+      <div class="mt-6 pt-6 border-t border-pink-100 text-center">
+        <a href="/" class="text-xs text-pink-600 hover:text-pink-800 font-bold flex items-center justify-center gap-1">
+          <span>←</span>
+          <span>Return to Public Website</span>
+        </a>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 2. DASHBOARD MAIN VIEW (Visible when authenticated) -->
+  <div id="admin-dashboard-view" class="min-h-screen flex hidden">
+    
+    <!-- Collapsible Sidebar -->
+    <aside id="admin-sidebar" class="w-64 bg-white border-r border-slate-200 flex flex-col justify-between hidden md:flex flex-shrink-0 transition-all">
+      <div>
+        <!-- Brand Header -->
+        <div class="p-6 border-b border-slate-100 flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-[#BE185D] text-white flex items-center justify-center text-lg shadow-sm">
+            🌸
+          </div>
+          <div>
+            <h3 class="font-serif font-bold text-slate-900 leading-tight">Blossom Dreams</h3>
+            <span class="text-[9px] text-[#BE185D] font-bold uppercase tracking-widest">Executive Portal</span>
+          </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <nav class="p-4 space-y-1 text-xs font-semibold text-slate-600">
+          <button data-tab="overview" class="admin-tab-btn w-full px-3.5 py-2.5 rounded-xl flex items-center gap-3 transition active">
+            <span>📊</span>
+            <span>Dashboard Overview</span>
+          </button>
+          <button data-tab="bookings" class="admin-tab-btn w-full px-3.5 py-2.5 rounded-xl flex items-center gap-3 transition">
+            <span>📅</span>
+            <span>Bookings & Calendar</span>
+          </button>
+          <button data-tab="services" class="admin-tab-btn w-full px-3.5 py-2.5 rounded-xl flex items-center gap-3 transition">
+            <span>💅</span>
+            <span>Services & Treatments</span>
+          </button>
+          <button data-tab="offers" class="admin-tab-btn w-full px-3.5 py-2.5 rounded-xl flex items-center gap-3 transition">
+            <span>🏷</span>
+            <span>Special Offers</span>
+          </button>
+          <button data-tab="availability" class="admin-tab-btn w-full px-3.5 py-2.5 rounded-xl flex items-center gap-3 transition">
+            <span>⏱</span>
+            <span>Hours & Availability</span>
+          </button>
+          <button data-tab="gallery" class="admin-tab-btn w-full px-3.5 py-2.5 rounded-xl flex items-center gap-3 transition">
+            <span>🖼</span>
+            <span>Gallery Portfolio</span>
+          </button>
+          <button data-tab="settings" class="admin-tab-btn w-full px-3.5 py-2.5 rounded-xl flex items-center gap-3 transition">
+            <span>⚙️</span>
+            <span>Salon Settings</span>
+          </button>
+        </nav>
+      </div>
+
+      <!-- Bottom Profile & Logout -->
+      <div class="p-4 border-t border-slate-100 bg-slate-50/50">
+        <div class="flex items-center justify-between mb-3 px-2">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-full bg-pink-100 text-pink-700 flex items-center justify-center font-bold text-xs">
+              AD
+            </div>
+            <div>
+              <div id="admin-user-display" class="text-xs font-bold text-slate-900">Salon Owner</div>
+              <div class="text-[10px] text-emerald-600 font-semibold flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                <span>Active Session</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="flex gap-2">
+          <a href="/" target="_blank" class="flex-1 py-2 text-center text-[11px] font-bold bg-white hover:bg-slate-100 text-slate-700 rounded-xl border border-slate-200 transition">
+            Live Site ↗
+          </a>
+          <button id="admin-logout-btn" class="flex-1 py-2 text-center text-[11px] font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl border border-rose-100 transition">
+            Log Out
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="flex-1 flex flex-col min-w-0">
+      
+      <!-- Top Mobile & Desktop Bar -->
+      <header class="bg-white border-b border-slate-200 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-3 shadow-xs">
+        <div class="flex items-center gap-3">
+          <button id="admin-mobile-toggle" aria-label="Toggle Admin Menu" class="md:hidden w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-700">
+            ☰
+          </button>
+          <h2 id="admin-page-title" class="text-lg font-serif font-bold text-slate-900">Dashboard Overview</h2>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <button id="btn-quick-new-booking" class="btn-primary px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm">
+            <span>+ Manual Booking</span>
+          </button>
+          <a href="/" target="_blank" class="hidden sm:inline-flex items-center gap-1 text-xs font-bold text-pink-700 bg-pink-50 px-3.5 py-2 rounded-xl border border-pink-200 hover:bg-pink-100 transition">
+            <span>View Public Site</span>
+            <span>↗</span>
+          </a>
+        </div>
+      </header>
+
+      <!-- Main Body Container -->
+      <main class="flex-1 p-4 sm:p-6 overflow-y-auto">
+        
+        <!-- TAB 1: OVERVIEW & ANALYTICS -->
+        <section id="tab-overview" class="admin-tab-pane space-y-6">
+          
+          <!-- KPI Summary Cards -->
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-sm relative overflow-hidden">
+              <span class="text-xs text-slate-400 font-bold uppercase tracking-wider">Today's Schedule</span>
+              <div id="stat-today-bookings" class="text-3xl font-serif font-bold text-slate-900 mt-1">0</div>
+              <span class="text-[10px] text-pink-700 font-bold mt-1 block">Scheduled for today</span>
+            </div>
+            
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-sm relative overflow-hidden">
+              <span class="text-xs text-slate-400 font-bold uppercase tracking-wider">Upcoming Bookings</span>
+              <div id="stat-upcoming-bookings" class="text-3xl font-serif font-bold text-slate-900 mt-1">0</div>
+              <span class="text-[10px] text-indigo-600 font-bold mt-1 block">Future appointments</span>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-sm relative overflow-hidden">
+              <span class="text-xs text-slate-400 font-bold uppercase tracking-wider">Active Services</span>
+              <div id="stat-active-services" class="text-3xl font-serif font-bold text-slate-900 mt-1">0</div>
+              <span class="text-[10px] text-emerald-600 font-bold mt-1 block">Live on client menu</span>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-sm relative overflow-hidden">
+              <span class="text-xs text-slate-400 font-bold uppercase tracking-wider">Confirmed Revenue</span>
+              <div id="stat-total-revenue" class="text-3xl font-serif font-bold text-pink-700 mt-1">$0</div>
+              <span class="text-[10px] text-slate-400 font-semibold mt-1 block">Total completed / confirmed</span>
+            </div>
+          </div>
+
+          <!-- Weekly Trend Chart & Breakdown -->
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- 7-Day Bookings Trend (SVG Line/Bar Chart) -->
+            <div class="lg:col-span-8 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+              <div class="flex items-center justify-between mb-4">
+                <div>
+                  <h3 class="font-serif font-bold text-slate-900 text-base">Weekly Appointment Trend</h3>
+                  <p class="text-xs text-slate-400">Appointment volume over the next 7 days</p>
+                </div>
+                <span class="text-[10px] bg-pink-50 text-pink-700 font-bold px-2.5 py-1 rounded-full border border-pink-100">Live Forecast</span>
+              </div>
+              <div id="chart-weekly-bookings-container" class="h-44 flex items-end">
+                <!-- Dynamically rendered SVG chart -->
+              </div>
+            </div>
+
+            <!-- Category Distribution Bar -->
+            <div class="lg:col-span-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+              <div>
+                <h3 class="font-serif font-bold text-slate-900 text-base mb-1">Services Breakdown</h3>
+                <p class="text-xs text-slate-400 mb-4">Active treatments by specialty</p>
+                <div id="category-distribution-container" class="space-y-3 text-xs">
+                  <!-- Dynamically populated -->
+                </div>
+              </div>
+              <div class="pt-4 border-t border-slate-100 text-[11px] text-slate-400">
+                Managed from Services Tab
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Today's Schedule Agenda Feed -->
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h3 class="font-serif font-bold text-slate-900 text-base">Today's Salon Agenda</h3>
+                <p class="text-xs text-slate-500">Clients scheduled to arrive today</p>
+              </div>
+              <button onclick="document.querySelector('[data-tab=bookings]').click();" class="text-xs text-pink-700 font-bold hover:underline">
+                View Full Calendar →
+              </button>
+            </div>
+            <div id="today-agenda-container" class="overflow-x-auto">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+        </section>
+
+        <!-- TAB 2: BOOKINGS & CALENDAR -->
+        <section id="tab-bookings" class="admin-tab-pane space-y-6 hidden">
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+            
+            <!-- Filters Bar -->
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-6 border-b border-slate-100">
+              <div class="flex flex-wrap items-center gap-2.5">
+                <input type="date" id="filter-booking-date" class="text-xs px-3 py-2 rounded-xl border border-slate-200 font-medium" />
+                <select id="filter-booking-status" class="text-xs px-3 py-2 rounded-xl border border-slate-200 font-medium">
+                  <option value="">All Statuses</option>
+                  <option value="pending">Pending</option>
+                  <option value="confirmed">Confirmed</option>
+                  <option value="completed">Completed</option>
+                  <option value="cancelled">Cancelled</option>
+                  <option value="no_show">No Show</option>
+                </select>
+                <button id="btn-reset-booking-filters" class="text-xs text-slate-500 hover:text-slate-800 px-2.5 py-1">
+                  Reset
+                </button>
+              </div>
+
+              <div class="flex items-center gap-3">
+                <input type="text" id="filter-booking-search" placeholder="Search guest or #BD code..."
+                  class="text-xs px-3.5 py-2 rounded-xl border border-slate-200 w-full sm:w-64" />
+                
+                <!-- Table vs Calendar Toggle -->
+                <div class="flex bg-slate-100 p-1 rounded-xl">
+                  <button id="btn-view-table" class="px-3.5 py-1.5 text-xs font-bold rounded-lg bg-white shadow-xs text-slate-800 transition">Table</button>
+                  <button id="btn-view-calendar" class="px-3.5 py-1.5 text-xs font-bold rounded-lg text-slate-500 hover:text-slate-800 transition">Calendar</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Table View -->
+            <div id="bookings-table-view">
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs text-slate-600">
+                  <thead class="bg-slate-50 text-slate-400 uppercase font-semibold text-[10px] tracking-wider border-b border-slate-200">
+                    <tr>
+                      <th class="py-3 px-4">Code</th>
+                      <th class="py-3 px-4">Date & Time</th>
+                      <th class="py-3 px-4">Guest</th>
+                      <th class="py-3 px-4">Treatment</th>
+                      <th class="py-3 px-4">Price</th>
+                      <th class="py-3 px-4">Status</th>
+                      <th class="py-3 px-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="bookings-table-body" class="divide-y divide-slate-100">
+                    <!-- Dynamic populated -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Calendar View -->
+            <div id="bookings-calendar-view" class="hidden">
+              <div class="flex items-center justify-between gap-2 flex-wrap mb-4">
+              <div class="flex items-center gap-2">
+                <button id="cal-prev-month" class="p-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs">← Prev</button>
+                <h4 id="cal-current-month-lbl" class="font-serif font-bold text-slate-800 text-sm">Month Year</h4>
+                <button id="cal-next-month" class="p-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs">Next →</button>
+              </div>
+              <button id="cal-today-btn" class="text-xs text-pink-700 font-bold px-3 py-1 rounded-lg bg-pink-50">Today</button>
+            </div>
+            <div class="overflow-x-auto scrollbar-none pb-1">
+              <div id="admin-calendar-grid" class="grid grid-cols-7 gap-2">
+                <!-- Dynamic calendar days -->
+              </div>
+            </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- TAB 3: SERVICES -->
+        <section id="tab-services" class="admin-tab-pane space-y-6 hidden">
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+            <div class="flex items-center justify-between mb-6">
+              <div>
+                <h3 class="font-serif font-bold text-slate-900 text-base">Salon Services & Treatments</h3>
+                <p class="text-xs text-slate-500">Add, edit, adjust prices, and toggle visibility</p>
+              </div>
+              <button id="btn-add-service-modal" class="btn-primary px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm">
+                <span>+ Add Treatment</span>
+              </button>
+            </div>
+
+            <div id="admin-services-table-container" class="overflow-x-auto">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 4: SPECIAL OFFERS -->
+        <section id="tab-offers" class="admin-tab-pane space-y-6 hidden">
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+            <div class="flex items-center justify-between mb-6">
+              <div>
+                <h3 class="font-serif font-bold text-slate-900 text-base">Special Offers & Bundles</h3>
+                <p class="text-xs text-slate-500">Configure seasonal discounts and promotional packages</p>
+              </div>
+              <button id="btn-add-offer-modal" class="btn-primary px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm">
+                <span>+ Add Special Offer</span>
+              </button>
+            </div>
+
+            <div id="admin-offers-table-container" class="overflow-x-auto">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 5: AVAILABILITY & WORKING HOURS -->
+        <section id="tab-availability" class="admin-tab-pane space-y-6 hidden">
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- Schedule Editor -->
+            <div class="lg:col-span-8 bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+              <h3 class="font-serif font-bold text-slate-900 text-base mb-1">Weekly Operating Schedule</h3>
+              <p class="text-xs text-slate-500 mb-6">Configure open days, hours, and appointment slots.</p>
+
+              <div id="admin-schedule-list" class="space-y-3">
+                <!-- Dynamically populated 7 days -->
+              </div>
+            </div>
+
+            <!-- Breaks & Holidays -->
+            <div class="lg:col-span-4 space-y-6">
+              <!-- Midday Breaks -->
+              <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+                <div class="flex items-center justify-between mb-3">
+                  <h4 class="font-serif font-bold text-slate-900 text-sm">Midday Breaks</h4>
+                  <button id="btn-add-break-modal" class="text-xs text-pink-700 font-bold hover:underline">+ Add Break</button>
+                </div>
+                <p class="text-xs text-slate-500 mb-4">Slots overlapping with breaks are automatically hidden from clients.</p>
+                <div id="admin-breaks-list" class="space-y-2 text-xs">
+                  <!-- Dynamically populated -->
+                </div>
+              </div>
+
+              <!-- Closed Dates / Holidays -->
+              <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+                <div class="flex items-center justify-between mb-3">
+                  <h4 class="font-serif font-bold text-slate-900 text-sm">Holidays & Closed Dates</h4>
+                  <button id="btn-add-closed-modal" class="text-xs text-pink-700 font-bold hover:underline">+ Add Date</button>
+                </div>
+                <p class="text-xs text-slate-500 mb-4">Specific dates when the salon is completely closed.</p>
+                <div id="admin-closed-dates-list" class="space-y-2 text-xs">
+                  <!-- Dynamically populated -->
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- TAB 6: GALLERY -->
+        <section id="tab-gallery" class="admin-tab-pane space-y-6 hidden">
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+            <div class="flex items-center justify-between mb-6">
+              <div>
+                <h3 class="font-serif font-bold text-slate-900 text-base">Atelier Portfolio Gallery</h3>
+                <p class="text-xs text-slate-500">Upload and curate client transformation photography</p>
+              </div>
+              <button id="btn-add-gallery-modal" class="btn-primary px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm">
+                <span>+ Upload Photo</span>
+              </button>
+            </div>
+
+            <div id="admin-gallery-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 7: SALON SETTINGS -->
+        <section id="tab-settings" class="admin-tab-pane space-y-6 hidden">
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <div class="lg:col-span-8 bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+              <h3 class="font-serif font-bold text-slate-900 text-base mb-1">Salon Identity & Contact Info</h3>
+              <p class="text-xs text-slate-500 mb-6">Live configuration of public information and WhatsApp integration.</p>
+
+              <form id="admin-settings-form" class="space-y-4 text-xs">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block font-bold text-slate-700 uppercase tracking-wider mb-1">Salon Name</label>
+                    <input type="text" id="set-salon-name" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200" />
+                  </div>
+                  <div>
+                    <label class="block font-bold text-slate-700 uppercase tracking-wider mb-1">Currency Symbol</label>
+                    <input type="text" id="set-currency" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200" />
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block font-bold text-slate-700 uppercase tracking-wider mb-1">Tagline</label>
+                  <input type="text" id="set-tagline" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200" />
+                </div>
+
+                <div>
+                  <label class="block font-bold text-slate-700 uppercase tracking-wider mb-1">Description / Bio</label>
+                  <textarea id="set-description" rows="3" class="w-full px-3.5 py-2 rounded-xl border border-slate-200"></textarea>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block font-bold text-slate-700 uppercase tracking-wider mb-1">Phone Number</label>
+                    <input type="text" id="set-phone" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200" />
+                  </div>
+                  <div>
+                    <label class="block font-bold text-slate-700 uppercase tracking-wider mb-1">WhatsApp Number (with country code)</label>
+                    <input type="text" id="set-whatsapp" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200" />
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block font-bold text-slate-700 uppercase tracking-wider mb-1">Instagram URL</label>
+                    <input type="url" id="set-instagram" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200" />
+                  </div>
+                  <div>
+                    <label class="block font-bold text-slate-700 uppercase tracking-wider mb-1">TikTok URL</label>
+                    <input type="url" id="set-tiktok" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200" />
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block font-bold text-slate-700 uppercase tracking-wider mb-1">Physical Address</label>
+                  <input type="text" id="set-address" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200" />
+                </div>
+
+                <div>
+                  <label class="block font-bold text-slate-700 uppercase tracking-wider mb-1">Opening Hours Display Text</label>
+                  <input type="text" id="set-hours" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200" />
+                </div>
+
+                <div>
+                  <label class="block font-bold text-slate-700 uppercase tracking-wider mb-1">Top Announcement Banner Text</label>
+                  <input type="text" id="set-announcement" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200" />
+                </div>
+
+                <div class="pt-4">
+                  <button type="submit" class="btn-primary px-6 py-2.5 rounded-xl text-xs font-bold shadow-md">
+                    Save Salon Settings
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Password Change -->
+            <div class="lg:col-span-4 bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+              <h3 class="font-serif font-bold text-slate-900 text-base mb-1">Security & Password</h3>
+              <p class="text-xs text-slate-500 mb-4">Update your admin login password</p>
+
+              <form id="admin-password-form" class="space-y-3 text-xs">
+                <div>
+                  <label class="block font-bold text-slate-700 uppercase tracking-wider mb-1">Current Password</label>
+                  <input type="password" id="pwd-old" required class="w-full px-3 py-2 rounded-xl border border-slate-200" />
+                </div>
+                <div>
+                  <label class="block font-bold text-slate-700 uppercase tracking-wider mb-1">New Password</label>
+                  <input type="password" id="pwd-new" required class="w-full px-3 py-2 rounded-xl border border-slate-200" />
+                </div>
+                <div>
+                  <label class="block font-bold text-slate-700 uppercase tracking-wider mb-1">Confirm New Password</label>
+                  <input type="password" id="pwd-confirm" required class="w-full px-3 py-2 rounded-xl border border-slate-200" />
+                </div>
+                <div class="pt-2">
+                  <button type="submit" class="btn-secondary w-full py-2.5 rounded-xl text-xs font-bold">
+                    Change Password
+                  </button>
+                </div>
+              </form>
+            </div>
+
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- MODALS CONTAINER -->
+  <div id="admin-modal-root"></div>
+
+  <!-- Admin Controller -->
+  <script type="module" src="/static/js/admin.js?v=5.0"></script>
+</body>
+</html>

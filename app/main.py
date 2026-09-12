@@ -1,0 +1,111 @@
+import os
+from pathlib import Path
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse, JSONResponse
+
+from app.config import settings
+from app.database import init_db
+from app.seed_data import seed_database
+from app.routers import auth, services, categories, offers, bookings, availability, gallery, settings as salon_settings_router, upload
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+PUBLIC_DIR = BASE_DIR / "public"
+UPLOADS_DIR = PUBLIC_DIR / "uploads"
+UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("[Server] Initializing database...")
+    init_db()
+    print("[Server] Checking seed data...")
+    seed_database()
+    print(f"[Server] Blossom Dreams is ready in {settings.ENVIRONMENT.upper()} mode!")
+    yield
+
+app = FastAPI(
+    title="Blossom Dreams API",
+    description="Luxury Beauty Salon Booking & Management Platform for Blossom Dreams",
+    version="1.0.0",
+    lifespan=lifespan
+)
+
+# Production Security Headers Middleware
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    return response
+
+# CORS Middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.CORS_ORIGINS,
+    allow_credentials=settings.CORS_ALLOW_CREDENTIALS,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Include API Routers
+app.include_router(auth.router)
+app.include_router(services.router)
+app.include_router(categories.router)
+app.include_router(offers.router)
+app.include_router(bookings.router)
+app.include_router(availability.router)
+app.include_router(gallery.router)
+app.include_router(salon_settings_router.router)
+app.include_router(upload.router)
+
+# Mount Static Files (/static points to public directory)
+app.mount("/static", StaticFiles(directory=str(PUBLIC_DIR)), name="static")
+
+@app.get("/api/health")
+def health_check():
+    return {
+        "status": "healthy",
+        "app": "Blossom Dreams",
+        "version": "1.0.0"
+    }
+
+# HTML Entry Points
+@app.get("/")
+def serve_index():
+    index_path = PUBLIC_DIR / "index.html"
+    if index_path.exists():
+        return FileResponse(index_path)
+    return {"message": "Blossom Dreams Frontend is initializing."}
+
+@app.get("/manifest.json")
+def serve_manifest():
+    manifest_path = PUBLIC_DIR / "manifest.json"
+    if manifest_path.exists():
+        return FileResponse(
+            manifest_path,
+            media_type="application/manifest+json",
+            headers={"Cache-Control": "public, max-age=0, must-revalidate"},
+        )
+    return JSONResponse({"error": "Manifest missing"}, status_code=404)
+
+@app.get("/sw.js")
+def serve_service_worker():
+    sw_path = PUBLIC_DIR / "sw.js"
+    if sw_path.exists():
+        return FileResponse(
+            sw_path,
+            media_type="application/javascript",
+            headers={"Cache-Control": "no-cache"},
+        )
+    return JSONResponse({"error": "Service worker missing"}, status_code=404)
+
+@app.get("/admin")
+@app.get("/admin/")
+def serve_admin():
+    admin_path = PUBLIC_DIR / "admin" / "index.html"
+    if admin_path.exists():
+        return FileResponse(admin_path)
+    return {"message": "Blossom Dreams Admin is initializing."}

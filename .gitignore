@@ -1,0 +1,25 @@
+# Environment / secrets
+.env
+*.env
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Local databases
+*.db
+*.db-wal
+*.db-shm
+
+# Local user uploads (dev only; production uses Supabase Storage)
+public/uploads/*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

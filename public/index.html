@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  
+  <!-- SEO & Luxury Branding Metadata -->
+  <title>Blossom Dreams | Haute Beauté & Luxury Salon Beirut</title>
+  <meta name="description" content="Blossom Dreams in Verdun, Beirut. Lebanon's premier luxury salon for Russian manicures, BIAB builder gel, Russian volume lashes, HD brow lamination, hydrafacials, and aesthetic glam." />
+  <meta name="keywords" content="Blossom Dreams, beauty salon Beirut, Russian manicure Lebanon, BIAB nails Beirut, lash extensions, brow lamination, hydrafacial Lebanon" />
+  
+  <meta property="og:title" content="Blossom Dreams | Luxury Beauty Sanctuary" />
+  <meta property="og:description" content="Experience bespoke beauty care in Beirut. Book your appointment online with instant slot confirmation." />
+  <meta property="og:image" content="/static/images/hero_bg.jpg" />
+  <meta property="og:url" content="https://www.instagram.com/blossomdreams.lb/" />
+  <meta property="og:type" content="website" />
+  <meta name="theme-color" content="#C01838" />
+
+  <!-- Progressive Web App -->
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="application-name" content="Blossom Dreams" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Blossom Dreams" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/images/icons/favicon-32.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/static/images/icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="/static/images/icons/apple-touch-icon.png" />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              blush: '#FDEDE8',
+              rose: '#C01838',
+              crimson: '#E03058',
+              wine: '#6B1332',
+              porcelain: '#FBEDE6',
+              gold: '#D4AF37'
+            },
+            cream: '#FFF7F0',
+            velvet: {
+              800: '#5C0E26',
+              900: '#470F24',
+              950: '#2E0810'
+            },
+            copper: {
+              100: '#FBEAE2',
+              200: '#F6D5C6',
+              300: '#EEB99F',
+              400: '#D06848',
+              500: '#C36B4F',
+              600: '#A2492D'
+            },
+            pink: {
+              50: '#FDEDE8',
+              100: '#F6D9D0',
+              200: '#EDBBAE',
+              300: '#E08F88',
+              400: '#D65A70',
+              500: '#D82850',
+              600: '#C01838',
+              700: '#8F102D',
+              800: '#6B1332',
+              900: '#470F24',
+              950: '#2E0810'
+            },
+            rose: {
+              50: '#FDEDE8',
+              100: '#F6DCD3',
+              200: '#EFBBAE',
+              300: '#E08F88',
+              400: '#D06848',
+              500: '#D62844',
+              600: '#BE1233',
+              700: '#91112D',
+              800: '#6E1030',
+              900: '#470C21'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Luxury Design System Stylesheet -->
+  <link rel="stylesheet" href="/static/css/style.css?v=6.0" />
+</head>
+<body class="bg-[#FBEDE6] text-[#2E0810] antialiased selection:bg-pink-200 selection:text-pink-950 pb-20 md:pb-0">
+
+  <!-- TOP PROMOTION & ANNOUNCEMENT BAR -->
+  <div class="bg-gradient-to-r from-[#6B1332] via-[#C01838] to-[#7A1330] text-white text-xs py-2.5 px-4 text-center font-medium tracking-wide shadow-sm flex items-center justify-center gap-2.5 relative z-50">
+    <span class="inline-block w-2 h-2 rounded-full bg-amber-300 animate-pulse"></span>
+    <span id="announcement-banner-text" class="truncate max-w-2xl font-medium">✨ Welcome to Blossom Dreams. Pamper yourself with our signature treatments. Book online today!</span>
+    <span class="hidden sm:inline text-pink-200">•</span>
+    <a href="#offers" class="hidden sm:inline-flex items-center gap-1 underline underline-offset-2 hover:text-amber-200 text-pink-100 text-[11px] font-bold">
+      View Seasonal Offers →
+    </a>
+  </div>
+
+  <!-- LUXURY MAIN HEADER -->
+  <header class="site-header sticky top-0 z-40 bg-[#470F24]/85 backdrop-blur-xl border-b border-amber-200/20 transition-all duration-300 shadow-lg shadow-velvet-950/20">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+      
+      <!-- Brand Logo & Atelier Insignia -->
+      <a href="#" class="flex items-center gap-3.5 group">
+        <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-[#D82850] to-[#C01838] flex items-center justify-center text-white shadow-md shadow-pink-600/40 ring-1 ring-amber-200/50 group-hover:scale-105 group-hover:rotate-3 transition duration-300 transform">
+          <span class="text-xl">🌸</span>
+        </div>
+        <div>
+          <span class="salon-brand-name font-serif text-xl sm:text-2xl font-bold tracking-tight text-white leading-none block drop-shadow-sm">
+            BLOSSOM DREAMS
+          </span>
+          <span class="text-[9px] tracking-[0.28em] text-amber-300 font-bold uppercase block mt-1">
+            HAUTE BEAUTÉ • BEIRUT
+          </span>
+        </div>
+      </a>
+
+      <!-- Desktop Navigation Links -->
+      <nav class="hidden lg:flex items-center gap-9 text-xs font-bold uppercase tracking-widest text-rose-100">
+        <a href="#services" class="hover:text-amber-300 transition relative py-1 hover:after:w-full after:w-0 after:h-0.5 after:bg-amber-300 after:absolute after:bottom-0 after:left-0 after:transition-all">Treatments</a>
+        <a href="#offers" class="hover:text-amber-300 transition text-amber-300 flex items-center gap-1.5 relative py-1">
+          <span>Exclusive Offers</span>
+          <span class="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-amber-100 text-amber-900">PROMO</span>
+        </a>
+        <a href="#about" class="hover:text-amber-300 transition relative py-1 hover:after:w-full after:w-0 after:h-0.5 after:bg-amber-300 after:absolute after:bottom-0 after:left-0 after:transition-all">Atelier</a>
+        <a href="#gallery" class="hover:text-amber-300 transition relative py-1 hover:after:w-full after:w-0 after:h-0.5 after:bg-amber-300 after:absolute after:bottom-0 after:left-0 after:transition-all">Portfolio</a>
+        <a href="#contact" class="hover:text-amber-300 transition relative py-1 hover:after:w-full after:w-0 after:h-0.5 after:bg-amber-300 after:absolute after:bottom-0 after:left-0 after:transition-all">Location</a>
+      </nav>
+
+      <!-- Desktop Actions -->
+      <div class="hidden sm:flex items-center gap-3.5">
+        <button id="btn-lookup-booking" class="text-xs font-semibold text-rose-100 hover:text-amber-300 px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 border border-white/25 hover:border-amber-300 bg-white/10 backdrop-blur-sm">
+          <span>🔍</span>
+          <span>My Booking</span>
+        </button>
+        <a href="#" target="_blank" rel="noopener noreferrer"
+          class="salon-whatsapp-link w-10 h-10 rounded-xl bg-white/10 text-emerald-300 hover:bg-emerald-500/20 flex items-center justify-center transition border border-white/25 shadow-xs" title="Chat on WhatsApp">
+          <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981z"/></svg>
+        </a>
+        <button class="btn-primary btn-open-booking px-6 py-3 rounded-full text-xs font-bold flex items-center gap-2">
+          <span>Book Appointment</span>
+          <span>✦</span>
+        </button>
+      </div>
+
+      <!-- Mobile Hamburger Menu Button -->
+      <div class="flex items-center gap-2 sm:hidden">
+        <button class="btn-primary btn-open-booking px-4 py-2 rounded-full text-xs font-bold">
+          Book
+        </button>
+        <button id="mobile-menu-btn" aria-label="Open Navigation" class="w-10 h-10 rounded-xl bg-white/10 text-amber-200 flex items-center justify-center text-lg border border-amber-200/30">
+          ☰
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- MOBILE SLIDE DRAWER -->
+  <div id="mobile-drawer" class="fixed inset-0 z-50 transform translate-x-full transition-transform duration-300 ease-in-out md:hidden flex justify-end">
+    <div id="drawer-overlay" class="fixed inset-0 bg-black/60 backdrop-blur-sm"></div>
+    <div class="relative w-80 max-w-[85vw] bg-white h-full shadow-2xl p-6 flex flex-col justify-between z-10 border-l border-pink-100">
+      <div>
+        <div class="flex items-center justify-between pb-5 border-b border-pink-100">
+          <div class="flex items-center gap-2.5">
+            <span class="text-2xl">🌸</span>
+            <div>
+              <span class="font-serif font-bold text-gray-900 text-base leading-none block">Blossom Dreams</span>
+              <span class="text-[9px] text-pink-700 font-bold uppercase tracking-wider block mt-0.5">Luxury Salon Beirut</span>
+            </div>
+          </div>
+          <button id="close-drawer-btn" class="w-8 h-8 rounded-full bg-pink-50 text-gray-600 flex items-center justify-center text-sm">✕</button>
+        </div>
+
+        <nav class="mt-6 flex flex-col gap-2.5 text-sm font-semibold text-slate-800">
+          <a href="#services" class="drawer-nav-link py-3 px-4 rounded-2xl hover:bg-pink-50 flex items-center justify-between transition">
+            <span>Our Treatments</span>
+            <span class="text-pink-600">→</span>
+          </a>
+          <a href="#offers" class="drawer-nav-link py-3 px-4 rounded-2xl hover:bg-pink-50 flex items-center justify-between text-pink-700 transition">
+            <span>Special Offers</span>
+            <span class="text-[10px] bg-pink-100 px-2 py-0.5 rounded-full font-bold">Limited</span>
+          </a>
+          <a href="#about" class="drawer-nav-link py-3 px-4 rounded-2xl hover:bg-pink-50 flex items-center justify-between transition">
+            <span>Atelier Philosophy</span>
+            <span class="text-pink-600">→</span>
+          </a>
+          <a href="#gallery" class="drawer-nav-link py-3 px-4 rounded-2xl hover:bg-pink-50 flex items-center justify-between transition">
+            <span>Client Portfolio</span>
+            <span class="text-pink-600">→</span>
+          </a>
+          <a href="#contact" class="drawer-nav-link py-3 px-4 rounded-2xl hover:bg-pink-50 flex items-center justify-between transition">
+            <span>Location & Hours</span>
+            <span class="text-pink-600">→</span>
+          </a>
+          <button onclick="document.getElementById('btn-lookup-booking').click();" class="drawer-nav-link text-left py-3 px-4 rounded-2xl hover:bg-pink-50 flex items-center justify-between text-slate-600">
+            <span>Look Up Booking Code</span>
+            <span>🔍</span>
+          </button>
+        </nav>
+      </div>
+
+      <div class="pt-6 border-t border-pink-100 space-y-3">
+        <button class="w-full btn-primary btn-open-booking py-3.5 rounded-2xl text-xs font-bold text-center flex items-center justify-center gap-2 shadow-lg">
+          <span>Book an Appointment</span>
+          <span>✦</span>
+        </button>
+        <a href="#" target="_blank" rel="noopener noreferrer"
+          class="salon-whatsapp-link w-full py-3 rounded-2xl bg-[#25D366] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-sm">
+          <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981z"/></svg>
+          <span>Chat on WhatsApp</span>
+        </a>
+        <a href="/admin" class="block text-center text-[11px] text-slate-400 hover:text-pink-700 py-1">
+          Salon Owner Management Login
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- HERO SECTION: ROSE-VELVET EDITORIAL DEPTH WITH IMMEDIATE LOAD ANIMATIONS -->
+  <section class="hero-velvet luxury-pattern relative overflow-hidden pt-12 pb-24 lg:pt-20 lg:pb-32">
+    <!-- Ambient Radial Glows -->
+    <div class="hero-aura-pink -top-24 -right-24"></div>
+    <div class="hero-aura-gold -bottom-28 -left-20"></div>
+
+    <!-- Floating Luxury Blossom Elements -->
+    <div class="floating-blossom-petal-1 absolute top-16 left-8 sm:left-20 text-3xl select-none pointer-events-none z-10 drop-shadow-md opacity-80">🌸</div>
+    <div class="floating-blossom-petal-2 absolute bottom-24 right-12 sm:right-32 text-2xl select-none pointer-events-none z-10 drop-shadow-md opacity-70">🌸</div>
+    <div class="floating-blossom-petal-1 absolute top-1/3 right-16 sm:right-1/4 text-amber-200 text-lg select-none pointer-events-none z-10 drop-shadow-md">✦</div>
+    <div class="floating-blossom-petal-2 absolute bottom-12 left-1/3 text-rose-100/70 text-xl select-none pointer-events-none z-10 drop-shadow-md">🌸</div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+        
+        <!-- Left Hero Text & Hierarchy -->
+        <div class="lg:col-span-7 text-center lg:text-left">
+          
+          <!-- Ribbon badge -->
+          <div class="hero-animate-badge inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-white/10 border border-amber-200/40 text-rose-50 text-xs font-semibold mb-6 shadow-xs backdrop-blur-md">
+            <span class="text-amber-300">✦</span>
+            <span class="tracking-wide">Beirut’s Sanctuary of Haute Beauté & Radiance</span>
+            <span class="text-amber-300">✦</span>
+          </div>
+
+          <h1 class="hero-animate-title font-serif text-4xl sm:text-5xl lg:text-6xl font-extrabold text-[#FFF7F0] leading-[1.12] tracking-tight drop-shadow-lg">
+            Where Precision Meets <br class="hidden sm:inline" />
+            <span class="text-transparent bg-clip-text bg-gradient-to-r from-[#F3CE7D] via-[#E2B54E] to-[#D4AF37]">
+              Pure Romance
+            </span>
+          </h1>
+
+          <p class="hero-animate-subtitle salon-brand-tagline mt-6 text-sm sm:text-base text-rose-100/90 max-w-xl mx-auto lg:mx-0 leading-relaxed font-normal">
+            Bespoke diamond e-file Russian manicures, BIAB builder gel overlays, handcrafted Russian mega volume lashes, featherweight brow lamination, and rejuvenating clinical facials.
+          </p>
+
+          <!-- CTAs -->
+          <div class="hero-animate-cta mt-8 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
+            <button class="btn-primary btn-open-booking w-full sm:w-auto px-8 py-4 rounded-full text-sm font-bold flex items-center justify-center gap-2.5 group">
+              <span>Book an Appointment</span>
+              <span class="group-hover:translate-x-1.5 transition transform duration-300">→</span>
+            </button>
+            <a href="#services" class="btn-secondary w-full sm:w-auto px-7 py-4 rounded-full text-sm font-semibold flex items-center justify-center gap-2">
+              <span>Explore Treatments</span>
+              <span>↓</span>
+            </a>
+          </div>
+
+          <!-- Trust Badges -->
+          <div class="hero-animate-stats mt-14 pt-8 border-t border-white/15 grid grid-cols-3 gap-4 text-center lg:text-left">
+            <div>
+              <div class="text-2xl sm:text-3xl font-serif font-bold text-amber-300">100%</div>
+              <div class="text-[11px] sm:text-xs text-rose-100/80 font-medium mt-0.5">Medical Autoclave Sterility</div>
+            </div>
+            <div>
+              <div class="text-2xl sm:text-3xl font-serif font-bold text-amber-300">5.0 ★</div>
+              <div class="text-[11px] sm:text-xs text-rose-100/80 font-medium mt-0.5">Guest Satisfaction</div>
+            </div>
+            <div>
+              <div class="text-2xl sm:text-3xl font-serif font-bold text-amber-300">2,500+</div>
+              <div class="text-[11px] sm:text-xs text-rose-100/80 font-medium mt-0.5">Appointments Completed</div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Right Hero Arched Artwork & Floating Badges -->
+        <div class="lg:col-span-5 relative hero-animate-artwork">
+          <div class="relative mx-auto max-w-sm sm:max-w-md">
+            
+            <!-- Arched Master Image Frame -->
+            <div class="arch-frame gold-corner-box bg-rose-100">
+              <img src="/static/images/hero_bg.jpg" alt="Blossom Dreams Luxury Salon" class="w-full h-96 sm:h-[440px] object-cover hover:scale-108 transition duration-700 ease-out" />
+              <div class="absolute inset-0 bg-gradient-to-t from-velvet-950/25 via-transparent to-rose-100/20 pointer-events-none"></div>
+            </div>
+
+            <!-- Floating Mini Card 1 (Bottom Left) -->
+            <div class="animate-float absolute -bottom-6 -left-6 bg-white/95 backdrop-blur-md p-4 rounded-2xl shadow-xl border border-rose-100 flex items-center gap-3.5 z-20">
+              <div class="w-12 h-12 rounded-xl bg-rose-50 border border-rose-200 flex items-center justify-center text-xl flex-shrink-0">
+                💅
+              </div>
+              <div>
+                <div class="text-xs font-bold text-gray-900">Russian Cuticle Care</div>
+                <div class="text-[10px] text-rose-700 font-semibold">Flawless 4-Week Retention</div>
+              </div>
+            </div>
+
+            <!-- Floating Mini Card 2 (Top Right) -->
+            <div class="animate-float-delayed absolute -top-4 -right-4 bg-white/95 backdrop-blur-md px-4 py-2.5 rounded-2xl shadow-xl border border-rose-100 flex items-center gap-2 z-20">
+              <span class="text-amber-500 text-sm">★★★★★</span>
+              <span class="text-xs font-bold text-gray-800 font-serif">Verdun Atelier</span>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- SPECIAL OFFERS SECTION: REAL COUNTDOWN CARDS -->
+  <section id="offers" class="py-20 bg-gradient-to-b from-white via-[#FDEDE8] to-white border-y border-pink-100/70 relative">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="text-center max-w-2xl mx-auto mb-14 reveal-on-scroll">
+        <span class="text-xs font-bold text-pink-700 uppercase tracking-widest block mb-2">✦ LIMITED INDULGENCE ✦</span>
+        <h2 class="font-serif text-3xl sm:text-4xl font-extrabold text-gray-900">Seasonal Beauty Packages</h2>
+        <p class="text-xs sm:text-sm text-slate-600 mt-2.5 leading-relaxed">
+          Curated treatment pairings with exclusive celebratory pricing. Book before dates expire.
+        </p>
+      </div>
+
+      <!-- Offers Grid -->
+      <div id="offers-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-7">
+        <!-- Dynamically rendered by app.js with live countdowns -->
+        <div class="col-span-full text-center py-12">
+          <div class="skeleton-box h-64 w-full max-w-sm mx-auto"></div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- SERVICES CATALOG SECTION -->
+  <section id="services" class="py-24 bg-[#FBEDE6]">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-6 reveal-on-scroll">
+        <div>
+          <span class="text-xs font-bold text-pink-700 uppercase tracking-widest block mb-1">Our Bespoke Menu</span>
+          <h2 class="font-serif text-3xl sm:text-4xl font-extrabold text-gray-900">Signature Treatments</h2>
+          <p class="text-xs sm:text-sm text-slate-600 mt-1">Select any service to reserve your private appointment slot.</p>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="w-full md:w-80">
+          <div class="relative">
+            <input type="text" id="services-search-input" placeholder="Search treatments (e.g. BIAB, Lashes...)"
+              class="w-full text-xs pl-10 pr-4 py-3 rounded-full border border-pink-200 bg-white focus:outline-none focus:ring-2 focus:ring-pink-500 shadow-xs transition" />
+            <span class="absolute left-3.5 top-3 text-sm text-slate-400">🔍</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Category Filter Tabs -->
+      <div id="categories-pills-container" class="flex gap-2.5 overflow-x-auto pb-4 mb-10 scrollbar-none reveal-on-scroll delay-100">
+        <!-- Dynamically rendered -->
+      </div>
+
+      <!-- Services Cards Grid -->
+      <div id="services-grid-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <!-- Dynamically rendered -->
+        <div class="col-span-full text-center py-12">
+          <div class="skeleton-box h-72 w-full max-w-sm mx-auto"></div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ATELIER PHILOSOPHY & EXCELLENCE -->
+  <section id="about" class="py-24 bg-white border-t border-pink-100">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+        
+        <!-- Image Composition -->
+        <div class="lg:col-span-6 relative reveal-on-scroll">
+          <div class="relative rounded-3xl overflow-hidden shadow-2xl border-4 border-rose-100 max-w-lg mx-auto">
+            <img src="/static/images/about_salon.jpg" alt="Blossom Dreams Philosophy" class="w-full h-[22rem] sm:h-[420px] object-cover" />
+            <div class="absolute inset-0 bg-gradient-to-t from-velvet-950/45 via-transparent to-transparent"></div>
+            
+            <div class="absolute bottom-6 left-6 right-6 p-4 rounded-2xl bg-white/90 backdrop-blur-md border border-white/60 shadow-lg text-xs">
+              <span class="font-serif italic text-pink-800 font-bold text-sm block">“Beauty is an art of delicate patience and bespoke care.”</span>
+              <span class="text-[10px] text-slate-500 uppercase tracking-widest font-semibold mt-1 block">— Blossom Dreams Atelier</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Copy & Guarantees -->
+        <div class="lg:col-span-6 reveal-on-scroll delay-100">
+          <span class="text-xs font-bold text-pink-700 uppercase tracking-widest block mb-2">Our Standard of Care</span>
+          <h2 class="font-serif text-3xl sm:text-4xl font-extrabold text-gray-900 leading-tight">
+            An Uncompromising <br />
+            Standard of Beauty
+          </h2>
+          <p class="salon-brand-description text-sm text-slate-600 mt-4 leading-relaxed font-normal">
+            At Blossom Dreams, we believe true luxury lies in meticulous craftsmanship, unhurried care, and clinical hygiene. Every treatment is designed to leave you feeling renewed, empowered, and naturally luminous.
+          </p>
+
+          <div class="mt-8 space-y-4 text-xs text-slate-700 font-medium">
+            <div class="flex items-start gap-3.5 p-3 rounded-2xl bg-pink-50/50 border border-pink-100">
+              <span class="w-7 h-7 rounded-full bg-pink-600 text-white flex items-center justify-center font-bold text-xs flex-shrink-0">✓</span>
+              <div>
+                <strong class="text-slate-900 text-xs block">Hospital-Grade Autoclave Sterilization</strong>
+                <span class="text-slate-500 text-[11px]">All steel instruments are heat-sterilized in individual sealed pouches opened in front of you.</span>
+              </div>
+            </div>
+
+            <div class="flex items-start gap-3.5 p-3 rounded-2xl bg-pink-50/50 border border-pink-100">
+              <span class="w-7 h-7 rounded-full bg-pink-600 text-white flex items-center justify-center font-bold text-xs flex-shrink-0">✓</span>
+              <div>
+                <strong class="text-slate-900 text-xs block">Premium European & US Formulations</strong>
+                <span class="text-slate-500 text-[11px]">Hypoallergenic builder gel, organic lash keratin serums, and pharmaceutical-grade facial peels.</span>
+              </div>
+            </div>
+
+            <div class="flex items-start gap-3.5 p-3 rounded-2xl bg-pink-50/50 border border-pink-100">
+              <span class="w-7 h-7 rounded-full bg-pink-600 text-white flex items-center justify-center font-bold text-xs flex-shrink-0">✓</span>
+              <div>
+                <strong class="text-slate-900 text-xs block">Complimentary Rose Tea & Lounge Pampering</strong>
+                <span class="text-slate-500 text-[11px]">Enjoy complimentary organic infusions, sweet delights, and quiet luxury in our Verdun boutique.</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-8">
+            <button class="btn-primary btn-open-booking px-7 py-3.5 rounded-full text-xs font-bold">
+              Reserve Your Private Experience ✦
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- PORTFOLIO GALLERY SECTION -->
+  <section id="gallery" class="py-24 bg-[#FBEDE6]">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center max-w-2xl mx-auto mb-14 reveal-on-scroll">
+        <span class="text-xs font-bold text-pink-700 uppercase tracking-widest block mb-2">✦ Real Client Transformations ✦</span>
+        <h2 class="font-serif text-3xl sm:text-4xl font-extrabold text-gray-900">Atelier Portfolio</h2>
+        <p class="text-xs sm:text-sm text-slate-600 mt-2">Click any creation to view high-resolution details.</p>
+      </div>
+
+      <div id="gallery-grid-container" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 reveal-on-scroll delay-100">
+        <!-- Dynamically rendered -->
+      </div>
+    </div>
+  </section>
+
+  <!-- INSTAGRAM SHOWCASE SECTION -->
+  <section class="py-20 bg-gradient-to-b from-[#FDEDE8] to-white border-y border-pink-100 text-center">
+    <div class="max-w-4xl mx-auto px-4 reveal-on-scroll">
+      
+      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-pink-100 text-pink-800 text-xs font-bold mb-4 shadow-xs">
+        <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+        <span>@blossomdreams.lb</span>
+      </div>
+
+      <h3 class="font-serif text-3xl sm:text-4xl font-extrabold text-gray-900">Follow Our Glamour Journey</h3>
+      <p class="text-xs sm:text-sm text-slate-600 mt-2.5 max-w-md mx-auto leading-relaxed">
+        Connect with our vibrant Instagram community in Beirut for daily nail transformations, lash looks, and flash discounts.
+      </p>
+
+      <div class="mt-8">
+        <a href="https://www.instagram.com/blossomdreams.lb/" target="_blank" rel="noopener noreferrer"
+          class="salon-instagram-link inline-flex items-center gap-2.5 px-8 py-4 rounded-full bg-gradient-to-r from-[#833ab4] via-[#fd1d1d] to-[#fcb045] text-white text-xs font-bold shadow-xl shadow-pink-500/20 hover:scale-105 transition transform duration-300">
+          <span>Join @blossomdreams.lb on Instagram</span>
+          <span>→</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- LOCATION, HOURS & CONTACT SECTION -->
+  <section id="contact" class="py-24 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+        
+        <div class="lg:col-span-5 reveal-on-scroll">
+          <span class="text-xs font-bold text-pink-700 uppercase tracking-widest block mb-2">Visit Our Boutique</span>
+          <h2 class="font-serif text-3xl sm:text-4xl font-extrabold text-gray-900">Find Us in Beirut</h2>
+          <p class="text-xs sm:text-sm text-slate-600 mt-2 leading-relaxed">Conveniently located in Verdun, Beirut's premier fashion avenue.</p>
+
+          <div class="mt-8 space-y-6 text-xs text-slate-700">
+            
+            <div class="flex items-start gap-4 p-4 rounded-2xl bg-pink-50/40 border border-pink-100">
+              <div class="w-10 h-10 rounded-2xl bg-pink-100 text-pink-700 flex items-center justify-center flex-shrink-0 text-base">
+                📍
+              </div>
+              <div>
+                <div class="font-bold text-gray-900 text-sm">Atelier Address</div>
+                <div class="salon-address-text mt-1 text-slate-600 leading-relaxed font-normal">Verdun, Luxury Fashion District, Beirut, Lebanon</div>
+              </div>
+            </div>
+
+            <div class="flex items-start gap-4 p-4 rounded-2xl bg-pink-50/40 border border-pink-100">
+              <div class="w-10 h-10 rounded-2xl bg-pink-100 text-pink-700 flex items-center justify-center flex-shrink-0 text-base">
+                ⏱
+              </div>
+              <div>
+                <div class="font-bold text-gray-900 text-sm">Operating Schedule</div>
+                <div class="salon-hours-text mt-1 text-slate-600 leading-relaxed font-normal">Monday - Saturday: 9:30 AM - 7:00 PM | Sunday: Closed</div>
+              </div>
+            </div>
+
+            <div class="flex items-start gap-4 p-4 rounded-2xl bg-pink-50/40 border border-pink-100">
+              <div class="w-10 h-10 rounded-2xl bg-pink-100 text-pink-700 flex items-center justify-center flex-shrink-0 text-base">
+                📞
+              </div>
+              <div>
+                <div class="font-bold text-gray-900 text-sm">Direct Phone Inquiry</div>
+                <div class="salon-phone-text mt-1 text-slate-600 font-mono font-semibold">+961 70 882 194</div>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="mt-8 flex items-center gap-4">
+            <a href="#" target="_blank" rel="noopener noreferrer"
+              class="salon-whatsapp-link flex-1 py-3.5 px-4 rounded-2xl bg-[#25D366] hover:bg-[#20bd5a] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-md transition">
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981z"/></svg>
+              <span>WhatsApp Us</span>
+            </a>
+            <button class="btn-primary btn-open-booking flex-1 py-3.5 px-4 rounded-2xl text-xs font-bold shadow-md">
+              Book Online ✦
+            </button>
+          </div>
+        </div>
+
+        <!-- Google Maps Embed -->
+        <div class="lg:col-span-7 reveal-on-scroll delay-200">
+          <div class="w-full h-88 sm:h-96 rounded-3xl overflow-hidden shadow-xl border-4 border-rose-100 relative">
+            <iframe 
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d13249.206584282382!2d35.4851!3d33.8869!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x151f17215880a78f%3A0x6b86f3dbcd4703a!2sVerdun%2C%20Beirut%2C%20Lebanon!5e0!3m2!1sen!2slb!4v1700000000000!5m2!1sen!2slb"
+              class="w-full h-full border-0" 
+              allowfullscreen="" 
+              loading="lazy" 
+              referrerpolicy="no-referrer-when-downgrade">
+            </iframe>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- LUXURY FOOTER -->
+  <footer class="bg-[#2E0810] text-white pt-16 pb-10 border-t border-velvet-900">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-10 pb-12 border-b border-velvet-900">
+        
+        <div class="md:col-span-2">
+          <div class="flex items-center gap-3 mb-4">
+            <span class="text-2xl">🌸</span>
+            <span class="salon-brand-name font-serif text-2xl font-bold text-white tracking-tight">BLOSSOM DREAMS</span>
+          </div>
+          <p class="salon-brand-tagline text-xs text-rose-200/60 max-w-sm leading-relaxed">
+            Your sanctuary of elegance, radiance, and luxury beauty in Beirut. Meticulously designed for your comfort and timeless allure.
+          </p>
+          <div class="mt-6 flex items-center gap-3">
+            <a href="https://www.instagram.com/blossomdreams.lb/" target="_blank" rel="noopener noreferrer"
+              class="salon-instagram-link w-9 h-9 rounded-full bg-white/10 hover:bg-rose-600 flex items-center justify-center text-xs transition duration-300">
+              IG
+            </a>
+            <a href="#" target="_blank" rel="noopener noreferrer"
+              class="salon-whatsapp-link w-9 h-9 rounded-full bg-white/10 hover:bg-emerald-600 flex items-center justify-center text-xs transition duration-300">
+              WA
+            </a>
+          </div>
+        </div>
+
+        <div>
+          <h5 class="text-xs font-bold uppercase tracking-widest text-amber-300/90 mb-4">Explore Menu</h5>
+          <ul class="space-y-2.5 text-xs text-rose-200/60">
+            <li><a href="#services" class="hover:text-white transition">All Treatments</a></li>
+            <li><a href="#offers" class="hover:text-white transition">Seasonal Packages</a></li>
+            <li><a href="#about" class="hover:text-white transition">Atelier Philosophy</a></li>
+            <li><a href="#gallery" class="hover:text-white transition">Client Portfolio</a></li>
+            <li><a href="#contact" class="hover:text-white transition">Location & Schedule</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h5 class="text-xs font-bold uppercase tracking-widest text-amber-300/90 mb-4">Client Care</h5>
+          <ul class="space-y-2.5 text-xs text-rose-200/60">
+            <li><button class="hover:text-white transition" onclick="document.getElementById('btn-lookup-booking').click();">Verify Appointment Code</button></li>
+            <li><a href="/admin" class="hover:text-amber-300 font-bold transition text-amber-300/90">Owner Portal Access →</a></li>
+          </ul>
+        </div>
+
+      </div>
+
+      <div class="pt-8 flex flex-col sm:flex-row items-center justify-between text-xs text-rose-200/50 gap-3">
+        <div>© 2025 Blossom Dreams. All rights reserved.</div>
+        <div>Crafted with Haute Elegance for Beirut, Lebanon</div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- FLOATING WHATSAPP BUTTON -->
+  <aside aria-label="WhatsApp Contact" class="fixed bottom-24 md:bottom-7 right-6 z-40">
+    <a href="#" target="_blank" rel="noopener noreferrer"
+      class="salon-whatsapp-link whatsapp-pulse-btn w-14 h-14 rounded-full bg-[#25D366] text-white flex items-center justify-center shadow-2xl hover:scale-110 transition transform duration-300"
+      title="Chat with Blossom Dreams on WhatsApp">
+      <svg class="w-7 h-7 fill-current" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981z"/></svg>
+    </a>
+  </aside>
+
+  <!-- MOBILE STICKY BOTTOM BAR -->
+  <nav aria-label="Mobile Navigation" class="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-pink-100 flex md:hidden items-center justify-around py-2.5 px-4 shadow-xl">
+    <a href="#" class="flex flex-col items-center text-slate-500 hover:text-pink-700">
+      <span class="text-base">🌸</span>
+      <span class="text-[10px] font-bold mt-0.5">Home</span>
+    </a>
+    <a href="#services" class="flex flex-col items-center text-slate-500 hover:text-pink-700">
+      <span class="text-base">💅</span>
+      <span class="text-[10px] font-bold mt-0.5">Services</span>
+    </a>
+    <button class="btn-open-booking -mt-6 w-13 h-13 rounded-full bg-gradient-to-tr from-[#C01838] to-[#D82850] text-white flex items-center justify-center shadow-lg shadow-pink-600/35 text-xl">
+      ✦
+    </button>
+    <a href="#offers" class="flex flex-col items-center text-slate-500 hover:text-pink-700">
+      <span class="text-base">🏷</span>
+      <span class="text-[10px] font-bold mt-0.5">Offers</span>
+    </a>
+    <a href="#" target="_blank" rel="noopener noreferrer" class="salon-whatsapp-link flex flex-col items-center text-emerald-600">
+      <span class="text-base">💬</span>
+      <span class="text-[10px] font-bold mt-0.5">Chat</span>
+    </a>
+  </nav>
+
+  <!-- Main JavaScript App -->
+  <script type="module" src="/static/js/app.js?v=6.0"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('/sw.js')
+        .then(function (registration) {
+          registration.addEventListener('updatefound', function () {
+            var installing = registration.installing;
+            if (installing) {
+              installing.addEventListener('statechange', function () {
+                if (installing.state === 'installed' && navigator.serviceWorker.controller) {
+                  navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
+                }
+              });
+            }
+          });
+        })
+        .catch(function () { /* SW unavailable (e.g. insecure context) – site works normally */ });
+    });
+  }
+</script>
+</body>
+</html>

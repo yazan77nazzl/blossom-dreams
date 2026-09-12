@@ -1,0 +1,49 @@
+# Render Blueprint — infrastructure-as-code for Blossom Dreams.
+#
+# Deploy with the "New +" -> "Blueprint" option in the Render dashboard,
+# pointing at this repository. Everything below is FREE:
+#   - free web service (sleeps after 15 min idle, wakes automatically)
+#   - HTTPS is automatic at https://blossom-dreams-lb.onrender.com
+#
+# The database (Neon Postgres) and image storage (Supabase Storage) are
+# external free services. Create them first, copy their credentials into
+# the DATABASE_URL / SUPABASE_* env vars below, then deploy.
+
+services:
+  - type: web
+    name: blossom-dreams-lb
+    runtime: python
+    plan: free
+    region: frankfurt
+    healthCheckPath: /api/health
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+      - key: CORS_ORIGINS
+        value: "*"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      - key: PUBLIC_BASE_URL
+        sync: false
+      - key: UPLOAD_STORAGE
+        value: supabase
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_STORAGE_BUCKET
+        value: uploads
+      - key: ADMIN_USERNAME
+        sync: false
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: ADMIN_FULL_NAME
+        sync: false

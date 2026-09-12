@@ -1,0 +1,54 @@
+from fastapi import APIRouter, HTTPException, Depends, status
+from app.database import get_db
+from app.auth import verify_password, get_password_hash, create_access_token, get_current_admin
+from app.models import AdminLoginRequest, TokenResponse, AdminUserResponse, ChangePasswordRequest
+
+router = APIRouter(prefix="/api/auth", tags=["auth"])
+
+@router.post("/login", response_model=TokenResponse)
+def login(form_data: AdminLoginRequest):
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT id, username, email, hashed_password, full_name, role FROM admin_users WHERE username = ? OR email = ?",
+            (form_data.username, form_data.username)
+        )
+        user = cursor.fetchone()
+
+    if not user or not verify_password(form_data.password, user["hashed_password"]):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    access_token = create_access_token(data={"sub": user["username"], "user_id": user["id"]})
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": {
+            "id": user["id"],
+            "username": user["username"],
+            "email": user["email"],
+            "full_name": user["full_name"],
+            "role": user["role"]
+        }
+    }
+
+@router.get("/me", response_model=AdminUserResponse)
+def get_me(current_admin: dict = Depends(get_current_admin)):
+    return current_admin
+
+@router.post("/change-password")
+def change_password(data: ChangePasswordRequest, current_admin: dict = Depends(get_current_admin)):
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT hashed_password FROM admin_users WHERE id = ?", (current_admin["id"],))
+        row = cursor.fetchone()
+        if not row or not verify_password(data.old_password, row["hashed_password"]):
+            raise HTTPException(status_code=400, detail="Current password does not match.")
+
+        new_hash = get_password_hash(data.new_password)
+        cursor.execute("UPDATE admin_users SET hashed_password = ? WHERE id = ?", (new_hash, current_admin["id"]))
+
+    return {"status": "success", "message": "Password changed successfully."}
