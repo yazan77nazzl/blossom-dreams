@@ -37,7 +37,7 @@ def seed_database():
                 'https://www.tiktok.com/@blossomdreams.lb',
                 'Amwaj Center, Jounieh, Lebanon',
                 'https://maps.google.com/?q=Amwaj+Center+Jounieh+Lebanon',
-                'Monday - Saturday: 9:30 AM - 7:00 PM | Sunday: Closed',
+                'Monday - Saturday: 9:00 AM - 7:00 PM | Sunday: Closed',
                 '$',
                 '🌸 Spring Glamour at Blossom Dreams: Enjoy exclusive pampering packages. Book your appointment online today!'
             )
@@ -54,13 +54,13 @@ def seed_database():
 
         # 3. Weekly Availability Settings (0 = Monday, 6 = Sunday)
         days = [
-            (0, "Monday", 1, "09:30", "19:00", 30),
-            (1, "Tuesday", 1, "09:30", "19:00", 30),
-            (2, "Wednesday", 1, "09:30", "19:00", 30),
-            (3, "Thursday", 1, "09:30", "19:00", 30),
-            (4, "Friday", 1, "09:30", "19:00", 30),
-            (5, "Saturday", 1, "09:30", "19:00", 30),
-            (6, "Sunday", 0, "09:30", "19:00", 30),
+            (0, "Monday", 1, "09:00", "19:00", 30),
+            (1, "Tuesday", 1, "09:00", "19:00", 30),
+            (2, "Wednesday", 1, "09:00", "19:00", 30),
+            (3, "Thursday", 1, "09:00", "19:00", 30),
+            (4, "Friday", 1, "09:00", "19:00", 30),
+            (5, "Saturday", 1, "09:00", "19:00", 30),
+            (6, "Sunday", 0, "09:00", "19:00", 30),
         ]
         for day in days:
             cursor.execute("SELECT id FROM availability_settings WHERE day_of_week = ?", (day[0],))
@@ -69,6 +69,37 @@ def seed_database():
                 INSERT INTO availability_settings (day_of_week, day_name, is_open, open_time, close_time, slot_interval_minutes)
                 VALUES (?, ?, ?, ?, ?, ?)
                 """, (day[0], day[1], bool(day[2]), day[3], day[4], day[5]))
+
+        # Migrate legacy installs that still open at 09:30 to the current 09:00 opening time
+        cursor.execute("UPDATE availability_settings SET open_time = '09:00' WHERE open_time = '09:30'")
+        cursor.execute("UPDATE salon_settings SET opening_hours_text = REPLACE(opening_hours_text, '9:30 AM', '9:00 AM') WHERE opening_hours_text LIKE '%9:30 AM%'")
+
+        # 3b. Business Locations
+        locations_data = [
+            (
+                "versailles", "Versailles Center", "Centre Savoy, Sarba, Jounieh, Lebanon",
+                "https://maps.google.com/?ftid=0x151f4096b6ee7923:0x1de97506f65318e9",
+                None, None, 1,
+            ),
+            (
+                "amwaj", "Amwaj Center", "Amwaj Center, Jounieh, Lebanon",
+                "https://maps.google.com/?q=Amwaj+Center+Jounieh+Lebanon",
+                33.9833907, 35.630377, 2,
+            ),
+        ]
+        for slug, name, address, maps_url, lat, lng, order in locations_data:
+            cursor.execute("SELECT id FROM locations WHERE slug = ?", (slug,))
+            if not cursor.fetchone():
+                cursor.execute("""
+                INSERT INTO locations (slug, name, address, google_maps_url, latitude, longitude, display_order, is_active)
+                VALUES (?, ?, ?, ?, ?, ?, ?, TRUE)
+                """, (slug, name, address, maps_url, lat, lng, order))
+            else:
+                # Only backfill a missing/empty map link; never clobber admin edits.
+                cursor.execute("""
+                UPDATE locations SET google_maps_url = ?
+                WHERE slug = ? AND (google_maps_url IS NULL OR google_maps_url = '')
+                """, (maps_url, slug))
 
         # 4. Break times (Monday - Saturday 13:30 to 14:30)
         cursor.execute("SELECT COUNT(*) as count FROM break_times")

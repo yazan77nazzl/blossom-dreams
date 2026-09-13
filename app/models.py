@@ -115,6 +115,7 @@ class OfferResponse(OfferBase):
 # --- Booking Schemas ---
 class BookingCreate(BaseModel):
     service_id: int
+    location_id: Optional[int] = None
     customer_name: str = Field(..., min_length=2, max_length=120, description="Full name of the client")
     customer_phone: str = Field(..., min_length=5, max_length=30, description="Phone / WhatsApp number")
     customer_email: Optional[str] = Field(
@@ -136,6 +137,8 @@ class BookingResponse(BaseModel):
     service_id: int
     service_name: Optional[str] = None
     service_duration: Optional[int] = None
+    location_id: Optional[int] = None
+    location_name: Optional[str] = None
     customer_name: str
     customer_phone: str
     customer_email: Optional[str] = None
@@ -147,6 +150,33 @@ class BookingResponse(BaseModel):
     price: float
     created_at: str
 
+# --- Location Schemas ---
+class LocationBase(BaseModel):
+    slug: str = Field(..., max_length=60, description="Unique URL-friendly identifier")
+    name: str = Field(..., min_length=2, max_length=120)
+    address: Optional[str] = Field(None, max_length=200)
+    google_maps_url: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    display_order: Optional[int] = 0
+    is_active: Optional[bool] = True
+
+class LocationCreate(LocationBase):
+    pass
+
+class LocationUpdate(BaseModel):
+    slug: Optional[str] = None
+    name: Optional[str] = None
+    address: Optional[str] = None
+    google_maps_url: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    display_order: Optional[int] = None
+    is_active: Optional[bool] = None
+
+class LocationResponse(LocationBase):
+    id: int
+
 # --- Availability Schemas ---
 class DaySchedule(BaseModel):
     day_of_week: int
@@ -155,6 +185,7 @@ class DaySchedule(BaseModel):
     open_time: str
     close_time: str
     slot_interval_minutes: int = 30
+    buffer_minutes: int = 0
 
 class BreakTimeItem(BaseModel):
     id: Optional[int] = None
@@ -162,6 +193,7 @@ class BreakTimeItem(BaseModel):
     label: str = "Break"
     start_time: str
     end_time: str
+    location_id: Optional[int] = None
 
 class ClosedDateItem(BaseModel):
     id: Optional[int] = None
@@ -172,6 +204,10 @@ class AvailabilityConfigResponse(BaseModel):
     schedule: List[DaySchedule]
     breaks: List[BreakTimeItem]
     closed_dates: List[ClosedDateItem]
+    locations: List[LocationResponse] = []
+
+class AvailabilityConfigUpdate(BaseModel):
+    buffer_minutes: int = 0
 
 # --- Gallery Schemas ---
 class GalleryImageCreate(BaseModel):

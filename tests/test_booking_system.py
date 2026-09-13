@@ -44,6 +44,13 @@ def get_next_weekday(target_weekday: int) -> str:
     return (today + timedelta(days=days_ahead)).isoformat()
 
 
+def get_safe_weekday(target_weekday: int) -> str:
+    """Like get_next_weekday but 7 days later, so the day stays free from other
+    bookings made by earlier integration tests that reuse the next occurrence."""
+    d = date.fromisoformat(get_next_weekday(target_weekday))
+    return (d + timedelta(days=7)).isoformat()
+
+
 def get_active_service() -> dict:
     services = client.get("/api/services").json()
     active = [s for s in services if s.get("is_active", True)]
@@ -262,7 +269,7 @@ def _add_minutes(time_str: str, minutes: int) -> str:
 
 
 def test_booking_before_opening_hours_rejected():
-    tue = get_next_weekday(1)  # Opens 09:30
+    tue = get_next_weekday(1)  # Opens 09:00
     service = get_active_service()
     payload = booking_payload(service, {"date": tue, "time": "08:00"}, "+961 70 801 801", "Early Bird Client")
     res = client.post("/api/bookings", json=payload)
@@ -459,3 +466,329 @@ def test_admin_booking_search_filter():
     assert rows, "Search should return at least one booking"
     for b in rows:
         assert "zelda" in b["customer_name"].lower() or "zelda" in (b["customer_phone"] or "").lower()
+
+
+# --- Configured opening hours are honoured (no hardcoded 09:00 / 12:00) ---
+def test_open_day_first_slot_matches_configured_open_time():
+    tue = get_safe_weekday(1)
+    service = get_active_service()
+    res = client.get(f"/api/availability/slots?date={tue}&service_id={service['id']}")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["available"] is True and data["slots"]
+    assert data["slots"][0] == "09:00", f"First slot must be the configured 09:00 opening, got {data['slots'][0]}"
+
+
+def test_booking_at_morning_slots_0900_1200_all_succeed():
+    services = client.get("/api/services").json()
+    service = next(s for s in services if s["slug"] == "russian-manicure")  # 60-min
+    wed = get_safe_weekday(2)
+    slots_res = client.get(f"/api/availability/slots?date={wed}&service_id={service['id']}").json()
+    openings = {"09:00", "10:00", "11:00", "12:00"}
+    missing = openings - set(slots_res["slots"])
+    assert not missing, f"Morning slots missing from availability: {sorted(missing)}"
+
+    for i, t in enumerate(sorted(openings)):
+        payload = booking_payload(service, {"date": wed, "time": t}, f"+961 70 830 8{i}", f"Morning Client {t[:5]}")
+        assert client.post("/api/bookings", json=payload).status_code == 201, f"Booking at {t} should succeed"
+
+
+def test_slots_follow_configured_open_time_close_not_hardcoded():
+    headers = get_admin_headers()
+    day = 3  # Thursday
+    config = client.get("/api/availability/config").json()
+    original = next(s for s in config["schedule"] if s["day_of_week"] == day)
+    service = get_active_service()
+
+    try:
+        put = client.put(f"/api/availability/schedule/{day}", headers=headers, json={
+            "day_of_week": day,
+            "day_name": original["day_name"],
+            "is_open": True,
+            "open_time": "11:00",
+            "close_time": original["close_time"],
+            "slot_interval_minutes": original["slot_interval_minutes"],
+        })
+        assert put.status_code == 200
+
+        thu = get_safe_weekday(day)
+        res = client.get(f"/api/availability/slots?date={thu}&service_id={service['id']}")
+        data = res.json()
+        assert data["available"] is True and data["slots"]
+        assert data["slots"][0] == "11:00", f"Slots must start at the configured 11:00, got {data['slots'][0]}"
+        assert "09:00" not in data["slots"]
+        assert "10:00" not in data["slots"]
+
+        # A booking at the new opening hour succeeds; one before opening is rejected
+        ok = client.post("/api/bookings", json=booking_payload(
+            service, {"date": thu, "time": "11:00"}, "+961 70 831 831", "Late Open Client"))
+        assert ok.status_code == 201
+
+        blocked = client.post("/api/bookings", json=booking_payload(
+            service, {"date": thu, "time": "09:00"}, "+961 70 832 832", "Too Early Client"))
+        assert blocked.status_code == 409
+    finally:
+        client.put(f"/api/availability/schedule/{day}", headers=headers, json={
+            "day_of_week": day,
+            "day_name": original["day_name"],
+            "is_open": True,
+            "open_time": original["open_time"],
+            "close_time": original["close_time"],
+            "slot_interval_minutes": original["slot_interval_minutes"],
+        })
+
+
+def test_slot_interval_respected_not_hardcoded_30():
+    headers = get_admin_headers()
+    day = 4  # Friday
+    config = client.get("/api/availability/config").json()
+    original = next(s for s in config["schedule"] if s["day_of_week"] == day)
+    service = get_active_service()
+
+    try:
+        put = client.put(f"/api/availability/schedule/{day}", headers=headers, json={
+            "day_of_week": day,
+            "day_name": original["day_name"],
+            "is_open": True,
+            "open_time": original["open_time"],
+            "close_time": original["close_time"],
+            "slot_interval_minutes": 60,
+        })
+        assert put.status_code == 200
+
+        fri = get_safe_weekday(day)
+        res = client.get(f"/api/availability/slots?date={fri}&service_id={service['id']}")
+        data = res.json()
+        assert data["available"] is True and data["slots"]
+        slots = data["slots"]
+
+        # Every slot starts exactly on the hour: the 30-min hardcode is gone.
+        assert all(t.endswith(":00") for t in slots), f"Slots should be hourly with a 60-min interval: {slots}"
+
+        # Spacing is 60 minutes normally and 180 only across the lunch break (13:30-14:30).
+        times = [int(t[:2]) * 60 + int(t[3:]) for t in slots]
+        gaps = [times[i + 1] - times[i] for i in range(len(times) - 1)]
+        assert all(g == 60 or g == 180 for g in gaps), f"Unexpected slot spacing with 60-min interval: gaps {gaps}"
+    finally:
+        client.put(f"/api/availability/schedule/{day}", headers=headers, json={
+            "day_of_week": day,
+            "day_name": original["day_name"],
+            "is_open": True,
+            "open_time": original["open_time"],
+            "close_time": original["close_time"],
+            "slot_interval_minutes": original["slot_interval_minutes"],
+        })
+
+
+def test_availability_config_returns_configured_opening_hours():
+    config = client.get("/api/availability/config").json()
+    assert config["schedule"]
+    monday = next(s for s in config["schedule"] if s["day_of_week"] == 0)
+    assert monday["open_time"] == "09:00"
+    assert monday["close_time"] == "19:00"
+    assert monday["slot_interval_minutes"] == 30
+
+
+# --- Business locations ---
+def get_location_id(slug: str) -> int:
+    locations = client.get("/api/locations").json()
+    match = next(l for l in locations if l["slug"] == slug)
+    return match["id"]
+
+
+def get_lonely_weekday(target_weekday: int, weeks_ahead: int = 1) -> str:
+    """A future weekday moved several weeks out, so it cannot collide with
+    bookings created by the other location tests (each uses a distinct date)."""
+    today = date.today()
+    days_ahead = target_weekday - today.weekday()
+    if days_ahead <= 0:
+        days_ahead += 7
+    return (today + timedelta(days=days_ahead) + timedelta(weeks=weeks_ahead)).isoformat()
+
+
+def test_locations_endpoint_returns_both_seeded_locations():
+    res = client.get("/api/locations")
+    assert res.status_code == 200
+    locations = res.json()
+    slugs = {l["slug"] for l in locations}
+    assert {"versailles", "amwaj"} <= slugs, f"Both seeded locations must exist, got {slugs}"
+
+    versailles = next(l for l in locations if l["slug"] == "versailles")
+    assert versailles["google_maps_url"] == "https://maps.google.com/?ftid=0x151f4096b6ee7923:0x1de97506f65318e9"
+    amwaj = next(l for l in locations if l["slug"] == "amwaj")
+    # Amwaj's map link is the established one and must never change.
+    assert amwaj["google_maps_url"] == "https://maps.google.com/?q=Amwaj+Center+Jounieh+Lebanon"
+
+
+def test_booking_stores_and_returns_location():
+    versailles = get_location_id("versailles")
+    amwaj = get_location_id("amwaj")
+    tue = get_lonely_weekday(1, weeks_ahead=2)
+    service = get_active_service()
+    slots = client.get(f"/api/availability/slots?date={tue}&service_id={service['id']}&location_id={versailles}").json()
+    slot = slots["slots"][0]
+
+    payload = booking_payload(service, {"date": tue, "time": slot}, "+961 70 901 901", "Location Client")
+    payload["location_id"] = amwaj
+    create_res = client.post("/api/bookings", json=payload)
+    assert create_res.status_code == 201
+    booking = create_res.json()
+    assert booking["location_id"] == amwaj
+    assert booking["location_name"] == "Amwaj Center"
+
+    # Public verification and the admin list both expose the location name
+    verify = client.get(f"/api/bookings/verify/{booking['booking_code']}").json()
+    assert verify["location_name"] == "Amwaj Center"
+
+    headers = get_admin_headers()
+    admin_row = next(b for b in client.get("/api/bookings", headers=headers).json() if b["id"] == booking["id"])
+    assert admin_row["location_id"] == amwaj
+    assert admin_row["location_name"] == "Amwaj Center"
+
+
+def test_booking_rejected_for_unknown_location():
+    tue = get_lonely_weekday(1, weeks_ahead=1)
+    service = get_active_service()
+    payload = booking_payload(service, {"date": tue, "time": "11:00"}, "+961 70 902 902", "Ghost Location Client")
+    payload["location_id"] = 999999
+    res = client.post("/api/bookings", json=payload)
+    assert res.status_code == 400
+    assert "location" in res.json()["detail"].lower()
+
+
+def test_same_slot_free_at_second_location():
+    versailles = get_location_id("versailles")
+    amwaj = get_location_id("amwaj")
+    wed = get_lonely_weekday(2, weeks_ahead=1)
+    service = get_active_service()
+
+    versailles_slots = client.get(f"/api/availability/slots?date={wed}&service_id={service['id']}&location_id={versailles}").json()["slots"]
+    slot = versailles_slots[0]
+
+    # Book it at Versailles
+    v_payload = booking_payload(service, {"date": wed, "time": slot}, "+961 70 903 903", "Versailles Client")
+    v_payload["location_id"] = versailles
+    assert client.post("/api/bookings", json=v_payload).status_code == 201
+
+    # Same slot must still be free at Amwaj
+    amwaj_slots = client.get(f"/api/availability/slots?date={wed}&service_id={service['id']}&location_id={amwaj}").json()["slots"]
+    assert slot in amwaj_slots
+
+    a_payload = booking_payload(service, {"date": wed, "time": slot}, "+961 70 904 904", "Amwaj Client")
+    a_payload["location_id"] = amwaj
+    assert client.post("/api/bookings", json=a_payload).status_code == 201
+
+    # Doubling up on the same (location, slot) is still rejected
+    dup_payload = booking_payload(service, {"date": wed, "time": slot}, "+961 70 905 905", "Versailles Dupe Client")
+    dup_payload["location_id"] = versailles
+    assert client.post("/api/bookings", json=dup_payload).status_code == 409
+
+
+def test_per_location_schedule_override_isolation():
+    headers = get_admin_headers()
+    versailles = get_location_id("versailles")
+    amwaj = get_location_id("amwaj")
+    day = 0  # Monday
+    service = get_active_service()
+    mon = get_lonely_weekday(day, weeks_ahead=1)
+
+    try:
+        put = client.put(f"/api/availability/schedule/{day}?location_id={versailles}", headers=headers, json={
+            "day_of_week": day,
+            "day_name": "Monday",
+            "is_open": True,
+            "open_time": "10:00",
+            "close_time": "19:00",
+            "slot_interval_minutes": 30,
+        })
+        assert put.status_code == 200
+
+        v_slots = client.get(f"/api/availability/slots?date={mon}&service_id={service['id']}&location_id={versailles}").json()
+        a_slots = client.get(f"/api/availability/slots?date={mon}&service_id={service['id']}&location_id={amwaj}").json()
+
+        assert v_slots["slots"][0] == "10:00", f"Versailles must honor its 10:00 override, got {v_slots['slots'][0]}"
+        assert a_slots["slots"][0] == "09:00", f"Amwaj must keep the global 09:00 opening, got {a_slots['slots'][0]}"
+
+        # The config endpoint reflects the override for that location
+        v_config = client.get(f"/api/availability/config?location_id={versailles}").json()
+        mon_entry = next(s for s in v_config["schedule"] if s["day_of_week"] == day)
+        assert mon_entry["open_time"] == "10:00"
+    finally:
+        client.delete(f"/api/availability/schedule/{day}/override?location_id={versailles}", headers=headers)
+
+
+def test_per_location_buffer_extends_existing_booking():
+    headers = get_admin_headers()
+    day = 0  # Monday
+    services = client.get("/api/services").json()
+    service = next(s for s in services if s["slug"] == "russian-manicure")  # 60-min
+    mon = get_lonely_weekday(day, weeks_ahead=3)
+    config = client.get("/api/availability/config").json()
+    original = next(s for s in config["schedule"] if s["day_of_week"] == day)
+
+    try:
+        put = client.put(f"/api/availability/schedule/{day}", headers=headers, json={
+            "day_of_week": day,
+            "day_name": original["day_name"],
+            "is_open": True,
+            "open_time": original["open_time"],
+            "close_time": original["close_time"],
+            "slot_interval_minutes": original["slot_interval_minutes"],
+            "buffer_minutes": 30,
+        })
+        assert put.status_code == 200
+
+        # Book 10:00 (60 min -> ends 11:00 + 30 min buffer = 11:30)
+        free = client.get(f"/api/availability/slots?date={mon}&service_id={service['id']}").json()["slots"]
+        assert "10:00" in free
+        payload = booking_payload(service, {"date": mon, "time": "10:00"}, "+961 70 906 906", "Buffer Client")
+        assert client.post("/api/bookings", json=payload).status_code == 201
+
+        # 11:00 must now be blocked by the buffered tail; 11:30 is free again
+        after = client.get(f"/api/availability/slots?date={mon}&service_id={service['id']}").json()["slots"]
+        assert "11:00" not in after
+        assert "11:30" in after
+    finally:
+        client.put(f"/api/availability/schedule/{day}", headers=headers, json={
+            "day_of_week": day,
+            "day_name": original["day_name"],
+            "is_open": original["is_open"],
+            "open_time": original["open_time"],
+            "close_time": original["close_time"],
+            "slot_interval_minutes": original["slot_interval_minutes"],
+            "buffer_minutes": 0,
+        })
+
+
+def test_availability_config_buffer_save_global():
+    headers = get_admin_headers()
+    day = 0
+    original = next(s for s in client.get("/api/availability/config").json()["schedule"] if s["day_of_week"] == day)
+    original_buf = original["buffer_minutes"]
+
+    put = client.put("/api/availability/config", headers=headers, json={"buffer_minutes": 45})
+    assert put.status_code == 200
+
+    updated = next(s for s in client.get("/api/availability/config").json()["schedule"] if s["day_of_week"] == day)
+    assert updated["buffer_minutes"] == 45
+
+    # Restore original
+    client.put("/api/availability/config", headers=headers, json={"buffer_minutes": original_buf})
+
+
+def test_availability_config_buffer_save_location():
+    headers = get_admin_headers()
+    amwaj_id = get_location_id("amwaj")
+    versailles_id = get_location_id("versailles")
+    day = 2  # Wednesday
+
+    put = client.put(f"/api/availability/config?location_id={amwaj_id}", headers=headers, json={"buffer_minutes": 20})
+    assert put.status_code == 200
+
+    amwaj_config = client.get(f"/api/availability/config?location_id={amwaj_id}").json()
+    amwaj_day = next(s for s in amwaj_config["schedule"] if s["day_of_week"] == day)
+    assert amwaj_day["buffer_minutes"] == 20
+
+    versailles_config = client.get(f"/api/availability/config?location_id={versailles_id}").json()
+    versailles_day = next(s for s in versailles_config["schedule"] if s["day_of_week"] == day)
+    assert versailles_day["buffer_minutes"] == 0

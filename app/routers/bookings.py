@@ -71,6 +71,14 @@ def create_booking(booking_in: BookingCreate):
         price = service["discount_price"] if service["discount_price"] and service["discount_price"] > 0 else service["price"]
         duration = service["duration_minutes"]
 
+        # 1b. Validate the requested location (optional, backward compatible)
+        location_id = booking_in.location_id
+        if location_id is not None:
+            cursor.execute("SELECT id, name FROM locations WHERE id = ? AND is_active = TRUE", (location_id,))
+            loc_row = cursor.fetchone()
+            if not loc_row:
+                raise HTTPException(status_code=400, detail="The selected location is not available.")
+
         # 2. Atomically validate the slot against schedule, breaks, closed days,
         #    past dates and existing bookings — inside the SAME locked transaction
         #    that performs the insert (prevents the double-booking race).
@@ -78,7 +86,8 @@ def create_booking(booking_in: BookingCreate):
             cursor,
             booking_in.appointment_date,
             booking_in.appointment_time,
-            duration
+            duration,
+            location_id
         )
         if not available:
             raise HTTPException(
@@ -92,6 +101,7 @@ def create_booking(booking_in: BookingCreate):
         duplicate_sql = """
         SELECT id FROM bookings
         WHERE customer_phone = ? AND service_id = ? AND appointment_date = ? AND appointment_time = ?
+          AND COALESCE(location_id, -1) = COALESCE(?, -1)
           AND status != 'cancelled'
           AND created_at >= {recent_window}
         LIMIT 1
@@ -104,6 +114,7 @@ def create_booking(booking_in: BookingCreate):
                 booking_in.service_id,
                 booking_in.appointment_date,
                 booking_in.appointment_time,
+                location_id,
             )
         )
         if cursor.fetchone():
@@ -123,12 +134,12 @@ def create_booking(booking_in: BookingCreate):
         # 5. Insert booking
         cursor.execute("""
         INSERT INTO bookings (
-            booking_code, service_id, customer_name, customer_phone,
+            booking_code, service_id, location_id, customer_name, customer_phone,
             customer_email, notes, appointment_date, appointment_time,
             duration_minutes, status, price
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'confirmed', ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'confirmed', ?)
         """, (
-            booking_code, booking_in.service_id, customer_name,
+            booking_code, booking_in.service_id, location_id, customer_name,
             customer_phone, booking_in.customer_email.strip() if booking_in.customer_email else None,
             booking_in.notes.strip() if booking_in.notes else None,
             booking_in.appointment_date, booking_in.appointment_time,
@@ -137,9 +148,10 @@ def create_booking(booking_in: BookingCreate):
         booking_id = cursor.lastrowid
 
         cursor.execute("""
-        SELECT b.*, s.name as service_name, s.duration_minutes as service_duration
+        SELECT b.*, s.name as service_name, s.duration_minutes as service_duration, l.name as location_name
         FROM bookings b
         JOIN services s ON b.service_id = s.id
+        LEFT JOIN locations l ON b.location_id = l.id
         WHERE b.id = ?
         """, (booking_id,))
         row = cursor.fetchone()
@@ -150,9 +162,10 @@ def verify_booking(code: str):
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute("""
-        SELECT b.*, s.name as service_name, s.duration_minutes as service_duration
+        SELECT b.*, s.name as service_name, s.duration_minutes as service_duration, l.name as location_name
         FROM bookings b
         JOIN services s ON b.service_id = s.id
+        LEFT JOIN locations l ON b.location_id = l.id
         WHERE b.booking_code = ?
         """, (code.strip().upper(),))
         row = cursor.fetchone()
@@ -167,15 +180,17 @@ def get_bookings(
     to_date: Optional[str] = None,
     status: Optional[str] = None,
     service_id: Optional[int] = None,
+    location_id: Optional[int] = None,
     search: Optional[str] = None,
     current_admin: dict = Depends(get_current_admin)
 ):
     with get_db() as conn:
         cursor = conn.cursor()
         query = """
-        SELECT b.*, s.name as service_name, s.duration_minutes as service_duration
+        SELECT b.*, s.name as service_name, s.duration_minutes as service_duration, l.name as location_name
         FROM bookings b
         JOIN services s ON b.service_id = s.id
+        LEFT JOIN locations l ON b.location_id = l.id
         WHERE 1=1
         """
         params = []
@@ -199,6 +214,10 @@ def get_bookings(
         if service_id:
             query += " AND b.service_id = ?"
             params.append(service_id)
+
+        if location_id:
+            query += " AND b.location_id = ?"
+            params.append(location_id)
 
         if search:
             query += " AND (b.customer_name LIKE ? OR b.customer_phone LIKE ? OR b.booking_code LIKE ?)"
@@ -229,9 +248,10 @@ def update_booking_status(
         cursor.execute("UPDATE bookings SET status = ? WHERE id = ?", (status_update.status, booking_id))
 
         cursor.execute("""
-        SELECT b.*, s.name as service_name, s.duration_minutes as service_duration
+        SELECT b.*, s.name as service_name, s.duration_minutes as service_duration, l.name as location_name
         FROM bookings b
         JOIN services s ON b.service_id = s.id
+        LEFT JOIN locations l ON b.location_id = l.id
         WHERE b.id = ?
         """, (booking_id,))
         return format_booking_row(cursor.fetchone())
@@ -280,9 +300,10 @@ def get_dashboard_stats(current_admin: dict = Depends(get_current_admin)):
 
         # Today's list preview
         cursor.execute("""
-        SELECT b.*, s.name as service_name
+        SELECT b.*, s.name as service_name, l.name as location_name
         FROM bookings b
         JOIN services s ON b.service_id = s.id
+        LEFT JOIN locations l ON b.location_id = l.id
         WHERE b.appointment_date = ? AND b.status != 'cancelled'
         ORDER BY b.appointment_time ASC
         LIMIT 10

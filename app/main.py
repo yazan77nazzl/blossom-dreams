@@ -9,7 +9,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from app.config import settings
 from app.database import init_db
 from app.seed_data import seed_database
-from app.routers import auth, services, categories, offers, bookings, availability, gallery, settings as salon_settings_router, upload
+from app.routers import auth, services, categories, offers, bookings, availability, gallery, settings as salon_settings_router, upload, locations
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 PUBLIC_DIR = BASE_DIR / "public"
@@ -57,6 +57,7 @@ app.include_router(categories.router)
 app.include_router(offers.router)
 app.include_router(bookings.router)
 app.include_router(availability.router)
+app.include_router(locations.router)
 app.include_router(gallery.router)
 app.include_router(salon_settings_router.router)
 app.include_router(upload.router)

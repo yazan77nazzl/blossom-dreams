@@ -26,7 +26,7 @@
     }
   </script>
   
-  <link rel="stylesheet" href="/static/css/style.css?v=6.4" />
+  <link rel="stylesheet" href="/static/css/style.css?v=6.6" />
 </head>
 <body class="bg-[#F8FAFC] text-slate-800 antialiased font-sans">
 
@@ -303,8 +303,10 @@
                       <th class="py-3 px-4">Date & Time</th>
                       <th class="py-3 px-4">Guest</th>
                       <th class="py-3 px-4">Treatment</th>
+                      <th class="py-3 px-4">Location</th>
                       <th class="py-3 px-4">Price</th>
                       <th class="py-3 px-4">Status</th>
+                      <th class="py-3 px-4">Created</th>
                       <th class="py-3 px-4 text-right">Actions</th>
                     </tr>
                   </thead>
@@ -379,8 +381,25 @@
             
             <!-- Schedule Editor -->
             <div class="lg:col-span-8 bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-              <h3 class="font-serif font-bold text-slate-900 text-base mb-1">Weekly Operating Schedule</h3>
-              <p class="text-xs text-slate-500 mb-6">Configure open days, hours, and appointment slots.</p>
+              <div class="flex items-center justify-between mb-2 gap-3 flex-wrap">
+                <div>
+                  <h3 class="font-serif font-bold text-slate-900 text-base">Weekly Operating Schedule</h3>
+                  <p class="text-xs text-slate-500 mt-0.5">Configure open days, hours, and appointment slots per location.</p>
+                </div>
+                <div class="flex items-center gap-2">
+                  <label class="text-xs font-bold text-slate-600 whitespace-nowrap">Location:</label>
+                  <select id="avail-location-select" class="text-xs px-3 py-2 rounded-xl border border-slate-200 font-semibold max-w-[200px] bg-white">
+                    <option value="">All Locations (Global)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-3 mb-5 p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex-wrap">
+                <label class="text-xs font-bold text-slate-700 whitespace-nowrap">Booking Buffer (min):</label>
+                <input type="number" id="avail-buffer-input" min="0" max="120" value="0" class="w-20 px-2.5 py-1.5 rounded-lg border border-slate-200 font-mono font-semibold text-xs" />
+                <button id="btn-save-buffer" class="btn-secondary px-3.5 py-1.5 rounded-xl text-xs font-bold">Save</button>
+                <span class="text-[10px] text-slate-400 ml-1">Gap after each booking before the next can start</span>
+              </div>
 
               <div id="admin-schedule-list" class="space-y-3">
                 <!-- Dynamically populated 7 days -->
@@ -548,6 +567,6 @@
   <div id="admin-modal-root"></div>
 
   <!-- Admin Controller -->
-  <script type="module" src="/static/js/admin.js?v=5.0"></script>
+  <script type="module" src="/static/js/admin.js?v=6.6"></script>
 </body>
 </html>

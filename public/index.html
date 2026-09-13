@@ -88,11 +88,7 @@
   </script>
 
   <!-- Luxury Design System Stylesheet -->
-  <link rel="stylesheet" href="/static/css/style.css?v=6.4" />
-
-  <!-- Leaflet (multi-location map) -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <link rel="stylesheet" href="/static/css/style.css?v=6.6" />
 </head>
 <body class="bg-[#FBEDE6] text-[#5C1B3F] antialiased selection:bg-pink-200 selection:text-pink-950 pb-20 md:pb-0">
 
@@ -506,7 +502,7 @@
               </div>
               <div>
                 <div class="font-bold text-gray-900 text-sm">Operating Schedule</div>
-                <div class="salon-hours-text mt-1 text-slate-600 leading-relaxed font-normal">Monday - Saturday: 9:30 AM - 7:00 PM | Sunday: Closed</div>
+                <div class="salon-hours-text mt-1 text-slate-600 leading-relaxed font-normal">Monday - Saturday: 9:00 AM - 7:00 PM | Sunday: Closed</div>
               </div>
             </div>
 
@@ -534,76 +530,42 @@
           </div>
         </div>
 
-        <!-- Salon Multi-Location Map -->
-        <div class="lg:col-span-7 reveal-on-scroll delay-200">
-          <div class="w-full h-88 sm:h-96 rounded-3xl overflow-hidden shadow-xl border-4 border-rose-100 relative">
-            <div id="salon-map" class="w-full h-full z-0"></div>
-          </div>
+        <!-- Two Clickable Google Maps Location Cards -->
+        <div class="lg:col-span-7 reveal-on-scroll delay-200 space-y-4">
+          <a href="https://maps.google.com/?ftid=0x151f4096b6ee7923:0x1de97506f65318e9" target="_blank" rel="noopener noreferrer"
+            class="location-card-link location-card block p-5 rounded-2xl border border-pink-100 bg-gradient-to-br from-white via-[#FDEDE8]/40 to-[#F6D9D0]/60 shadow-lg hover:shadow-xl transition-all duration-200 group">
+            <div class="flex items-start gap-4">
+              <span class="w-12 h-12 rounded-2xl bg-pink-100 text-pink-700 flex items-center justify-center text-xl flex-shrink-0 group-hover:scale-105 transition-transform">📍</span>
+              <div class="min-w-0 flex-1">
+                <h5 class="text-sm font-serif font-bold text-gray-900 group-hover:text-pink-700 transition">Versailles Center</h5>
+                <p class="text-xs text-slate-500 mt-1 leading-relaxed">Centre Savoy, Sarba, Jounieh, Lebanon</p>
+                <span class="inline-flex items-center gap-1 mt-2 text-[11px] text-pink-700 font-bold underline underline-offset-2 group-hover:text-pink-900">
+                  Open in Google Maps
+                  <span class="group-hover:translate-x-0.5 transition-transform">→</span>
+                </span>
+              </div>
+            </div>
+          </a>
+
+          <a href="https://maps.google.com/?q=Amwaj+Center+Jounieh+Lebanon" target="_blank" rel="noopener noreferrer"
+            class="location-card-link location-card block p-5 rounded-2xl border border-pink-100 bg-gradient-to-br from-white via-[#FDEDE8]/40 to-[#F6D9D0]/60 shadow-lg hover:shadow-xl transition-all duration-200 group">
+            <div class="flex items-start gap-4">
+              <span class="w-12 h-12 rounded-2xl bg-pink-100 text-pink-700 flex items-center justify-center text-xl flex-shrink-0 group-hover:scale-105 transition-transform">📍</span>
+              <div class="min-w-0 flex-1">
+                <h5 class="text-sm font-serif font-bold text-gray-900 group-hover:text-pink-700 transition">Amwaj Center, Jounieh</h5>
+                <p class="text-xs text-slate-500 mt-1 leading-relaxed">Amwaj Center, Jounieh, Lebanon</p>
+                <span class="inline-flex items-center gap-1 mt-2 text-[11px] text-pink-700 font-bold underline underline-offset-2 group-hover:text-pink-900">
+                  Open in Google Maps
+                  <span class="group-hover:translate-x-0.5 transition-transform">→</span>
+                </span>
+              </div>
+            </div>
+          </a>
         </div>
 
       </div>
     </div>
   </section>
-
-  <!-- Salon Map with two location markers -->
-  <script>
-    document.addEventListener('DOMContentLoaded', function () {
-      var mapEl = document.getElementById('salon-map');
-      if (!mapEl || typeof L === 'undefined') return;
-
-      var locations = [
-        {
-          name: 'Versailles Center',
-          detail: 'Centre Versailles, Sarba, Jounieh, Lebanon',
-          lat: 33.9805127,
-          lng: 35.6261905
-        },
-        {
-          name: 'Amwaj Center, Jounieh',
-          detail: 'Amwaj Center, Main Street, Jounieh, Lebanon',
-          lat: 33.9833907,
-          lng: 35.630377
-        }
-      ];
-
-      var map = L.map('salon-map', {
-        scrollWheelZoom: false,
-        attributionControl: true
-      }).setView([33.982, 35.6283], 15);
-
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-      }).addTo(map);
-
-      var pinIcon = L.divIcon({
-        className: 'bd-map-pin',
-        html: '<svg viewBox="0 0 24 24" width="34" height="34" aria-hidden="true">' +
-              '<path fill="#EE6A95" stroke="#FFFFFF" stroke-width="1.4" d="M12 0C7.6 0 4 3.6 4 8c0 5.4 8 16 8 16s8-10.6 8-16c0-4.4-3.6-8-8-8z"/>' +
-              '<circle cx="12" cy="8" r="3.2" fill="#FFFFFF"/></svg>',
-        iconSize: [34, 42],
-        iconAnchor: [17, 42],
-        popupAnchor: [0, -38]
-      });
-
-      var firstMarker = null;
-      locations.forEach(function (loc, index) {
-        var marker = L.marker([loc.lat, loc.lng], { icon: pinIcon })
-          .addTo(map)
-          .bindPopup(
-            '<strong style="color: #8B2A5C;">' + loc.name + '</strong>' +
-            '<br><span style="color: #5C1B3F; font-size: 11px;">' + loc.detail + '</span>'
-          );
-        if (index === 0) firstMarker = marker;
-      });
-
-      if (firstMarker) setTimeout(function () { firstMarker.openPopup(); }, 400);
-
-      function resizeMap() { map.invalidateSize(); }
-      window.addEventListener('resize', resizeMap);
-      setTimeout(resizeMap, 600);
-    });
-  </script>
 
   <!-- LUXURY FOOTER -->
   <footer class="bg-[#5C1B3F] text-white pt-16 pb-10 border-t border-velvet-900">
@@ -619,13 +581,20 @@
             Your sanctuary of elegance, radiance, and luxury beauty in Beirut. Meticulously designed for your comfort and timeless allure.
           </p>
           <div class="mt-6 flex items-center gap-3">
-            <a href="https://www.instagram.com/blossomdreams.lb/" target="_blank" rel="noopener noreferrer"
-              class="salon-instagram-link w-9 h-9 rounded-full bg-white/10 hover:bg-rose-600 flex items-center justify-center text-xs transition duration-300">
-              IG
+            <a href="https://www.instagram.com/blossomdreams.lb/" target="_blank" rel="noopener noreferrer" title="Instagram"
+              class="salon-instagram-link w-9 h-9 rounded-full bg-white/10 hover:bg-rose-600 flex items-center justify-center text-xs transition duration-300"
+              aria-label="Follow Blossom Dreams on Instagram">
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
             </a>
-            <a href="#" target="_blank" rel="noopener noreferrer"
-              class="salon-whatsapp-link w-9 h-9 rounded-full bg-white/10 hover:bg-emerald-600 flex items-center justify-center text-xs transition duration-300">
-              WA
+            <a href="https://wa.me/96170882194" target="_blank" rel="noopener noreferrer" title="WhatsApp"
+              class="salon-whatsapp-link w-9 h-9 rounded-full bg-white/10 hover:bg-emerald-600 flex items-center justify-center text-xs transition duration-300"
+              aria-label="Message Blossom Dreams on WhatsApp">
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981z"/></svg>
+            </a>
+            <a href="https://www.tiktok.com/@blossomdreams.lb" target="_blank" rel="noopener noreferrer" title="TikTok"
+              class="salon-tiktok-link w-9 h-9 rounded-full bg-white/10 hover:bg-slate-100 hover:text-black flex items-center justify-center text-xs transition duration-300"
+              aria-label="Follow Blossom Dreams on TikTok">
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-1-.05A6.33 6.33 0 005 20.1a6.34 6.34 0 0010.86-4.43v-7a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-1-.1z"/></svg>
             </a>
           </div>
         </div>
@@ -691,7 +660,7 @@
   </nav>
 
   <!-- Main JavaScript App -->
-  <script type="module" src="/static/js/app.js?v=6.4"></script>
+  <script type="module" src="/static/js/app.js?v=6.6"></script>
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {

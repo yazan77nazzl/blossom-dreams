@@ -247,6 +247,40 @@ def init_db():
             currency_symbol TEXT DEFAULT '$',
             announcement_text TEXT DEFAULT '✨ Welcome to Blossom Dreams. Pamper yourself with our signature treatments. Book online today!'
         );
+        """,
+        # 11. Business Locations
+        """
+        CREATE TABLE IF NOT EXISTS locations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            slug TEXT UNIQUE NOT NULL,
+            name TEXT NOT NULL,
+            address TEXT,
+            google_maps_url TEXT,
+            latitude REAL,
+            longitude REAL,
+            display_order INTEGER DEFAULT 0,
+            is_active BOOLEAN DEFAULT 1,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        """,
+        # 12. Per-Location Availability Overrides (NULL/absent = use global
+        #     availability_settings). Separate table because the global settings
+        #     table carries a UNIQUE constraint on day_of_week that cannot be
+        #     dropped cheaply in SQLite.
+        """
+        CREATE TABLE IF NOT EXISTS location_availability_settings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            location_id INTEGER NOT NULL,
+            day_of_week INTEGER NOT NULL,
+            day_name TEXT NOT NULL,
+            is_open BOOLEAN DEFAULT 1,
+            open_time TEXT NOT NULL DEFAULT '09:00',
+            close_time TEXT NOT NULL DEFAULT '19:00',
+            slot_interval_minutes INTEGER DEFAULT 30,
+            buffer_minutes INTEGER DEFAULT 0,
+            UNIQUE (location_id, day_of_week),
+            FOREIGN KEY (location_id) REFERENCES locations (id) ON DELETE CASCADE
+        );
         """
 ]
 
@@ -266,3 +300,30 @@ def init_db():
         CREATE INDEX IF NOT EXISTS idx_bookings_date_time 
         ON bookings (appointment_date, appointment_time, status);
         """)
+
+        _apply_column_migrations(cursor)
+
+
+def _column_exists(cursor, table: str, column: str) -> bool:
+    """Guarded column-existence check that works on both SQLite and Postgres."""
+    if IS_POSTGRES:
+        cursor.execute(
+            "SELECT 1 FROM information_schema.columns WHERE table_name = %s AND column_name = %s",
+            (table, column),
+        )
+        return cursor.fetchone() is not None
+    cursor.execute(f"PRAGMA table_info({table})")
+    return any(row["name"] == column for row in cursor.fetchall())
+
+
+def _apply_column_migrations(cursor) -> None:
+    """Idempotent ALTER TABLE migrations for features added after the base schema."""
+    migrations = [
+        ("bookings", "location_id", "INTEGER"),
+        ("availability_settings", "buffer_minutes", "INTEGER DEFAULT 0"),
+        ("break_times", "location_id", "INTEGER"),
+    ]
+    for table, column, column_ddl in migrations:
+        if _column_exists(cursor, table, column):
+            continue
+        cursor.execute(f"ALTER TABLE {table} ADD COLUMN {column} {column_ddl}")

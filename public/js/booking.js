@@ -1,4 +1,4 @@
-// Interactive 5-Step Luxury Booking Wizard for Blossom Dreams
+// Interactive 6-Step Luxury Booking Wizard for Blossom Dreams
 import { apiFetch, showToast, formatPrice, formatDuration, formatDatePretty, escapeHtml } from "./api.js";
 
 class BookingWizard {
@@ -6,9 +6,11 @@ class BookingWizard {
     this.modal = null;
     this.services = [];
     this.settings = null;
+    this.locations = [];
     this.state = {
-      step: 1, // 1: Service, 2: Date, 3: Time, 4: Details, 5: Confirmation
+      step: 1, // 1: Service, 2: Location, 3: Date, 4: Time, 5: Details, 6: Confirmation
       selectedService: null,
+      selectedLocation: null,
       selectedDate: null,
       selectedTime: null,
       availableSlots: [],
@@ -22,9 +24,10 @@ class BookingWizard {
     };
   }
 
-  init(services, settings) {
+  init(services, settings, locations = []) {
     this.services = services;
     this.settings = settings;
+    this.locations = locations || [];
     this.renderModalContainer();
   }
 
@@ -52,17 +55,18 @@ class BookingWizard {
           </button>
         </div>
 
-        <!-- 5-Step Progress Bar & Indicators -->
+        <!-- 6-Step Progress Bar & Indicators -->
         <div class="px-6 pt-3.5 pb-2.5 bg-pink-50/40 border-b border-pink-100/60">
           <div class="flex items-center justify-between text-[11px] font-bold text-slate-400 mb-2">
             <span id="step-lbl-1" class="step-indicator active">1. Service</span>
-            <span id="step-lbl-2" class="step-indicator">2. Date</span>
-            <span id="step-lbl-3" class="step-indicator">3. Time</span>
-            <span id="step-lbl-4" class="step-indicator">4. Details</span>
-            <span id="step-lbl-5" class="step-indicator">5. Confirmation</span>
+            <span id="step-lbl-2" class="step-indicator">2. Location</span>
+            <span id="step-lbl-3" class="step-indicator">3. Date</span>
+            <span id="step-lbl-4" class="step-indicator">4. Time</span>
+            <span id="step-lbl-5" class="step-indicator">5. Details</span>
+            <span id="step-lbl-6" class="step-indicator">6. Confirm</span>
           </div>
           <div class="booking-progress-track">
-            <div id="booking-progress-bar" class="booking-progress-fill" style="width: 20%;"></div>
+            <div id="booking-progress-bar" class="booking-progress-fill" style="width: 17%;"></div>
           </div>
         </div>
 
@@ -89,6 +93,7 @@ class BookingWizard {
     if (!this.modal) this.renderModalContainer();
 
     this.state.step = 1;
+    this.state.selectedLocation = null;
     this.state.selectedTime = null;
     this.state.availableSlots = [];
     this.state.confirmedBooking = null;
@@ -104,7 +109,7 @@ class BookingWizard {
       const match = this.services.find(s => s.id === parseInt(preSelectedServiceId));
       if (match) {
         this.state.selectedService = match;
-        this.state.step = 2; // Jump directly to date
+        this.state.step = 2; // Jump directly to location
       }
     } else {
       this.state.selectedService = null;
@@ -122,11 +127,14 @@ class BookingWizard {
   }
 
   updateProgress() {
-    const progressMap = { 1: "20%", 2: "40%", 3: "60%", 4: "80%", 5: "100%" };
+    const progressMap = { 1: "17%", 2: "34%", 3: "50%", 4: "67%", 5: "84%", 6: "100%" };
     const bar = document.getElementById("booking-progress-bar");
-    if (bar) bar.style.width = progressMap[this.state.step] || "20%";
+    if (bar) {
+      bar.style.width = progressMap[this.state.step] || "17%";
+      if (this.state.step === 6) bar.classList.add("complete");
+    }
 
-    for (let i = 1; i <= 5; i++) {
+    for (let i = 1; i <= 6; i++) {
       const lbl = document.getElementById(`step-lbl-${i}`);
       if (!lbl) continue;
       if (i < this.state.step) {
@@ -152,6 +160,7 @@ class BookingWizard {
     else if (this.state.step === 3) this.renderStep3(content, footer);
     else if (this.state.step === 4) this.renderStep4(content, footer);
     else if (this.state.step === 5) this.renderStep5(content, footer);
+    else if (this.state.step === 6) this.renderStep6(content, footer);
   }
 
   // --- STEP 1: SELECT TREATMENT ---
@@ -239,8 +248,14 @@ class BookingWizard {
     }
   }
 
-  // --- STEP 2: SELECT DATE ---
+  // --- STEP 2: SELECT LOCATION ---
   renderStep2(content, footer) {
+    if (!this.locations || this.locations.length === 0) {
+      this.state.step = 3;
+      this.renderCurrentStep();
+      return;
+    }
+
     const s = this.state.selectedService;
     const symbol = this.settings?.currency_symbol || "$";
     const price = s.discount_price || s.price;
@@ -261,7 +276,94 @@ class BookingWizard {
       </div>
 
       <div class="mb-4">
-        <h4 class="text-base font-serif font-bold text-gray-900">Step 2 — Select Appointment Date</h4>
+        <h4 class="text-base font-serif font-bold text-gray-900">Step 2 — Choose Your Location</h4>
+        <p class="text-xs text-slate-500 mt-0.5">Select the boutique you would like to visit</p>
+      </div>
+
+      <div class="space-y-3">
+    `;
+
+    this.locations.forEach(loc => {
+      const isSelected = this.state.selectedLocation?.id === loc.id;
+      html += `
+        <div data-location-id="${loc.id}" class="wizard-location-item p-4 rounded-2xl border cursor-pointer transition flex items-start gap-3.5 ${isSelected ? 'border-pink-600 bg-pink-50/70 ring-2 ring-pink-500/20' : 'border-pink-100 hover:border-pink-300 hover:bg-pink-50/30'}">
+          <span class="w-11 h-11 rounded-2xl bg-pink-100 text-pink-700 flex items-center justify-center text-lg flex-shrink-0">📍</span>
+          <div class="min-w-0">
+            <h5 class="text-sm font-bold text-gray-900">${escapeHtml(loc.name)}</h5>
+            ${loc.address ? `<p class="text-[11px] text-slate-500 mt-0.5 leading-relaxed">${escapeHtml(loc.address)}</p>` : ''}
+            ${loc.google_maps_url ? `<a href="${escapeHtml(loc.google_maps_url)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 mt-1.5 text-[11px] text-pink-700 font-bold hover:text-pink-900 underline" title="Open in Google Maps">Open in Maps ↗</a>` : ''}
+          </div>
+          <span class="ml-auto w-5 h-5 rounded-full border-2 ${isSelected ? 'border-pink-600 bg-pink-600' : 'border-pink-200'} flex items-center justify-center flex-shrink-0">${isSelected ? '<span class="text-white text-[10px]">✓</span>' : ''}</span>
+        </div>
+      `;
+    });
+
+    html += `
+      </div>
+
+      <p class="text-[11px] text-slate-400 mt-4 flex items-center gap-1.5">📍 Tap a location to open it on Google Maps, then select it for your appointment.</p>
+    `;
+
+    content.innerHTML = html;
+
+    document.getElementById("wizard-change-service-btn").addEventListener("click", () => {
+      this.state.step = 1;
+      this.renderCurrentStep();
+    });
+
+    document.querySelectorAll(".wizard-location-item").forEach(item => {
+      item.addEventListener("click", (e) => {
+        if (e.target.closest("a")) return; // let the map link open normally
+        const id = parseInt(item.dataset.locationId);
+        this.state.selectedLocation = this.locations.find(loc => loc.id === id);
+        document.querySelectorAll(".wizard-location-item").forEach(x => {
+          x.classList.remove("border-pink-600", "bg-pink-50/70", "ring-2", "ring-pink-500/20");
+          const dot = x.querySelector("span.ml-auto");
+          if (dot) { dot.classList.remove("border-pink-600", "bg-pink-600"); dot.innerHTML = ""; }
+        });
+        item.classList.add("border-pink-600", "bg-pink-50/70", "ring-2", "ring-pink-500/20");
+        const dot = item.querySelector("span.ml-auto");
+        if (dot) { dot.classList.add("border-pink-600", "bg-pink-600"); dot.innerHTML = '<span class="text-white text-[10px]">✓</span>'; }
+      });
+    });
+
+    // Footer
+    footer.innerHTML = `
+      <button id="step2-next-btn" class="btn-primary px-6 py-2.5 rounded-xl text-xs font-bold">
+        Next: Choose Date →
+      </button>
+    `;
+
+    document.getElementById("step2-next-btn").addEventListener("click", () => {
+      this.state.step = 3;
+      this.renderCurrentStep();
+    });
+  }
+
+  // --- STEP 3: SELECT DATE ---
+  renderStep3(content, footer) {
+    const s = this.state.selectedService;
+    const loc = this.state.selectedLocation;
+    const symbol = this.settings?.currency_symbol || "$";
+    const price = s.discount_price || s.price;
+
+    let html = `
+      <!-- Service Recap Pill -->
+      <div class="mb-5 p-3 rounded-2xl bg-pink-50/70 border border-pink-200 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <span class="text-xl">✨</span>
+          <div>
+            <h5 class="text-xs font-bold text-gray-900">${escapeHtml(s.name)}</h5>
+            <p class="text-[11px] text-pink-700 font-semibold">${formatDuration(s.duration_minutes)} • ${formatPrice(price, symbol)}${loc ? ` • 📍 ${escapeHtml(loc.name)}` : ''}</p>
+          </div>
+        </div>
+        <button id="wizard-change-service-btn" class="text-[11px] text-pink-700 hover:text-pink-900 font-bold underline">
+          Change
+        </button>
+      </div>
+
+      <div class="mb-4">
+        <h4 class="text-base font-serif font-bold text-gray-900">Step 3 — Select Appointment Date</h4>
         <p class="text-xs text-slate-500 mt-0.5">Choose your preferred salon visiting day</p>
       </div>
 
@@ -340,35 +442,37 @@ class BookingWizard {
 
     // Footer
     footer.innerHTML = `
-      <button id="step2-back-btn" class="btn-secondary px-4 py-2.5 rounded-xl text-xs font-bold">
+      <button id="step3-back-btn" class="btn-secondary px-4 py-2.5 rounded-xl text-xs font-bold">
         ← Back
       </button>
-      <button id="step2-next-btn" class="btn-primary px-6 py-2.5 rounded-xl text-xs font-bold">
+      <button id="step3-next-btn" class="btn-primary px-6 py-2.5 rounded-xl text-xs font-bold">
         Next: Choose Time →
       </button>
     `;
 
-    document.getElementById("step2-back-btn").addEventListener("click", () => {
-      this.state.step = 1;
+    document.getElementById("step3-back-btn").addEventListener("click", () => {
+      this.state.step = 2;
       this.renderCurrentStep();
     });
 
-    document.getElementById("step2-next-btn").addEventListener("click", () => {
-      this.state.step = 3;
+    document.getElementById("step3-next-btn").addEventListener("click", () => {
+      this.state.selectedTime = null;
+      this.state.step = 4;
       this.renderCurrentStep();
     });
   }
 
-  // --- STEP 3: SELECT TIME SLOT ---
-  async renderStep3(content, footer) {
+  // --- STEP 4: SELECT TIME SLOT ---
+  async renderStep4(content, footer) {
     const s = this.state.selectedService;
+    const loc = this.state.selectedLocation;
     const dateStr = this.state.selectedDate;
 
     let html = `
       <!-- Date & Service Pill -->
       <div class="mb-5 p-3 rounded-2xl bg-pink-50/70 border border-pink-200 flex items-center justify-between">
         <div>
-          <div class="text-xs font-bold text-gray-900">${escapeHtml(s.name)}</div>
+          <div class="text-xs font-bold text-gray-900">${escapeHtml(s.name)}${loc ? ` • 📍 ${escapeHtml(loc.name)}` : ''}</div>
           <div class="text-[11px] text-pink-700 font-semibold font-mono">${formatDatePretty(dateStr)} • ${formatDuration(s.duration_minutes)}</div>
         </div>
         <button id="wizard-back-to-date" class="text-[11px] text-pink-700 hover:text-pink-900 font-bold underline">
@@ -377,7 +481,7 @@ class BookingWizard {
       </div>
 
       <div class="mb-4">
-        <h4 class="text-base font-serif font-bold text-gray-900">Step 3 — Select Available Time</h4>
+        <h4 class="text-base font-serif font-bold text-gray-900">Step 4 — Select Available Time</h4>
         <p class="text-xs text-slate-500 mt-0.5">Calculated in real-time to avoid any scheduling conflicts</p>
       </div>
 
@@ -394,27 +498,27 @@ class BookingWizard {
 
     document.getElementById("wizard-back-to-date").addEventListener("click", () => {
       this.state.selectedTime = null;
-      this.state.step = 2;
+      this.state.step = 3;
       this.renderCurrentStep();
     });
 
     footer.innerHTML = `
-      <button id="step3-back-btn" class="btn-secondary px-4 py-2.5 rounded-xl text-xs font-bold">
+      <button id="step4-back-btn" class="btn-secondary px-4 py-2.5 rounded-xl text-xs font-bold">
         ← Back
       </button>
-      <button id="step3-next-btn" disabled class="btn-primary opacity-50 px-6 py-2.5 rounded-xl text-xs font-bold cursor-not-allowed">
+      <button id="step4-next-btn" disabled class="btn-primary opacity-50 px-6 py-2.5 rounded-xl text-xs font-bold cursor-not-allowed">
         Next: Guest Details →
       </button>
     `;
 
-    document.getElementById("step3-back-btn").addEventListener("click", () => {
-      this.state.step = 2;
+    document.getElementById("step4-back-btn").addEventListener("click", () => {
+      this.state.step = 3;
       this.renderCurrentStep();
     });
 
-    document.getElementById("step3-next-btn").addEventListener("click", () => {
+    document.getElementById("step4-next-btn").addEventListener("click", () => {
       if (this.state.selectedTime) {
-        this.state.step = 4;
+        this.state.step = 5;
         this.renderCurrentStep();
       }
     });
@@ -427,7 +531,12 @@ class BookingWizard {
     if (!wrapper) return;
 
     try {
-      const data = await apiFetch(`/api/availability/slots?date=${this.state.selectedDate}&service_id=${this.state.selectedService.id}`);
+      let url = `/api/availability/slots?date=${this.state.selectedDate}&service_id=${this.state.selectedService.id}`;
+      if (this.state.selectedLocation) {
+        url += `&location_id=${this.state.selectedLocation.id}`;
+      }
+
+      const data = await apiFetch(url);
       this.state.availableSlots = data.slots || [];
 
       if (!data.available || this.state.availableSlots.length === 0) {
@@ -442,7 +551,7 @@ class BookingWizard {
           </div>
         `;
         document.getElementById("btn-pick-diff-date").addEventListener("click", () => {
-          this.state.step = 2;
+          this.state.step = 3;
           this.renderCurrentStep();
         });
         return;
@@ -508,7 +617,7 @@ class BookingWizard {
           btn.classList.add("selected");
           this.state.selectedTime = btn.dataset.time;
 
-          const nextBtn = document.getElementById("step3-next-btn");
+          const nextBtn = document.getElementById("step4-next-btn");
           if (nextBtn) {
             nextBtn.disabled = false;
             nextBtn.classList.remove("opacity-50", "cursor-not-allowed");
@@ -534,9 +643,10 @@ class BookingWizard {
     `;
   }
 
-  // --- STEP 4: GUEST INFORMATION ---
-  renderStep4(content, footer) {
+  // --- STEP 5: GUEST INFORMATION ---
+  renderStep5(content, footer) {
     const s = this.state.selectedService;
+    const loc = this.state.selectedLocation;
     const symbol = this.settings?.currency_symbol || "$";
     const price = s.discount_price || s.price;
 
@@ -550,6 +660,10 @@ class BookingWizard {
             <strong class="text-gray-900">${escapeHtml(s.name)}</strong>
           </div>
           <div class="flex justify-between">
+            <span class="text-slate-500">Location:</span>
+            <strong class="text-pink-700">${loc ? escapeHtml(loc.name) : escapeHtml(this.settings?.address || 'Amwaj Center, Jounieh, Lebanon')}</strong>
+          </div>
+          <div class="flex justify-between">
             <span class="text-slate-500">Schedule:</span>
             <strong class="text-pink-700">${formatDatePretty(this.state.selectedDate)} at ${this.state.selectedTime}</strong>
           </div>
@@ -561,7 +675,7 @@ class BookingWizard {
       </div>
 
       <div class="mb-4">
-        <h4 class="text-base font-serif font-bold text-gray-900">Step 4 — Guest Contact Details</h4>
+        <h4 class="text-base font-serif font-bold text-gray-900">Step 5 — Guest Contact Details</h4>
         <p class="text-xs text-slate-500 mt-0.5">Please provide your details so we can confirm your reservation</p>
       </div>
 
@@ -604,17 +718,17 @@ class BookingWizard {
     content.innerHTML = html;
 
     footer.innerHTML = `
-      <button id="step4-back-btn" class="btn-secondary px-4 py-2.5 rounded-xl text-xs font-bold">
+      <button id="step5-back-btn" class="btn-secondary px-4 py-2.5 rounded-xl text-xs font-bold">
         ← Back
       </button>
-      <button id="step4-submit-btn" class="btn-primary px-6 py-2.5 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md">
+      <button id="step5-submit-btn" class="btn-primary px-6 py-2.5 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md">
         <span>Confirm & Reserve Slot</span>
         <span>✦</span>
       </button>
     `;
 
-    document.getElementById("step4-back-btn").addEventListener("click", () => {
-      this.state.step = 3;
+    document.getElementById("step5-back-btn").addEventListener("click", () => {
+      this.state.step = 4;
       this.renderCurrentStep();
     });
 
@@ -624,13 +738,13 @@ class BookingWizard {
       this.submitBooking();
     });
 
-    document.getElementById("step4-submit-btn").addEventListener("click", () => {
+    document.getElementById("step5-submit-btn").addEventListener("click", () => {
       this.submitBooking();
     });
   }
 
   async submitBooking() {
-    const submitBtn = document.getElementById("step4-submit-btn");
+    const submitBtn = document.getElementById("step5-submit-btn");
     if (!submitBtn || submitBtn.disabled) {
       return;
     }
@@ -674,6 +788,9 @@ class BookingWizard {
         appointment_date: this.state.selectedDate,
         appointment_time: this.state.selectedTime
       };
+      if (this.state.selectedLocation) {
+        payload.location_id = this.state.selectedLocation.id;
+      }
 
       const booking = await apiFetch("/api/bookings", {
         method: "POST",
@@ -681,7 +798,7 @@ class BookingWizard {
       });
 
       this.state.confirmedBooking = booking;
-      this.state.step = 5;
+      this.state.step = 6;
       showToast("Appointment successfully confirmed!", "success");
       this.renderCurrentStep();
     } catch (err) {
@@ -690,7 +807,7 @@ class BookingWizard {
 
       if (err.status === 409) {
         showToast("Slot conflict: That time was just booked. Please pick another slot.", "error");
-        this.state.step = 3;
+        this.state.step = 4;
         this.renderCurrentStep();
       } else {
         showToast(err.message || "Failed to complete booking. Please try again.", "error");
@@ -698,16 +815,18 @@ class BookingWizard {
     }
   }
 
-  // --- STEP 5: CONFIRMATION & CELEBRATION ---
-  renderStep5(content, footer) {
+  // --- STEP 6: CONFIRMATION & CELEBRATION ---
+  renderStep6(content, footer) {
     const b = this.state.confirmedBooking;
     const symbol = this.settings?.currency_symbol || "$";
     const waNumber = (this.settings?.whatsapp_number || "+96170882194").replace(/[^0-9]/g, "");
+    const locationLabel = b.location_name || (this.state.selectedLocation?.name || null);
 
     const waMessage = encodeURIComponent(
       `Hello Blossom Dreams! 🌸\nI just booked an appointment online:\n\n` +
       `• Code: ${b.booking_code}\n` +
       `• Service: ${b.service_name}\n` +
+      (locationLabel ? `• Location: ${locationLabel}\n` : ``) +
       `• Date: ${formatDatePretty(b.appointment_date)}\n` +
       `• Time: ${b.appointment_time}\n` +
       `• Client: ${b.customer_name}\n\n` +
@@ -745,6 +864,11 @@ class BookingWizard {
               <span class="text-slate-500">Treatment:</span>
               <strong class="text-gray-900">${escapeHtml(b.service_name)}</strong>
             </div>
+            ${locationLabel ? `
+            <div class="flex justify-between">
+              <span class="text-slate-500">Location:</span>
+              <strong class="text-pink-700">${escapeHtml(locationLabel)}</strong>
+            </div>` : ''}
             <div class="flex justify-between">
               <span class="text-slate-500">Date:</span>
               <strong class="text-slate-800">${formatDatePretty(b.appointment_date)}</strong>
@@ -765,7 +889,7 @@ class BookingWizard {
 
           <div class="pt-3 text-[11px] text-slate-500 flex items-center gap-2">
             <span>📍</span>
-            <span>${escapeHtml(this.settings?.address || 'Amwaj Center, Jounieh, Lebanon')}</span>
+            <span>${escapeHtml(locationLabel || this.settings?.address || 'Amwaj Center, Jounieh, Lebanon')}</span>
           </div>
         </div>
 
@@ -793,19 +917,19 @@ class BookingWizard {
     }
 
     footer.innerHTML = `
-      <button id="step5-book-another" class="btn-secondary px-4 py-2.5 rounded-xl text-xs font-bold">
+      <button id="step6-book-another" class="btn-secondary px-4 py-2.5 rounded-xl text-xs font-bold">
         Book Another Treatment
       </button>
-      <button id="step5-done-btn" class="btn-primary px-7 py-2.5 rounded-xl text-xs font-bold">
+      <button id="step6-done-btn" class="btn-primary px-7 py-2.5 rounded-xl text-xs font-bold">
         Done
       </button>
     `;
 
-    document.getElementById("step5-book-another").addEventListener("click", () => {
+    document.getElementById("step6-book-another").addEventListener("click", () => {
       this.open();
     });
 
-    document.getElementById("step5-done-btn").addEventListener("click", () => {
+    document.getElementById("step6-done-btn").addEventListener("click", () => {
       this.close();
     });
   }

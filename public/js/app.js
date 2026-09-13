@@ -9,6 +9,7 @@ class BlossomApp {
     this.services = [];
     this.offers = [];
     this.gallery = [];
+    this.locations = [];
     this.activeCategorySlug = "all";
     this.searchQuery = "";
     this.countdownTimer = null;
@@ -18,7 +19,7 @@ class BlossomApp {
     try {
       this.setupIntersectionObserver();
       await this.loadInitialData();
-      bookingWizard.init(this.services, this.settings);
+      bookingWizard.init(this.services, this.settings, this.locations);
       this.bindEvents();
       this.render();
       this.startOfferCountdowns();
@@ -66,12 +67,13 @@ class BlossomApp {
   }
 
   async loadInitialData() {
-    const [settings, categories, services, offers, gallery] = await Promise.all([
+    const [settings, categories, services, offers, gallery, locations] = await Promise.all([
       apiFetch("/api/settings").catch(() => null),
       apiFetch("/api/categories").catch(() => []),
       apiFetch("/api/services").catch(() => []),
       apiFetch("/api/offers").catch(() => []),
       apiFetch("/api/gallery").catch(() => []),
+      apiFetch("/api/locations").catch(() => []),
     ]);
 
     this.settings = settings;
@@ -79,6 +81,7 @@ class BlossomApp {
     this.services = services;
     this.offers = offers;
     this.gallery = gallery;
+    this.locations = locations;
   }
 
   bindEvents() {
@@ -173,6 +176,12 @@ class BlossomApp {
     const igUrl = s.instagram_url || "https://www.instagram.com/blossomdreams.lb/";
     document.querySelectorAll(".salon-instagram-link").forEach(el => {
       el.href = igUrl;
+    });
+
+    // TikTok Links
+    const tiktokUrl = s.tiktok_url || "https://www.tiktok.com/@blossomdreams.lb";
+    document.querySelectorAll(".salon-tiktok-link").forEach(el => {
+      el.href = tiktokUrl;
     });
   }
 

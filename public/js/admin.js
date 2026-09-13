@@ -1,6 +1,13 @@
 // Blossom Dreams - Admin Dashboard Controller & Analytics
 import { apiFetch, showToast, formatPrice, formatDuration, formatDatePretty, escapeHtml, setAuthToken, clearAuthToken, getAuthToken, getCurrentUser } from "./api.js";
 
+function formatDateTimePretty(dtStr) {
+  if (!dtStr) return "";
+  const [datePart, timePart = ""] = String(dtStr).split(" ");
+  const prettyDate = formatDatePretty(datePart);
+  return timePart ? `${prettyDate} ${timePart.slice(0, 5)}` : prettyDate;
+}
+
 class AdminApp {
   constructor() {
     this.token = getAuthToken();
@@ -11,6 +18,7 @@ class AdminApp {
     this.offers = [];
     this.bookings = [];
     this.settings = null;
+    this.locations = [];
     this.calCurrentDate = new Date();
   }
 
@@ -25,9 +33,18 @@ class AdminApp {
     } else {
       this.showLoginView();
     }
+    this._autoRefreshTimer = setInterval(() => {
+      if (this.currentTab === "bookings" && this.token) {
+        this.renderBookingsTab().catch(() => {});
+      }
+    }, 30000);
   }
 
   showLoginView() {
+    if (this._autoRefreshTimer) {
+      clearInterval(this._autoRefreshTimer);
+      this._autoRefreshTimer = null;
+    }
     document.getElementById("admin-login-view").classList.remove("hidden");
     document.getElementById("admin-dashboard-view").classList.add("hidden");
   }
@@ -54,12 +71,13 @@ class AdminApp {
   }
 
   async loadAllData() {
-    const [settings, categories, services, offers, bookings] = await Promise.all([
+    const [settings, categories, services, offers, bookings, locations] = await Promise.all([
       apiFetch("/api/settings").catch(() => null),
       apiFetch("/api/categories?include_inactive=true").catch(() => []),
       apiFetch("/api/services?include_inactive=true").catch(() => []),
       apiFetch("/api/offers?include_inactive=true").catch(() => []),
-      apiFetch("/api/bookings").catch(() => [])
+      apiFetch("/api/bookings").catch(() => []),
+      apiFetch("/api/locations").catch(() => [])
     ]);
 
     this.settings = settings;
@@ -67,6 +85,7 @@ class AdminApp {
     this.services = services;
     this.offers = offers;
     this.bookings = bookings;
+    this.locations = locations;
   }
 
   bindGlobalEvents() {
@@ -472,7 +491,8 @@ class AdminApp {
         const matchPhone = b.customer_phone.toLowerCase().includes(searchVal);
         const matchCode = b.booking_code.toLowerCase().includes(searchVal);
         const matchService = b.service_name && b.service_name.toLowerCase().includes(searchVal);
-        if (!matchName && !matchPhone && !matchCode && !matchService) return false;
+        const matchLocation = b.location_name && b.location_name.toLowerCase().includes(searchVal);
+        if (!matchName && !matchPhone && !matchCode && !matchService && !matchLocation) return false;
       }
       return true;
     });
@@ -480,7 +500,7 @@ class AdminApp {
     if (filtered.length === 0) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="7" class="py-10 text-center text-slate-400 text-xs">
+          <td colspan="9" class="py-10 text-center text-slate-400 text-xs">
             No bookings found matching current filters.
           </td>
         </tr>
@@ -502,6 +522,9 @@ class AdminApp {
             <div class="text-[11px] text-slate-500 font-mono">${escapeHtml(b.customer_phone)}</div>
           </td>
           <td class="py-3.5 px-4 font-semibold text-slate-800">${escapeHtml(b.service_name)}</td>
+          <td class="py-3.5 px-4">
+            <span class="inline-block max-w-[9rem] truncate align-middle text-slate-600" title="${escapeHtml(b.location_name || "")}">${escapeHtml(b.location_name || "—")}</span>
+          </td>
           <td class="py-3.5 px-4 font-bold text-pink-800">${formatPrice(b.price, symbol)}</td>
           <td class="py-3.5 px-4">
             <select data-id="${b.id}" class="select-change-status text-xs font-semibold py-1 px-2.5 rounded-xl border border-slate-200 bg-white shadow-2xs">
@@ -512,6 +535,7 @@ class AdminApp {
               <option value="no_show" ${b.status === 'no_show' ? 'selected' : ''}>No Show</option>
             </select>
           </td>
+          <td class="py-3.5 px-4 text-[11px] text-slate-500 font-mono">${formatDateTimePretty(b.created_at)}</td>
           <td class="py-3.5 px-4 text-right space-x-2">
             <button data-id="${b.id}" class="btn-view-booking-detail text-pink-700 hover:text-pink-900 font-bold text-xs">
               View
@@ -868,7 +892,40 @@ class AdminApp {
 
   // --- 5. AVAILABILITY & HOURS TAB ---
   async renderAvailabilityTab() {
-    const config = await apiFetch("/api/availability/config");
+    const locSelect = document.getElementById("avail-location-select");
+    if (locSelect && !locSelect._bound) {
+      locSelect._bound = true;
+      locSelect.innerHTML = `<option value="">All Locations (Global)</option>` +
+        (this.locations || []).map(l => `<option value="${l.id}">${escapeHtml(l.name)}</option>`).join('');
+      locSelect.value = this._selectedAvailLocId ?? "";
+      locSelect.addEventListener("change", () => {
+        this._selectedAvailLocId = locSelect.value || null;
+        this.renderAvailabilityTab();
+      });
+    }
+    const locationId = locSelect?.value || null;
+    const qs = locationId ? `?location_id=${locationId}` : "";
+    const config = await apiFetch(`/api/availability/config${qs}`);
+    const bufferInput = document.getElementById("avail-buffer-input");
+    if (bufferInput) bufferInput.value = config.schedule?.[0]?.buffer_minutes ?? 0;
+    const bufferByDay = {};
+    (config.schedule || []).forEach(d => { bufferByDay[d.day_of_week] = d.buffer_minutes ?? 0; });
+
+    const saveBufferBtn = document.getElementById("btn-save-buffer");
+    if (saveBufferBtn && !saveBufferBtn._bound) {
+      saveBufferBtn._bound = true;
+      saveBufferBtn.addEventListener("click", async () => {
+        const val = parseInt(document.getElementById("avail-buffer-input").value) || 0;
+        const locId = locSelect?.value || null;
+        const q = locId ? `?location_id=${locId}` : "";
+        try {
+          await apiFetch(`/api/availability/config${q}`, { method: "PUT", body: { buffer_minutes: val } });
+          showToast("Buffer saved.");
+        } catch (e) {
+          showToast(e.message, "error");
+        }
+      });
+    }
 
     // 1. Weekly Schedule List
     const schedContainer = document.getElementById("admin-schedule-list");
@@ -885,6 +942,13 @@ class AdminApp {
             <input type="time" id="sched-open-time-${s.day_of_week}" value="${s.open_time}" class="text-xs px-2.5 py-1 rounded-xl border border-slate-200 font-mono font-semibold" />
             <span class="text-xs text-slate-400">Close:</span>
             <input type="time" id="sched-close-time-${s.day_of_week}" value="${s.close_time}" class="text-xs px-2.5 py-1 rounded-xl border border-slate-200 font-mono font-semibold" />
+            <span class="text-xs text-slate-400">Slot:</span>
+            <select id="sched-interval-${s.day_of_week}" class="text-xs px-2 py-1.5 rounded-xl border border-slate-200 font-semibold bg-white">
+              <option value="15" ${s.slot_interval_minutes === 15 ? 'selected' : ''}>15 min</option>
+              <option value="30" ${s.slot_interval_minutes === 30 ? 'selected' : ''}>30 min</option>
+              <option value="45" ${s.slot_interval_minutes === 45 ? 'selected' : ''}>45 min</option>
+              <option value="60" ${s.slot_interval_minutes === 60 ? 'selected' : ''}>60 min</option>
+            </select>
           </div>
           <button data-day="${s.day_of_week}" data-name="${s.day_name}" class="btn-save-day-sched btn-secondary px-3.5 py-1.5 rounded-xl text-xs font-bold">
             Save
@@ -901,9 +965,10 @@ class AdminApp {
         const isOpen = document.getElementById(`sched-open-${day}`).checked;
         const openTime = document.getElementById(`sched-open-time-${day}`).value;
         const closeTime = document.getElementById(`sched-close-time-${day}`).value;
+        const slotInterval = parseInt(document.getElementById(`sched-interval-${day}`).value, 10);
 
         try {
-          await apiFetch(`/api/availability/schedule/${day}`, {
+          await apiFetch(`/api/availability/schedule/${day}${locSelect?.value ? `?location_id=${locSelect.value}` : ""}`, {
             method: "PUT",
             body: {
               day_of_week: day,
@@ -911,7 +976,8 @@ class AdminApp {
               is_open: isOpen,
               open_time: openTime,
               close_time: closeTime,
-              slot_interval_minutes: 30
+              slot_interval_minutes: slotInterval,
+              buffer_minutes: bufferByDay[day] ?? 0
             }
           });
           showToast(`Saved schedule for ${name}`);
@@ -1450,6 +1516,10 @@ class AdminApp {
                 <strong class="text-slate-900">${escapeHtml(b.service_name)}</strong>
               </div>
               <div class="flex justify-between">
+                <span class="text-slate-400">Location:</span>
+                <strong class="text-slate-900">${escapeHtml(b.location_name || "—")}</strong>
+              </div>
+              <div class="flex justify-between">
                 <span class="text-slate-400">Duration:</span>
                 <span class="font-medium text-slate-800">${formatDuration(b.duration_minutes)}</span>
               </div>
@@ -1460,6 +1530,10 @@ class AdminApp {
               <div class="flex justify-between">
                 <span class="text-slate-400">Total Price:</span>
                 <strong class="text-slate-900 font-serif text-sm">${formatPrice(b.price, symbol)}</strong>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-400">Booked On:</span>
+                <span class="text-slate-600 font-mono">${formatDateTimePretty(b.created_at)}</span>
               </div>
             </div>
 
@@ -1507,6 +1581,7 @@ class AdminApp {
   openManualBookingModal() {
     const root = document.getElementById("admin-modal-root");
     const srvOptions = this.services.map(s => `<option value="${s.id}">${escapeHtml(s.name)} ($${s.price})</option>`).join('');
+    const locOptions = (this.locations || []).map(l => `<option value="${l.id}">${escapeHtml(l.name)}</option>`).join('');
     const todayStr = new Date().toISOString().split('T')[0];
 
     root.innerHTML = `
@@ -1522,6 +1597,14 @@ class AdminApp {
               <label class="block font-bold text-slate-700 uppercase tracking-wider mb-1">Service *</label>
               <select id="man-service" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 font-semibold">
                 ${srvOptions}
+              </select>
+            </div>
+
+            <div>
+              <label class="block font-bold text-slate-700 uppercase tracking-wider mb-1">Location</label>
+              <select id="man-location" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 font-semibold">
+                <option value="">No location (General)</option>
+                ${locOptions}
               </select>
             </div>
 
@@ -1570,6 +1653,7 @@ class AdminApp {
         service_id: parseInt(root.querySelector("#man-service").value),
         appointment_date: root.querySelector("#man-date").value,
         appointment_time: root.querySelector("#man-time").value,
+        location_id: parseInt(root.querySelector("#man-location").value) || null,
         customer_name: root.querySelector("#man-name").value.trim(),
         customer_phone: root.querySelector("#man-phone").value.trim(),
         notes: root.querySelector("#man-notes").value.trim() || "Manual phone reservation"
@@ -1595,6 +1679,7 @@ class AdminApp {
     const root = document.getElementById("admin-modal-root");
     const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
     const dayOptions = days.map((d, idx) => `<option value="${idx}">${d}</option>`).join('');
+    const locOptions = (this.locations || []).map(l => `<option value="${l.id}">${escapeHtml(l.name)}</option>`).join('');
 
     root.innerHTML = `
       <div class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay">
@@ -1604,6 +1689,13 @@ class AdminApp {
             <button id="close-brk-modal" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">✕</button>
           </div>
           <form id="add-break-form" class="py-4 space-y-3 text-xs">
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Location</label>
+              <select id="brk-location" class="w-full px-3 py-2 rounded-xl border border-slate-200 font-semibold">
+                <option value="">All Locations (Global)</option>
+                ${locOptions}
+              </select>
+            </div>
             <div>
               <label class="block font-bold text-slate-700 mb-1">Day of Week</label>
               <select id="brk-day" class="w-full px-3 py-2 rounded-xl border border-slate-200 font-semibold">
@@ -1641,6 +1733,7 @@ class AdminApp {
           method: "POST",
           body: {
             day_of_week: parseInt(root.querySelector("#brk-day").value),
+            location_id: parseInt(root.querySelector("#brk-location").value) || null,
             start_time: root.querySelector("#brk-start").value,
             end_time: root.querySelector("#brk-end").value,
             label: root.querySelector("#brk-label").value.trim()

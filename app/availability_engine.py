@@ -42,11 +42,14 @@ def check_intervals_overlap(start1: int, end1: int, start2: int, end2: int) -> b
     """Returns True if [start1, end1) overlaps with [start2, end2)."""
     return max(start1, start2) < min(end1, end2)
 
-def _slots_for_date(cursor, date_str: str, duration_minutes: int):
+def _slots_for_date(cursor, date_str: str, duration_minutes: int, location_id: int = None):
     """
     Core availability calculation executed against a *provided* cursor so callers
     can re-use an existing (locked) transaction. Returns:
         (available: bool, reason: Optional[str], slots: List[str])
+    When location_id is given, any per-location schedule override (from
+    location_availability_settings) takes precedence, otherwise the global
+    availability_settings apply.
     """
     try:
         req_date = datetime.strptime(date_str, "%Y-%m-%d").date()
@@ -66,45 +69,89 @@ def _slots_for_date(cursor, date_str: str, duration_minutes: int):
         return False, f"Salon is closed on this date: {closed_row['reason']}", []
 
     # 2. Check weekly schedule (0 = Monday, 6 = Sunday)
+    #    Per-location override first, then the shared/global schedule.
     day_of_week = req_date.weekday()
-    cursor.execute(
-        "SELECT is_open, open_time, close_time, slot_interval_minutes FROM availability_settings WHERE day_of_week = ?", 
-        (day_of_week,)
-    )
-    schedule_row = cursor.fetchone()
+    schedule_row = None
+    if location_id is not None:
+        cursor.execute(
+            """
+            SELECT is_open, open_time, close_time, slot_interval_minutes, buffer_minutes
+            FROM location_availability_settings
+            WHERE location_id = ? AND day_of_week = ?
+            """,
+            (location_id, day_of_week)
+        )
+        schedule_row = cursor.fetchone()
+    if schedule_row is None:
+        cursor.execute(
+            "SELECT is_open, open_time, close_time, slot_interval_minutes, buffer_minutes FROM availability_settings WHERE day_of_week = ?", 
+            (day_of_week,)
+        )
+        schedule_row = cursor.fetchone()
     if not schedule_row or not schedule_row["is_open"]:
         return False, "Salon is closed on this day of the week.", []
 
     open_time_str = schedule_row["open_time"]
     close_time_str = schedule_row["close_time"]
     step_minutes = schedule_row["slot_interval_minutes"] or 30
+    buffer_minutes = schedule_row["buffer_minutes"] or 0
 
     open_minutes = time_str_to_minutes(open_time_str)
     close_minutes = time_str_to_minutes(close_time_str)
 
-    # 3. Retrieve breaks for this day of week
-    cursor.execute(
-        "SELECT start_time, end_time, label FROM break_times WHERE day_of_week = ?",
-        (day_of_week,)
-    )
-    breaks = [
-        (time_str_to_minutes(row["start_time"]), time_str_to_minutes(row["end_time"]))
-        for row in cursor.fetchall()
-    ]
+    # 3. Retrieve breaks for this day of week. A location that defines its own
+    #    breaks for the day uses those; otherwise the shared/global breaks apply.
+    breaks = []
+    if location_id is not None:
+        cursor.execute(
+            "SELECT start_time, end_time, label FROM break_times WHERE day_of_week = ? AND location_id = ?",
+            (day_of_week, location_id)
+        )
+        location_day_breaks = cursor.fetchall()
+    else:
+        location_day_breaks = None
+    if location_day_breaks:
+        breaks = [
+            (time_str_to_minutes(row["start_time"]), time_str_to_minutes(row["end_time"]))
+            for row in location_day_breaks
+        ]
+    else:
+        cursor.execute(
+            "SELECT start_time, end_time, label FROM break_times WHERE day_of_week = ? AND location_id IS NULL",
+            (day_of_week,)
+        )
+        breaks = [
+            (time_str_to_minutes(row["start_time"]), time_str_to_minutes(row["end_time"]))
+            for row in cursor.fetchall()
+        ]
 
-    # 4. Retrieve existing non-cancelled bookings for this date
-    cursor.execute(
-        """
-        SELECT appointment_time, duration_minutes 
-        FROM bookings 
-        WHERE appointment_date = ? AND status != 'cancelled'
-        """,
-        (date_str,)
-    )
+    # 4. Retrieve existing non-cancelled bookings for this date. Legacy rows
+    #    without a location block every location; location-scoped rows only
+    #    block their own location. buffer_minutes extends the tail of an
+    #    existing booking before the overlap check (cleaning window).
+    if location_id is not None:
+        cursor.execute(
+            """
+            SELECT appointment_time, duration_minutes
+            FROM bookings
+            WHERE appointment_date = ? AND status != 'cancelled'
+              AND (location_id IS NULL OR location_id = ?)
+            """,
+            (date_str, location_id)
+        )
+    else:
+        cursor.execute(
+            """
+            SELECT appointment_time, duration_minutes
+            FROM bookings
+            WHERE appointment_date = ? AND status != 'cancelled'
+            """,
+            (date_str,)
+        )
     existing_bookings = [
         (
             time_str_to_minutes(row["appointment_time"]), 
-            time_str_to_minutes(row["appointment_time"]) + int(row["duration_minutes"])
+            time_str_to_minutes(row["appointment_time"]) + int(row["duration_minutes"]) + buffer_minutes
         )
         for row in cursor.fetchall()
     ]
@@ -157,14 +204,15 @@ def _slots_for_date(cursor, date_str: str, duration_minutes: int):
 def get_available_slots_for_date(
     date_str: str, 
     duration_minutes: int = 60,
-    service_id: int = None
+    service_id: int = None,
+    location_id: int = None
 ) -> Dict[str, Any]:
     """
     Calculates all available appointment slots for a given date and service duration.
     """
     with get_db() as conn:
         cursor = conn.cursor()
-        available, reason, slots = _slots_for_date(cursor, date_str, duration_minutes)
+        available, reason, slots = _slots_for_date(cursor, date_str, duration_minutes, location_id)
 
     return {
         "available": available,
@@ -172,25 +220,25 @@ def get_available_slots_for_date(
         "reason": reason
     }
 
-def is_slot_available(date_str: str, time_str: str, duration_minutes: int) -> bool:
+def is_slot_available(date_str: str, time_str: str, duration_minutes: int, location_id: int = None) -> bool:
     """
     Checks if a specific start time and duration are free (uses its own connection).
     Mainly kept for backwards compatibility / public slot validation.
     """
     with get_db() as conn:
         cursor = conn.cursor()
-        available, reason, slots = _slots_for_date(cursor, date_str, duration_minutes)
+        available, reason, slots = _slots_for_date(cursor, date_str, duration_minutes, location_id)
     if not available:
         return False
     return time_str in slots
 
-def is_slot_available_for_booking(cursor, date_str: str, time_str: str, duration_minutes: int) -> Tuple[bool, Optional[str]]:
+def is_slot_available_for_booking(cursor, date_str: str, time_str: str, duration_minutes: int, location_id: int = None) -> Tuple[bool, Optional[str]]:
     """
     Validates a specific booking request against the *given* cursor so the check and
     the insert can live inside the exact same transaction (atomic double-booking guard).
     Returns (available, reason).
     """
-    available, reason, slots = _slots_for_date(cursor, date_str, duration_minutes)
+    available, reason, slots = _slots_for_date(cursor, date_str, duration_minutes, location_id)
     if not available:
         return False, reason or "This appointment slot is not available."
     if time_str not in slots:
