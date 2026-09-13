@@ -57,15 +57,25 @@ async def upload_image(file: UploadFile = File(...), current_admin: dict = Depen
 
     unique_filename = f"{uuid.uuid4().hex[:12]}_{Path(file.filename).stem[:20]}{ext}"
 
-    # Production: persist uploads in free Supabase object storage (survives
-    # Render's ephemeral disk, restarts, and redeploys).
-    if settings.UPLOAD_STORAGE == "supabase":
+    # Production: persist uploads in Supabase. Development can fall back to
+    # local storage when Supabase credentials are not configured, which keeps
+    # the admin upload workflow usable without hiding a production misconfiguration.
+    use_supabase = settings.UPLOAD_STORAGE == "supabase"
+    supabase_ready = bool(settings.SUPABASE_URL and settings.SUPABASE_SERVICE_ROLE_KEY)
+    if use_supabase and supabase_ready:
         url = await _store_supabase(content, unique_filename)
         return {
             "status": "success",
             "url": url,
             "filename": unique_filename
         }
+    if use_supabase and settings.IS_PRODUCTION:
+        raise HTTPException(
+            status_code=503,
+            detail="Supabase storage is not configured (missing SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY).",
+        )
+    if use_supabase and not supabase_ready:
+        print("[Upload] Supabase is not configured; using local development storage.")
 
     # Local development: save to the project filesystem (not persistent on hosted free tier).
     dest_path = UPLOAD_DIR / unique_filename
