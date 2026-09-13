@@ -3,6 +3,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from app.database import get_db
 from app.auth import get_current_admin
 from app.models import GalleryImageCreate, GalleryImageResponse
+from app.models import GalleryImageUpdate
 
 router = APIRouter(prefix="/api/gallery", tags=["gallery"])
 
@@ -40,6 +41,29 @@ def add_gallery_image(item: GalleryImageCreate, current_admin: dict = Depends(ge
         ))
         new_id = cursor.lastrowid
         cursor.execute("SELECT * FROM gallery_images WHERE id = ?", (new_id,))
+        return dict(cursor.fetchone())
+
+@router.put("/{image_id}", response_model=GalleryImageResponse)
+def update_gallery_image(image_id: int, item: GalleryImageUpdate, current_admin: dict = Depends(get_current_admin)):
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT id FROM gallery_images WHERE id = ?", (image_id,))
+        if not cursor.fetchone():
+            raise HTTPException(status_code=404, detail="Image not found")
+
+        updates = []
+        params = []
+        for field in ("title", "caption", "image_url", "category", "is_featured", "display_order"):
+            value = getattr(item, field)
+            if value is not None:
+                updates.append(f"{field} = ?")
+                params.append(bool(value) if field == "is_featured" else value)
+
+        if updates:
+            params.append(image_id)
+            cursor.execute(f"UPDATE gallery_images SET {', '.join(updates)} WHERE id = ?", params)
+
+        cursor.execute("SELECT * FROM gallery_images WHERE id = ?", (image_id,))
         return dict(cursor.fetchone())
 
 @router.delete("/{image_id}")

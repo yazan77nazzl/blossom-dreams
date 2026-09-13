@@ -1083,9 +1083,10 @@ class AdminApp {
             <div class="font-bold text-slate-800 text-xs truncate">${escapeHtml(img.title || 'Atelier Shot')}</div>
             <div class="flex items-center justify-between mt-2.5 pt-2 border-t border-slate-100">
               <span class="text-[10px] text-slate-400 font-semibold">${img.is_featured ? '★ Featured' : ''}</span>
-              <button data-id="${img.id}" class="btn-delete-gallery-img text-rose-600 hover:text-rose-800 text-xs font-bold">
-                Delete
-              </button>
+              <div class="flex items-center gap-2">
+                <button data-id="${img.id}" class="btn-edit-gallery-img text-pink-700 hover:text-pink-900 text-xs font-bold">Edit</button>
+                <button data-id="${img.id}" class="btn-delete-gallery-img text-rose-600 hover:text-rose-800 text-xs font-bold">Delete</button>
+              </div>
             </div>
           </div>
         </div>
@@ -1107,6 +1108,77 @@ class AdminApp {
           }
         });
       });
+    });
+
+    container.querySelectorAll(".btn-edit-gallery-img").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const image = images.find(item => item.id === parseInt(btn.dataset.id));
+        if (image) this.openGalleryEditModal(image);
+      });
+    });
+  }
+
+  openGalleryEditModal(image) {
+    const root = document.getElementById("admin-modal-root");
+    root.innerHTML = `
+      <div class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay">
+        <div class="relative w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl modal-content-anim border border-slate-200">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+            <h4 class="font-serif font-bold text-slate-900 text-base">Edit Portfolio Photo</h4>
+            <button id="close-gallery-edit" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">✕</button>
+          </div>
+          <form id="gallery-edit-form" class="py-4 space-y-3 text-xs">
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Image URL</label>
+              <input id="edit-gallery-url" required value="${escapeHtml(image.image_url || '')}" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Title</label>
+              <input id="edit-gallery-title" value="${escapeHtml(image.title || '')}" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Category</label>
+              <input id="edit-gallery-category" value="${escapeHtml(image.category || 'All')}" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Caption</label>
+              <textarea id="edit-gallery-caption" rows="2" class="w-full px-3 py-2 rounded-xl border border-slate-200">${escapeHtml(image.caption || '')}</textarea>
+            </div>
+            <label class="flex items-center gap-2 font-bold text-slate-700">
+              <input id="edit-gallery-featured" type="checkbox" ${image.is_featured ? 'checked' : ''} class="w-4 h-4 text-pink-600 rounded" />
+              <span>Featured</span>
+            </label>
+            <div class="pt-3 border-t border-slate-100 flex justify-end gap-2">
+              <button type="button" id="cancel-gallery-edit" class="btn-secondary px-4 py-2 rounded-xl">Cancel</button>
+              <button type="submit" class="btn-primary px-4 py-2 rounded-xl font-bold">Save Changes</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+
+    const close = () => { root.innerHTML = ""; };
+    root.querySelector("#close-gallery-edit").addEventListener("click", close);
+    root.querySelector("#cancel-gallery-edit").addEventListener("click", close);
+    root.querySelector("#gallery-edit-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      try {
+        await apiFetch(`/api/gallery/${image.id}`, {
+          method: "PUT",
+          body: {
+            image_url: root.querySelector("#edit-gallery-url").value.trim(),
+            title: root.querySelector("#edit-gallery-title").value.trim(),
+            category: root.querySelector("#edit-gallery-category").value.trim() || "All",
+            caption: root.querySelector("#edit-gallery-caption").value.trim(),
+            is_featured: root.querySelector("#edit-gallery-featured").checked
+          }
+        });
+        showToast("Portfolio photo updated.");
+        close();
+        this.renderGalleryTab();
+      } catch (error) {
+        showToast(error.message || "Could not update photo.", "error");
+      }
     });
   }
 

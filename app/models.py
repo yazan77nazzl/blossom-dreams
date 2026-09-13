@@ -209,6 +209,14 @@ class GalleryImageCreate(BaseModel):
     is_featured: Optional[bool] = False
     display_order: Optional[int] = 0
 
+class GalleryImageUpdate(BaseModel):
+    title: Optional[str] = None
+    caption: Optional[str] = None
+    image_url: Optional[str] = None
+    category: Optional[str] = None
+    is_featured: Optional[bool] = None
+    display_order: Optional[int] = None
+
 class GalleryImageResponse(GalleryImageCreate):
     id: int
     created_at: str
