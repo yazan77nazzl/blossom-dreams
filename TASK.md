@@ -1,56 +1,64 @@
-URGENT: Render deployment is failing during application startup.
-
-The exact production error is:
-
-psycopg.ProgrammingError:
-only '%s', '%b', '%t' are allowed as placeholders, got '%0'
-
-The traceback points to:
-
-app/seed_data.py line 111
-
-Specifically this query:
-
-UPDATE locations SET google_maps_url = ?
-WHERE slug = 'versailles'
-  AND (
-    google_maps_url IS NULL
-    OR google_maps_url = ''
-    OR google_maps_url LIKE '%0x151f4096b6ee7923%'
-  )
-
-The project uses SQLite locally and PostgreSQL/Neon in production.
-
-The problem is that PostgreSQL/psycopg does NOT use SQLite's `?` parameter placeholder. It uses `%s`.
-
-Also, the Google Maps URL contains `%` characters, so make sure the URL is passed as a bound parameter and is NOT interpolated directly into the SQL string.
-
-FIX THE ROOT CAUSE PROPERLY.
-
-Requirements:
-
-1. Make the seed_database() location update compatible with PostgreSQL/psycopg.
-2. Preserve SQLite compatibility if the project supports both databases.
-3. Do NOT hardcode or directly interpolate the Google Maps URL into the SQL query.
-4. Use the project's existing database abstraction/helper if it already handles database-specific placeholders.
-5. Make sure LIKE parameters are also handled correctly for PostgreSQL.
-6. Do not modify the correct Amwaj Center location.
-7. Do not change any other booking functionality.
-8. Do not remove the Versailles location update; fix it correctly.
-9. Run the relevant tests.
-10. Test application startup using PostgreSQL/psycopg, because SQLite alone will NOT catch this bug.
-11. Run the exact production startup command:
-   uvicorn app.main:app --host 0.0.0.0 --port $PORT
-   and verify that the application starts without an exception.
+The website is now broken after the latest changes.
 
 IMPORTANT:
-Do not make random changes.
-Do not change the Google Maps URL to avoid the error.
-The correct fix is to make the SQL/database parameter handling compatible with PostgreSQL while preserving SQLite support.
+Do NOT revert the latest commit.
+Do NOT undo previous working features.
+Fix the actual problem causing the page to stay stuck in a loading state.
 
-After fixing it, verify:
-- seed_database() completes successfully
-- FastAPI startup completes
-- No "Application startup failed" error
-- Render can start the service successfully
-- Existing booking functionality remains intact
+PROBLEM:
+After the latest changes, the website loads but the items/content are no longer displayed.
+They appear as if they are loading forever.
+
+The page was working correctly before the latest changes.
+
+Please investigate the issue from end to end:
+
+1. Check the browser/frontend console for JavaScript errors.
+2. Check the Network/API requests that are stuck, failing, or returning unexpected responses.
+3. Check the backend logs.
+4. Check whether the API endpoints used to load the items are returning the correct data.
+5. Check whether the frontend is waiting indefinitely for an API response.
+6. Check loading state logic, promises, async/await, fetch requests, error handling, and state updates.
+7. Check whether the latest changes to app/seed_data.py or any other backend/frontend files affected the item-loading API.
+8. Check database initialization/startup and make sure the required data still exists.
+9. Check for any API 500/404/400 errors.
+10. Check whether a failed request leaves the UI permanently stuck in `loading=true`.
+
+IMPORTANT:
+Do not just hide the loading indicator.
+Do not add fake/static items.
+Do not hardcode data.
+Do not change the design just to hide the problem.
+
+Find the ROOT CAUSE and fix it properly.
+
+The booking system that was already working must remain working.
+
+The two locations must remain correct:
+- Versailles Center
+- Amwaj Center, Jounieh
+
+Do not change the location data unless it is directly causing this loading problem.
+
+Also do not remove or modify unrelated functionality.
+
+After fixing:
+
+1. Run the backend.
+2. Test all item/service/product API endpoints.
+3. Test the frontend.
+4. Confirm the items actually appear.
+5. Confirm there are no console errors.
+6. Confirm there are no failed API requests.
+7. Confirm the loading state finishes correctly.
+8. Test the booking flow again.
+9. Run the existing tests.
+
+IMPORTANT:
+Do NOT commit or push anything yet.
+
+First fix the issue and then tell me:
+- What the root cause was.
+- Which files you changed.
+- What you tested.
+- Whether the items now load correctly.
