@@ -220,17 +220,7 @@ def init_db():
             slot_interval_minutes INTEGER DEFAULT 30
         );
         """,
-        # 7. Break Times
-        """
-        CREATE TABLE IF NOT EXISTS break_times (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            day_of_week INTEGER NOT NULL,
-            label TEXT DEFAULT 'Lunch Break',
-            start_time TEXT NOT NULL,
-            end_time TEXT NOT NULL
-        );
-        """,
-        # 8. Closed Dates
+        # 7. Closed Dates
         """
         CREATE TABLE IF NOT EXISTS closed_dates (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -238,7 +228,7 @@ def init_db():
             reason TEXT NOT NULL
         );
         """,
-        # 9. Gallery Images
+        # 8. Gallery Images
         """
         CREATE TABLE IF NOT EXISTS gallery_images (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -251,7 +241,7 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
         """,
-        # 10. Salon Settings
+        # 9. Salon Settings
         """
         CREATE TABLE IF NOT EXISTS salon_settings (
             id INTEGER PRIMARY KEY CHECK (id = 1),
@@ -269,7 +259,7 @@ def init_db():
             announcement_text TEXT DEFAULT '✨ Welcome to Blossom Dreams. Pamper yourself with our signature treatments. Book online today!'
         );
         """,
-        # 11. Business Locations
+        # 10. Business Locations
         """
         CREATE TABLE IF NOT EXISTS locations (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -284,7 +274,7 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
         """,
-        # 12. Per-Location Availability Overrides (NULL/absent = use global
+        # 11. Per-Location Availability Overrides (NULL/absent = use global
         #     availability_settings). Separate table because the global settings
         #     table carries a UNIQUE constraint on day_of_week that cannot be
         #     dropped cheaply in SQLite.
@@ -342,7 +332,6 @@ def _apply_column_migrations(cursor) -> None:
     migrations = [
         ("bookings", "location_id", "INTEGER"),
         ("availability_settings", "buffer_minutes", "INTEGER DEFAULT 0"),
-        ("break_times", "location_id", "INTEGER"),
     ]
     for table, column, column_ddl in migrations:
         if _column_exists(cursor, table, column):

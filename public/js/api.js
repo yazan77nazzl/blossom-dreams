@@ -164,3 +164,18 @@ export function formatDatePretty(dateStr) {
     year: "numeric"
   });
 }
+
+// Convert a 24-hour "HH:MM" API value into a friendly 12-hour display string,
+// e.g. "09:00" -> "9:00 AM", "13:30" -> "1:30 PM", "00:00" -> "12:00 AM".
+// The internal database/API representation stays HH:MM; only the display changes.
+export function formatTimeDisplay(hhmm) {
+  if (!hhmm) return "";
+  const parts = String(hhmm).split(":");
+  const h = parseInt(parts[0], 10);
+  const m = parts[1] ? parts[1].padStart(2, "0") : "00";
+  if (Number.isNaN(h) || h < 0 || h > 23) return String(hhmm);
+  const period = h >= 12 ? "PM" : "AM";
+  let displayHour = h % 12;
+  if (displayHour === 0) displayHour = 12;
+  return `${displayHour}:${m} ${period}`;
+}

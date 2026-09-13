@@ -99,33 +99,7 @@ def _slots_for_date(cursor, date_str: str, duration_minutes: int, location_id: i
     open_minutes = time_str_to_minutes(open_time_str)
     close_minutes = time_str_to_minutes(close_time_str)
 
-    # 3. Retrieve breaks for this day of week. A location that defines its own
-    #    breaks for the day uses those; otherwise the shared/global breaks apply.
-    breaks = []
-    if location_id is not None:
-        cursor.execute(
-            "SELECT start_time, end_time, label FROM break_times WHERE day_of_week = ? AND location_id = ?",
-            (day_of_week, location_id)
-        )
-        location_day_breaks = cursor.fetchall()
-    else:
-        location_day_breaks = None
-    if location_day_breaks:
-        breaks = [
-            (time_str_to_minutes(row["start_time"]), time_str_to_minutes(row["end_time"]))
-            for row in location_day_breaks
-        ]
-    else:
-        cursor.execute(
-            "SELECT start_time, end_time, label FROM break_times WHERE day_of_week = ? AND location_id IS NULL",
-            (day_of_week,)
-        )
-        breaks = [
-            (time_str_to_minutes(row["start_time"]), time_str_to_minutes(row["end_time"]))
-            for row in cursor.fetchall()
-        ]
-
-    # 4. Retrieve existing non-cancelled bookings for this date. Legacy rows
+    # 3. Retrieve existing non-cancelled bookings for this date. Legacy rows
     #    without a location block every location; location-scoped rows only
     #    block their own location. buffer_minutes extends the tail of an
     #    existing booking before the overlap check (cleaning window).
@@ -156,7 +130,7 @@ def _slots_for_date(cursor, date_str: str, duration_minutes: int, location_id: i
         for row in cursor.fetchall()
     ]
 
-    # 5. Generate candidate start slots
+    # 4. Generate candidate start slots
     candidate_slots = []
     current_time_slot = open_minutes
 
@@ -170,17 +144,6 @@ def _slots_for_date(cursor, date_str: str, duration_minutes: int, location_id: i
 
         # Check if today and slot is in the past or too soon
         if min_allowed_minutes_today and current_time_slot < min_allowed_minutes_today:
-            current_time_slot += step_minutes
-            continue
-
-        # Check break overlaps
-        overlaps_break = False
-        for b_start, b_end in breaks:
-            if check_intervals_overlap(current_time_slot, slot_end, b_start, b_end):
-                overlaps_break = True
-                break
-
-        if overlaps_break:
             current_time_slot += step_minutes
             continue
 

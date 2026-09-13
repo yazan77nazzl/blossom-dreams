@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException, Depends, Query
 from app.database import get_db
 from app.auth import get_current_admin
 from app.availability_engine import get_available_slots_for_date
-from app.models import AvailabilityConfigResponse, AvailabilityConfigUpdate, DaySchedule, BreakTimeItem, ClosedDateItem
+from app.models import AvailabilityConfigResponse, AvailabilityConfigUpdate, DaySchedule, ClosedDateItem
 
 router = APIRouter(prefix="/api/availability", tags=["availability"])
 
@@ -50,27 +50,9 @@ def get_availability_config(location_id: Optional[int] = None):
                 if override:
                     row.update(override)
                 schedules.append(row)
-
-            # Breaks: per-day, the location's own break wins, else the global one.
-            cursor.execute("SELECT * FROM break_times WHERE location_id = ? ORDER BY day_of_week ASC, start_time ASC", (location_id,))
-            loc_breaks = [dict(r) for r in cursor.fetchall()]
-            cursor.execute("SELECT * FROM break_times WHERE location_id IS NULL ORDER BY day_of_week ASC, start_time ASC")
-            global_breaks_rows = [dict(r) for r in cursor.fetchall()]
-            breaks_by_loc = {}
-            for b in loc_breaks:
-                breaks_by_loc.setdefault(b["day_of_week"], []).append(b)
-            breaks_by_global = {}
-            for b in global_breaks_rows:
-                breaks_by_global.setdefault(b["day_of_week"], []).append(b)
-            breaks = []
-            for day_idx in range(7):
-                breaks.extend(breaks_by_loc.get(day_idx) or breaks_by_global.get(day_idx) or [])
         else:
             cursor.execute("SELECT * FROM availability_settings ORDER BY day_of_week ASC")
             schedules = [dict(r) for r in cursor.fetchall()]
-
-            cursor.execute("SELECT * FROM break_times ORDER BY day_of_week ASC, start_time ASC")
-            breaks = [dict(r) for r in cursor.fetchall()]
 
         cursor.execute("SELECT * FROM closed_dates ORDER BY closed_date ASC")
         closed = [dict(r) for r in cursor.fetchall()]
@@ -80,7 +62,6 @@ def get_availability_config(location_id: Optional[int] = None):
 
     return {
         "schedule": schedules,
-        "breaks": breaks,
         "closed_dates": closed,
         "locations": locations
     }
@@ -175,33 +156,6 @@ def delete_day_schedule_override(
             (location_id, day_of_week)
         )
     return {"status": "success", "message": f"Removed schedule override for day {day_of_week}"}
-
-@router.post("/breaks")
-def add_break(item: BreakTimeItem, current_admin: dict = Depends(get_current_admin)):
-    with get_db() as conn:
-        cursor = conn.cursor()
-        if item.location_id is not None:
-            cursor.execute("SELECT id FROM locations WHERE id = ?", (item.location_id,))
-            if not cursor.fetchone():
-                raise HTTPException(status_code=404, detail="Location not found.")
-            cursor.execute("""
-            INSERT INTO break_times (day_of_week, label, start_time, end_time, location_id)
-            VALUES (?, ?, ?, ?, ?)
-            """, (item.day_of_week, item.label, item.start_time, item.end_time, item.location_id))
-        else:
-            cursor.execute("""
-            INSERT INTO break_times (day_of_week, label, start_time, end_time)
-            VALUES (?, ?, ?, ?)
-            """, (item.day_of_week, item.label, item.start_time, item.end_time))
-        new_id = cursor.lastrowid
-    return {"status": "success", "id": new_id, "message": "Break added"}
-
-@router.delete("/breaks/{break_id}")
-def delete_break(break_id: int, current_admin: dict = Depends(get_current_admin)):
-    with get_db() as conn:
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM break_times WHERE id = ?", (break_id,))
-    return {"status": "success", "message": "Break removed"}
 
 @router.post("/closed-dates")
 def add_closed_date(item: ClosedDateItem, current_admin: dict = Depends(get_current_admin)):

@@ -79,7 +79,7 @@ def create_booking(booking_in: BookingCreate):
             if not loc_row:
                 raise HTTPException(status_code=400, detail="The selected location is not available.")
 
-        # 2. Atomically validate the slot against schedule, breaks, closed days,
+        # 2. Atomically validate the slot against schedule, closed days,
         #    past dates and existing bookings — inside the SAME locked transaction
         #    that performs the insert (prevents the double-booking race).
         available, reason = is_slot_available_for_booking(
@@ -257,14 +257,21 @@ def update_booking_status(
         return format_booking_row(cursor.fetchone())
 
 @router.delete("/{booking_id}")
-def cancel_or_delete_booking(booking_id: int, current_admin: dict = Depends(get_current_admin)):
+def delete_booking(booking_id: int, current_admin: dict = Depends(get_current_admin)):
+    """
+    Permanently removes a single booking from the database (admin action).
+    Verifies the booking exists, then deletes ONLY that booking row. Customers,
+    services, locations and all other bookings are untouched, and the freed
+    appointment slot immediately becomes available again (slots are computed
+    live from the bookings table — nothing is cached).
+    """
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT id FROM bookings WHERE id = ?", (booking_id,))
         if not cursor.fetchone():
             raise HTTPException(status_code=404, detail="Booking not found")
-        cursor.execute("UPDATE bookings SET status = 'cancelled' WHERE id = ?", (booking_id,))
-    return {"status": "success", "message": "Booking marked as cancelled"}
+        cursor.execute("DELETE FROM bookings WHERE id = ?", (booking_id,))
+    return {"status": "success", "message": "Booking permanently deleted"}
 
 @router.get("/stats/overview")
 def get_dashboard_stats(current_admin: dict = Depends(get_current_admin)):

@@ -1,150 +1,131 @@
-URGENT: The booking system is STILL BROKEN and needs a complete root-cause fix, not a frontend workaround.
+FULL PROJECT UPDATE — IMPORTANT
 
-Current problems:
+Please inspect the existing project before making changes.
 
-1. When I submit a booking, I get:
-   "Request failed with status 500"
+The project already has several working parts, so DO NOT rewrite or break functionality that is currently working.
 
-2. The available appointment times are WRONG.
-   On some days they start at 4:00 PM.
-   On other days they start at 11:00 AM.
-   The business working hours are configured differently, so the system is clearly not calculating availability correctly.
+The booking submission/API is now working correctly after the previous fixes. Preserve that working functionality.
 
-3. The WhatsApp icon is incorrect. I want the REAL WhatsApp icon.
-
-Please stop and fully audit the booking system before making changes.
+Implement ALL requirements below and test everything before considering the task complete.
 
 ==================================================
-1. FIX THE HTTP 500 BOOKING ERROR
+1. BRAND COLOR
 ==================================================
 
-Find the exact backend/API/database error causing:
+Use the Bubblegum color throughout the website where the existing burgundy/wine color was previously used:
 
-"Request failed with status 500"
+#F7A1B3
 
-Do NOT simply catch the error or hide it from the frontend.
+Keep the design elegant and consistent.
 
-Trace the complete request:
-
-Frontend booking form
-→ API request
-→ backend booking endpoint
-→ validation
-→ availability check
-→ database
-→ booking creation
-→ response
-
-Find the actual exception/root cause and fix it.
-
-Check:
-- API endpoint
-- Request payload
-- Validation
-- Required fields
-- Location ID
-- Service ID
-- Date format
-- Time format
-- Timezone conversion
-- Database schema
-- Database constraints
-- Foreign keys
-- Booking creation logic
-- Availability logic
-
-After fixing it, actually create a test booking and verify that:
-- The API returns success.
-- The booking is saved in the database.
-- The booking appears in Admin.
-- The selected service, location, date, and time are stored correctly.
-
-Do NOT consider the task complete if the API still returns HTTP 500.
+Do not redesign the entire website.
 
 ==================================================
-2. COMPLETELY FIX APPOINTMENT AVAILABILITY
+2. HERO / OPENING IMAGE
 ==================================================
 
-The appointment times are currently completely inconsistent.
+The main image shown when the website opens should:
 
-Some days start at 4:00 PM.
-Some days start at 11:00 AM.
-The system must NOT randomly choose or infer these times.
+- NOT have a visible frame/border around it.
+- NOT look like it is inside a card.
+- Appear clearly in the center of the screen.
+- Be large and high quality.
+- Have a smooth entrance animation when the page first loads.
+- The image should be clearly visible.
+- Keep the existing visual style and avoid unnecessary borders.
 
-The available appointment times MUST be generated directly from the configured working hours.
-
-For example:
-
-If a location/day is configured:
-
-Opening time: 9:00 AM
-Closing time: 6:00 PM
-
-Then available slots must be generated starting from 9:00 AM according to the service duration and configured interval/buffer.
-
-Do NOT hardcode:
-- 11:00 AM
-- 12:00 PM
-- 4:00 PM
-or any other start time.
-
-The system must read the actual working-hours configuration from the database/configuration.
+Do not crop the image in a way that makes it unclear.
 
 ==================================================
-3. CHECK WORKING HOURS LOGIC
+3. HERO TEXT
 ==================================================
 
-Audit the entire working-hours implementation.
+Replace:
 
-Check:
+"Verdum Atelier"
 
-- Day of week mapping
-- Opening time
-- Closing time
-- Location-specific working hours
-- Service duration
-- Appointment interval
-- Buffer time
-- Break times
-- Blocked times
-- Existing bookings
-- Current date/time
-- Timezone
-- UTC conversion
-- Local time conversion
-- Date parsing
-- Frontend filtering
-- Backend filtering
+with:
 
-Make sure the day of the week is calculated correctly.
+"+22 years of experience"
 
-For example:
-If Monday is configured as 9:00 AM–6:00 PM,
-Monday appointments must be generated from 9:00 AM to 6:00 PM according to the booking rules.
+Remove the previous text/statistics:
 
-Do NOT shift the start time because of timezone conversion.
+"100% Hygiene & Sterilization"
+"4.9 ★ Client Reviews"
+"2000+ Happy Clients"
+
+Also remove:
+
+"Russian Cuticle Care"
+
+and:
+
+"Flawless 4-Week Retention"
+
+Do not show these texts anywhere in the relevant hero/service section.
+
+Also remove the five-star symbol that was displayed next to:
+
+"+22 years of experience"
 
 ==================================================
-4. IMPORTANT TIMEZONE REQUIREMENT
+4. SOCIAL MEDIA ICONS
 ==================================================
 
-The business operates in Lebanon.
+Add social media icons for:
 
-Make sure the booking system consistently uses the correct Lebanon timezone:
+- Instagram
+- WhatsApp
+- TikTok
 
-Asia/Beirut
+Place them in the existing lower/footer social section.
 
-Do not accidentally convert business opening hours to UTC and then display them as local time.
+TikTok official profile:
 
-Opening hours such as 9:00 AM must remain 9:00 AM for the customer.
+https://www.tiktok.com/@blossomdreams.lb
 
-Check the entire flow:
-Database → Backend → API → Frontend.
+The TikTok icon must open the official TikTok profile.
 
-Dates and appointment times must represent the same local business time everywhere.
+For Instagram and WhatsApp:
+- Use the existing configured official links/contact information.
+- Do not invent a phone number or URL.
+- Keep the icons responsive.
+- Make them easy to tap on mobile.
 
 ==================================================
-5. LOCATION-SPECIFIC AVAILABILITY
+5. WHATSAPP ICON — IMPORTANT
+==================================================
+
+The current WhatsApp icon is WRONG.
+
+Replace it with a real recognizable WhatsApp brand icon.
+
+DO NOT use:
+- 💬 emoji
+- Generic chat icon
+- Generic message icon
+- MessageCircle
+- Random speech bubble
+- Fake CSS WhatsApp logo
+
+Use a proper WhatsApp brand SVG/icon.
+
+If the project already uses an icon library that supports brand icons, use the correct WhatsApp icon from that library.
+
+The icon should clearly look like the official WhatsApp logo with the recognizable phone handset inside the WhatsApp bubble.
+
+The WhatsApp icon must be clickable.
+
+Use the WhatsApp business contact already configured in the project.
+
+Do not invent a new phone number.
+
+On mobile, open WhatsApp when possible.
+
+On desktop, open WhatsApp Web/the appropriate WhatsApp link.
+
+==================================================
+6. TWO BUSINESS LOCATIONS
 ==================================================
 
 The business has TWO locations:
@@ -152,156 +133,618 @@ The business has TWO locations:
 1. Versailles Center
 2. Amwaj Center, Jounieh
 
-The customer selects a location before choosing an appointment.
+Customers must be able to choose between these two locations.
 
-The selected location must determine the correct working hours and available appointments.
+==================================================
+7. IMPORTANT — AMWAJ LOCATION
+==================================================
+
+The existing:
+
+"Amwaj Center, Jounieh"
+
+location is CORRECT.
+
+DO NOT modify it.
+
+Do NOT change:
+- Coordinates
+- Map pin
+- Google Maps destination
+- Address
+- Location configuration
+
+Keep the existing Amwaj Center location exactly as it currently works.
+
+==================================================
+8. VERSAILLES CENTER LOCATION
+==================================================
+
+The Versailles Center location previously needed correction.
+
+Use this Google Maps reference for Versailles Center:
+
+https://www.google.com/maps?geocode=FVZlBgId-qQfAg%3D%3D;FeKABgIdjp0fAikjee62lkAfFTHpGFP2BnXpHQ%3D%3D&daddr=Centre+Savoy,+XJJG+7H6,+Sarba&saddr=33.9735896,35.6282820&dirflg=d&ftid=0x151f4096b6ee7923:0x1de97506f65318e9&lucs=,94297699,100795621,94231188,94280568,47071704,94218641,94282134,94286869,100820247,100822504&g_ep=CAISEjI2LjM2LjMuOTczNTQ4ODUxMBgAILq3CypdLDk0Mjk3Njk5LDEwMDc5NTYyMSw5NDIzMTE4OCw5NDI4MDU2OCw0NzA3MTcwNCw5NDIxODY0MSw5NDI4MjEzNCw5NDI4Njg2OSwxMDA4MjAyNDcsMTAwODIyNTA0QgJMQg%3D%3D&skid=0f2ba6b9-e5e3-45ac-902c-c1454b1e5484&g_st=iw
+
+This reference is for:
+
+VERSAILLES CENTER ONLY.
+
+Correct Versailles Center based on this reference.
+
+DO NOT modify Amwaj Center.
+
+==================================================
+9. LOCATION UI
+==================================================
+
+Do NOT keep a large permanent static map visible on the website.
+
+Instead show two location options:
+
+- Versailles Center
+- Amwaj Center, Jounieh
+
+When the customer clicks a location:
+
+Open Google Maps directly.
+
+Do not require a permanent embedded map.
+
+For Versailles Center:
+Use the corrected Versailles location.
+
+For Amwaj Center:
+Keep the existing correct Google Maps destination.
+
+==================================================
+10. BOOKING LOCATION SELECTION
+==================================================
+
+The customer must select a location when making a booking.
+
+Options:
+
+- Versailles Center
+- Amwaj Center, Jounieh
+
+The selected location must be saved with the booking.
+
+Admin must see the selected location.
+
+==================================================
+11. BOOKING SYSTEM — PRESERVE WORKING API
+==================================================
+
+The HTTP 500 booking problem was already fixed.
+
+DO NOT break the working booking creation API.
+
+A booking must successfully:
+
+- Submit
+- Validate
+- Save to PostgreSQL/Neon
+- Return a successful response
+- Appear in Admin
+- Store service
+- Store location
+- Store date
+- Store time
+- Store customer information
+
+Do not rewrite working booking creation unnecessarily.
+
+==================================================
+12. APPOINTMENT AVAILABILITY — MAJOR FIX
+==================================================
+
+There is still an availability problem.
+
+Some future days do not show morning appointments.
+
+Some days start at:
+- 11:00 AM
+- 2:00 PM
+- 4:00 PM
+
+even though the business may open in the morning.
+
+This must be fixed properly.
+
+DO NOT hardcode appointment times.
+
+DO NOT simply force 9:00 AM to appear.
+
+Find the actual root cause.
+
+==================================================
+13. WORKING HOURS
+==================================================
+
+Available appointment times must be generated from the actual configured working hours.
+
+If a location opens at:
+
+9:00 AM
+
+then valid appointments should start from 9:00 AM, subject to:
+
+- Service duration
+- Appointment interval
+- Buffer if configured
+- Existing bookings
+- Blocked periods
+- Closing time
+
+If the location opens at another time, use that configured time.
+
+Do NOT use fixed values.
+
+==================================================
+14. REMOVE BREAKS COMPLETELY
+==================================================
+
+Remove the entire Breaks functionality.
+
+I do NOT want a Breaks system anymore.
+
+Remove from Admin:
+
+- Breaks section
+- Add Break
+- Edit Break
+- Delete Break
+- Break configuration
+- Break time selectors
+- Break-related fields
+- Break-related buttons
+- Break-related UI
+
+Remove backend/API break functionality if it is no longer needed.
+
+Do not leave broken references.
 
 IMPORTANT:
 
-Amwaj Center, Jounieh is already correct.
+After removing Breaks, availability must still work correctly using:
 
-DO NOT change its existing location/coordinates/Google Maps destination.
+- Opening hours
+- Closing hours
+- Service duration
+- Appointment interval
+- Existing bookings
+- Other legitimate scheduling restrictions
 
-Versailles Center is the location that previously needed correction.
-
-Do not break either location while fixing availability.
+Do not replace Breaks with hardcoded unavailable periods.
 
 ==================================================
-6. SERVICE DURATION
+15. AVAILABILITY DATABASE AUDIT
 ==================================================
 
-Make sure appointment slots respect the selected service duration.
+Inspect the REAL production Neon/PostgreSQL data.
+
+Do not rely only on local SQLite.
+
+For BOTH:
+
+Versailles Center
+Amwaj Center, Jounieh
+
+Inspect every day of the week.
+
+Check:
+
+- Opening time
+- Closing time
+- Location schedule
+- Special dates
+- Schedule overrides
+- Blocked dates
+- Existing bookings
+- Any unexpected restrictions
+
+Find out why some future dates only show afternoon slots.
+
+If the database has incorrect schedule values, fix the data/configuration.
+
+If the backend calculation is wrong, fix the backend.
+
+If the frontend filters out valid morning slots, fix the frontend.
+
+Do not add special cases for individual dates.
+
+==================================================
+16. TIMEZONE
+==================================================
+
+The business timezone is:
+
+Asia/Beirut
+
+Use this consistently.
+
+Do not allow UTC conversion to shift opening hours.
+
+If the business opens at:
+
+9:00 AM
+
+the customer must see:
+
+9:00 AM
+
+not a shifted time.
+
+Date/day calculations must also use the Lebanon local calendar date.
+
+==================================================
+17. SERVICE DURATION
+==================================================
+
+Available slots must respect service duration.
 
 Example:
 
-If the service takes 60 minutes, a 9:00 AM booking occupies:
+60-minute service:
+
 9:00 AM → 10:00 AM
 
 The next appointment must respect the configured interval/buffer.
 
-Never offer a time that would cause the appointment to extend beyond the location's closing time.
+Never show a slot that would extend beyond closing time.
 
 ==================================================
-7. EXISTING BOOKINGS
+18. EXISTING BOOKINGS
 ==================================================
 
-Existing confirmed bookings must block their corresponding time slots.
+Existing confirmed bookings must block their exact time.
 
 Prevent double booking.
-
-Two customers must never be able to successfully book the exact same unavailable appointment.
 
 This must be enforced on the backend/database level, not only by hiding the slot in the frontend.
 
 ==================================================
-8. ADMIN
+19. TIME DISPLAY — 12-HOUR FORMAT
 ==================================================
 
-Every successful booking must appear correctly in Admin.
+Change the DISPLAY format to a 12-hour clock.
+
+Use:
+
+9:00 AM
+10:00 AM
+11:30 AM
+12:00 PM
+1:00 PM
+2:00 PM
+4:00 PM
+7:00 PM
+
+Do NOT display:
+
+09:00
+10:00
+11:30
+12:00
+13:00
+14:00
+16:00
+19:00
+
+Apply this to:
+
+- Booking calendar
+- Available appointment slots
+- Selected time
+- Booking confirmation
+- Booking summary
+- Customer booking details
+- Admin dashboard
+- Admin booking details
+- Calendar
+
+IMPORTANT:
+
+Keep the internal database/API time representation unchanged if it is already working.
+
+Only change the DISPLAY format.
+
+Correct conversion:
+
+12:00 AM = midnight
+9:00 AM = morning
+12:00 PM = noon
+1:00 PM = afternoon
+
+==================================================
+20. ADMIN — BOOKINGS & CALENDAR
+==================================================
+
+In:
+
+"Bookings & Calendar"
 
 Admin must see:
 
 - Customer name
-- Customer phone
+- Phone/contact
 - Service
 - Location
-- Appointment date
+- Date
 - Appointment time
 - Booking status
 - Created date/time
 
-The appointment time displayed in Admin must match the time selected by the customer.
+Display appointment times in 12-hour format.
 
 ==================================================
-9. OLD / TEST DATA
+21. DELETE BOOKING FROM ADMIN
 ==================================================
 
-Inspect existing booking records.
+Add a:
 
-If there are clearly test/demo/invalid/duplicate records causing availability problems, clean them safely.
+"Delete Booking"
+
+action for every booking.
+
+When Admin clicks Delete:
+
+1. Show a confirmation dialog.
+2. Explain that the booking will be permanently deleted.
+3. Require confirmation.
+4. Delete the selected booking from the database.
+5. Remove it from the Admin list/calendar.
+6. Make the appointment slot available again.
+
+Confirmation:
+
+"Are you sure you want to permanently delete this booking?"
+
+Buttons:
+
+"Cancel"
+"Delete Booking"
+
+==================================================
+22. DELETE BOOKING — BACKEND
+==================================================
+
+Do NOT implement deletion only in the frontend.
+
+Create/fix the proper backend delete endpoint.
+
+Use the booking's unique database ID.
+
+The backend must:
+
+- Verify the booking exists.
+- Delete ONLY the selected booking.
+- Handle related records safely.
+- Return success/error correctly.
+
+Do NOT delete:
+- Customer
+- Service
+- Location
+- Other bookings
+- Unrelated data
+
+==================================================
+23. AVAILABILITY AFTER BOOKING DELETION
+==================================================
+
+If Admin deletes a booking at:
+
+10:00 AM
+
+then that time should become available again, assuming:
+
+- Location is open
+- Service can fit
+- No other booking blocks it
+
+Do not cache deleted bookings.
+
+==================================================
+24. PRODUCT DELETE ERROR
+==================================================
+
+There is currently an error when Admin tries to delete a product.
+
+Find the actual root cause.
+
+Trace:
+
+Admin UI
+→ Delete request
+→ API
+→ Backend
+→ Database
+→ Foreign keys/relationships
+
+Check whether the product is referenced by:
+
+- Services
+- Bookings
+- Orders
+- Categories
+- Images
+- Other database records
+
+Handle relationships safely.
+
+Do NOT blindly delete unrelated records.
+
+If safe deletion is possible, delete correctly.
+
+If the product cannot safely be deleted because of existing dependencies, show a clear Admin error explaining why.
+
+Do not hide the error.
+
+==================================================
+25. PRODUCT DELETE TEST
+==================================================
+
+After fixing:
+
+1. Create a test product.
+2. Delete it from Admin.
+3. Verify successful response.
+4. Verify it disappears from the product list.
+5. Verify it is actually removed from the database.
+6. Verify no unrelated records were deleted.
+
+==================================================
+26. OLD / TEST BOOKING DATA
+==================================================
+
+Inspect the production database.
+
+If there are clearly test/demo/invalid/duplicate bookings, clean them safely.
 
 DO NOT delete real customer bookings.
 
-DO NOT reset the entire database.
+DO NOT reset the production database.
 
-Only remove data that is clearly test/demo/invalid.
-
-==================================================
-10. WHATSAPP ICON
-==================================================
-
-The current WhatsApp icon is incorrect.
-
-Replace it with the REAL WhatsApp icon/logo.
-
-Use the official WhatsApp recognizable icon, not a generic chat/message icon.
-
-Requirements:
-- Clearly recognizable as WhatsApp.
-- Correct WhatsApp logo styling.
-- Clickable.
-- Opens the configured business WhatsApp contact.
-- Works correctly on mobile and desktop.
-- Keep the existing website styling and Bubblegum color #F7A1B3 where appropriate.
-
-Do not replace WhatsApp with a generic speech bubble icon.
+Only remove records that are clearly test/demo/invalid.
 
 ==================================================
-11. FULL END-TO-END TESTING
+27. ADMIN SAFETY
 ==================================================
 
-After making the fixes, test the system thoroughly.
+Deleting a booking must only delete that booking.
 
-Test multiple days with different configured working hours.
+Deleting a product must only affect the intended product and safe dependent records.
 
-For each day:
+Do not delete:
 
-1. Select location.
-2. Select service.
-3. Select date.
-4. Verify the first available appointment matches the configured opening time.
-5. Verify all valid appointment slots appear.
-6. Select an appointment.
-7. Submit booking.
-8. Verify HTTP response is successful.
-9. Verify database record.
-10. Verify Admin record.
-11. Verify selected time is correct.
-12. Verify selected location is correct.
-
-Specifically test days where the system currently incorrectly starts at:
-- 4:00 PM
-- 11:00 AM
-
-Find out WHY those days are wrong and fix the underlying cause.
-
-Do not manually add special cases for those days.
+- Customers
+- Locations
+- Services
+- Other bookings
+- Other products
+- Real customer data
 
 ==================================================
-12. FINAL REQUIREMENT
+28. FULL TESTING
 ==================================================
 
-Do NOT tell me the task is complete just because the UI looks correct.
+Run the complete test suite.
 
-The task is complete ONLY when:
+Then test against PostgreSQL/Neon.
 
-- HTTP 500 booking error is fixed.
-- A real booking can be successfully submitted.
-- Booking is stored in the database.
-- Booking appears in Admin.
-- Appointment times are generated from the actual configured working hours.
-- No random 11 AM / 4 PM start times occur.
-- Timezone handling is correct.
-- Service duration works.
-- Buffers work.
-- Existing bookings block unavailable times.
+Test both locations.
+
+Test at least 14–30 future dates.
+
+For each date verify:
+
+- Day of week
+- Location
+- Opening time
+- Closing time
+- First available appointment
+- Morning slots
+- Afternoon slots
+- Existing bookings
+- Service duration
+- Appointment interval
+- Timezone
+- 12-hour display
+
+Specifically investigate dates that previously started at:
+
+11:00 AM
+2:00 PM
+4:00 PM
+
+Do NOT consider the issue fixed unless you know WHY those times were appearing.
+
+==================================================
+29. END-TO-END BOOKING TEST
+==================================================
+
+Test:
+
+1. Select service.
+2. Select location.
+3. Select future date.
+4. Verify available times.
+5. Select morning appointment.
+6. Submit booking.
+7. Confirm successful response.
+8. Confirm database record.
+9. Confirm Admin record.
+10. Confirm correct location.
+11. Confirm correct date/time.
+12. Delete the test booking from Admin.
+13. Confirm it disappears.
+14. Confirm its time becomes available again.
+
+==================================================
+30. MOBILE AND DESKTOP
+==================================================
+
+Test the website on:
+
+- Mobile
+- Desktop
+
+Verify:
+
+- Booking
+- Calendar
+- Location selection
+- Social icons
+- WhatsApp
+- TikTok
+- Instagram
+- Admin
+- Delete booking
+- Delete product
+- 12-hour time format
+
+==================================================
+31. FINAL ACCEPTANCE CRITERIA
+==================================================
+
+Do NOT consider this task complete until:
+
+- Booking creation works.
+- No HTTP 500 occurs during normal booking.
+- Appointment availability follows real working hours.
+- Morning slots are not incorrectly hidden.
+- Future dates work correctly.
+- Both locations work independently.
+- Amwaj Center location remains unchanged and correct.
+- Versailles Center uses the corrected location.
+- Static map is removed.
+- Locations open Google Maps directly.
+- Breaks are completely removed.
+- Product deletion works.
+- Admin can delete individual bookings.
+- Deleted booking times become available again.
 - Double bookings are prevented.
-- Both locations work correctly.
-- Amwaj Center's existing correct location remains unchanged.
-- Versailles Center remains correctly configured.
-- WhatsApp uses the real WhatsApp icon.
-- Mobile and desktop booking flows work.
+- Asia/Beirut timezone works correctly.
+- All appointment times display in 12-hour format.
+- WhatsApp uses the REAL recognizable WhatsApp icon.
+- WhatsApp link works.
+- TikTok link works.
+- Instagram link works.
+- Bubblegum #F7A1B3 is used.
+- Hero image has no visible frame and has a smooth opening animation.
+- Removed texts remain removed.
+- No real customer data is deleted.
+- All relevant tests pass.
 
 IMPORTANT:
-Inspect the actual code and logs, identify the root cause of every issue, fix it properly, and run end-to-end tests before finishing.
-Do not use frontend hacks or hardcoded appointment times to hide the problem.
+
+Do not use hacks.
+Do not hardcode appointment times.
+Do not hide errors.
+Do not fake the WhatsApp icon.
+Do not modify Amwaj Center's correct location.
+Do not break the working booking API.
+
+Inspect the actual code, database, API, and production configuration, identify the root causes, implement proper fixes, and perform full end-to-end testing before declaring the task complete.

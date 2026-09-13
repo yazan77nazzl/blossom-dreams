@@ -75,10 +75,20 @@ def seed_database():
         cursor.execute("UPDATE salon_settings SET opening_hours_text = REPLACE(opening_hours_text, '9:30 AM', '9:00 AM') WHERE opening_hours_text LIKE '%9:30 AM%'")
 
         # 3b. Business Locations
+        # Versailles Center uses the corrected Google Maps reference:
+        # https://www.google.com/maps?geocode=...daddr=Centre+Savoy,+XJJG+7H6,+Sarba...&ftid=0x151f4096b6ee7923:0x1de97506f65318e9
+        versailles_maps_url = (
+            "https://www.google.com/maps?geocode=FVZlBgId-qQfAg%3D%3D;FeKABgIdjp0fAikjee62lkAfFTHpGFP2BnXpHQ%3D%3D"
+            "&daddr=Centre+Savoy,+XJJG+7H6,+Sarba&saddr=33.9735896,35.6282820&dirflg=d"
+            "&ftid=0x151f4096b6ee7923:0x1de97506f65318e9"
+            "&lucs=,94297699,100795621,94231188,94280568,47071704,94218641,94282134,94286869,100820247,100822504"
+            "&g_ep=CAISEjI2LjM2LjMuOTczNTQ4ODUxMBgAILq3CypdLDk0Mjk3Njk5LDEwMDc5NTYyMSw5NDIzMTE4OCw5NDI4MDU2OCw0NzA3MTcwNCw5NDIxODY0MSw5NDI4MjEzNCw5NDI4Njg2OSwxMDA4MjAyNDcsMTAwODIyNTA0QgJMQg%3D%3D"
+            "&skid=0f2ba6b9-e5e3-45ac-902c-c1454b1e5484&g_st=iw"
+        )
         locations_data = [
             (
                 "versailles", "Versailles Center", "Centre Savoy, Sarba, Jounieh, Lebanon",
-                "https://maps.google.com/?ftid=0x151f4096b6ee7923:0x1de97506f65318e9",
+                versailles_maps_url,
                 None, None, 1,
             ),
             (
@@ -95,22 +105,16 @@ def seed_database():
                 VALUES (?, ?, ?, ?, ?, ?, ?, TRUE)
                 """, (slug, name, address, maps_url, lat, lng, order))
             else:
-                # Only backfill a missing/empty map link; never clobber admin edits.
+                # Versailles: replace the legacy ftid-only map link with the
+                # corrected reference. Amwaj is never clobbered; other admin
+                # edits are preserved.
                 cursor.execute("""
                 UPDATE locations SET google_maps_url = ?
-                WHERE slug = ? AND (google_maps_url IS NULL OR google_maps_url = '')
-                """, (maps_url, slug))
+                WHERE slug = 'versailles'
+                  AND (google_maps_url IS NULL OR google_maps_url = '' OR google_maps_url LIKE '%0x151f4096b6ee7923%')
+                """, (maps_url,))
 
-        # 4. Break times (Monday - Saturday 13:30 to 14:30)
-        cursor.execute("SELECT COUNT(*) as count FROM break_times")
-        if cursor.fetchone()["count"] == 0:
-            for day_idx in range(6): # Mon to Sat
-                cursor.execute("""
-                INSERT INTO break_times (day_of_week, label, start_time, end_time)
-                VALUES (?, 'Salon Midday Break', '13:30', '14:30')
-                """, (day_idx,))
-
-        # 5. Categories
+        # 4. Categories
         categories_data = [
             ("Nails", "nails", "Luxury Russian manicures, BIAB overlays, gel enhancements, and bespoke nail couture.", 1, "hand"),
             ("Lashes", "lashes", "Custom lash extensions, mega volume, classic sets, and lifting infusions.", 2, "eye"),
@@ -134,7 +138,7 @@ def seed_database():
             else:
                 category_id_map[cat[1]] = row["id"]
 
-        # 6. Services
+        # 5. Services
         services_data = [
             # Nails
             (
@@ -264,7 +268,7 @@ def seed_database():
             else:
                 service_id_map[slug] = row["id"]
 
-        # 7. Special Offers
+        # 6. Special Offers
         offers_data = [
             (
                 "Blossom Bridal Glow Duo",
@@ -306,7 +310,7 @@ def seed_database():
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, offer[:8] + (bool(offer[8]), bool(offer[9])) + offer[10:])
 
-        # 8. Gallery Images
+        # 7. Gallery Images
         gallery_data = [
             ("French Ombre Almond Nails", "Hand-sculpted Russian manicure with delicate chrome pearl powder", "/static/images/gallery_1.jpg", "Nails", 1, 1),
             ("Fluffy Russian Volume Fans", "Bespoke eye styling with silk volume lashes", "/static/images/gallery_2.jpg", "Lashes", 1, 2),

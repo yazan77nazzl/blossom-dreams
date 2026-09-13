@@ -187,14 +187,6 @@ class DaySchedule(BaseModel):
     slot_interval_minutes: int = 30
     buffer_minutes: int = 0
 
-class BreakTimeItem(BaseModel):
-    id: Optional[int] = None
-    day_of_week: int
-    label: str = "Break"
-    start_time: str
-    end_time: str
-    location_id: Optional[int] = None
-
 class ClosedDateItem(BaseModel):
     id: Optional[int] = None
     closed_date: str
@@ -202,7 +194,6 @@ class ClosedDateItem(BaseModel):
 
 class AvailabilityConfigResponse(BaseModel):
     schedule: List[DaySchedule]
-    breaks: List[BreakTimeItem]
     closed_dates: List[ClosedDateItem]
     locations: List[LocationResponse] = []
 

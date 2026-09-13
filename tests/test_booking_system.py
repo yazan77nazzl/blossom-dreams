@@ -154,12 +154,18 @@ def test_booking_rejected_in_past():
     assert "past" in res.json()["detail"].lower()
 
 
-def test_booking_rejected_during_lunch_break():
-    tue = get_next_weekday(1)
+def test_former_lunch_break_time_now_bookable():
+    # Breaks were removed completely. The old 13:30 start must no longer be
+    # rejected by any fake "break" window — it is governed only by real working
+    # hours and existing bookings.
+    tue = get_safe_weekday(1)
     service = get_active_service()
+    slots_res = client.get(f"/api/availability/slots?date={tue}&service_id={service['id']}").json()
+    assert "13:30" in slots_res["slots"], f"13:30 must be a valid slot now, got {slots_res['slots']}"
+
     payload = booking_payload(service, {"date": tue, "time": "13:30"}, "+961 70 456 456", "Lunch Break Client")
     res = client.post("/api/bookings", json=payload)
-    assert res.status_code == 409
+    assert res.status_code == 201
 
 
 def test_back_to_back_bookings_both_succeed():
@@ -285,19 +291,17 @@ def test_booking_after_closing_hours_rejected():
     assert "slot" in res.json()["detail"].lower()
 
 
-def test_booking_adjacent_to_midday_break_blocked():
-    # The break runs 13:30-14:30; any start overlapping it must be rejected.
-    tue = get_next_weekday(1)
-    service = get_active_service()
-    cases = {
-        "13:00": "+961 70 816 816",  # ends 14:00, inside the break
-        "13:45": "+961 70 817 817",  # starts mid-break
-        "14:00": "+961 70 818 818",  # starts exactly as the break ends
-    }
-    for start, phone in cases.items():
-        payload = booking_payload(service, {"date": tue, "time": start}, phone, "Break Client")
-        res = client.post("/api/bookings", json=payload)
-        assert res.status_code == 409, f"{start} should be blocked by the lunch break"
+def test_former_break_period_no_artificial_block():
+    # With the Breaks system removed, times that used to fall inside the old
+    # lunch window (13:00, 13:30, 14:00) must be free when no real booking or
+    # schedule restriction occupies them.
+    tue = get_lonely_weekday(2, weeks_ahead=3)
+    services = client.get("/api/services").json()
+    service = next(s for s in services if s["slug"] == "russian-manicure")
+    res = client.get(f"/api/availability/slots?date={tue}&service_id={service['id']}").json()
+    assert res["available"] is True
+    for t in ("13:00", "13:30", "14:00"):
+        assert t in res["slots"], f"{t} must be available now that breaks are removed"
 
 
 # --- Service state edge cases ---
@@ -336,6 +340,74 @@ def test_inactive_service_rejected():
         assert "available" in res.json()["detail"].lower()
     finally:
         client.delete(f"/api/services/{service_id}", headers=headers)
+
+
+def test_delete_service_without_bookings_succeeds():
+    headers = get_admin_headers()
+    cat_id = client.get("/api/categories").json()[0]["id"]
+
+    create_res = client.post("/api/services", headers=headers, json={
+        "category_id": cat_id,
+        "name": "Deletable Test Service",
+        "slug": "deletable-test-service",
+        "duration_minutes": 60,
+        "price": 25.0,
+    })
+    assert create_res.status_code == 200
+    service_id = create_res.json()["id"]
+
+    del_res = client.delete(f"/api/services/{service_id}", headers=headers)
+    assert del_res.status_code == 200
+    assert del_res.json()["status"] == "success"
+
+    # Gone from the public + admin lists, and the DB row is actually removed.
+    public_ids = [s["id"] for s in client.get("/api/services").json()]
+    assert service_id not in public_ids
+    admin_ids = [s["id"] for s in client.get("/api/services?include_inactive=true", headers=headers).json()]
+    assert service_id not in admin_ids
+
+
+def test_delete_service_with_bookings_blocked_with_clear_error():
+    headers = get_admin_headers()
+    cat_id = client.get("/api/categories").json()[0]["id"]
+
+    create_res = client.post("/api/services", headers=headers, json={
+        "category_id": cat_id,
+        "name": "Protected Test Service",
+        "slug": "protected-test-service",
+        "duration_minutes": 60,
+        "price": 40.0,
+    })
+    assert create_res.status_code == 200
+    service_id = create_res.json()["id"]
+
+    free_day = get_lonely_weekday(4, weeks_ahead=2)
+    free_slot = choose_free_slot(free_day, service_id)
+    booking = client.post("/api/bookings", json=booking_payload(
+        {"id": service_id, "duration_minutes": 60},
+        {"date": free_day, "time": free_slot},
+        "+961 70 990 990",
+        "Protected Service Client",
+    ))
+    assert booking.status_code == 201
+    booking_id = booking.json()["id"]
+
+    try:
+        # Deleting a service that still has bookings must fail with a clear
+        # explanation (the error is surfaced, never swallowed).
+        del_res = client.delete(f"/api/services/{service_id}", headers=headers)
+        assert del_res.status_code == 400
+        assert "booking" in del_res.json()["detail"].lower()
+        assert "cannot be deleted" in del_res.json()["detail"].lower()
+
+        # The service must still exist and the booking must be untouched.
+        assert any(s["id"] == service_id for s in client.get("/api/services", headers=headers).json())
+        assert client.get(f"/api/bookings/verify/{booking.json()['booking_code']}").status_code == 200
+    finally:
+        # Clean up: permanently delete the booking, then the service.
+        client.delete(f"/api/bookings/{booking_id}", headers=headers)
+        clean = client.delete(f"/api/services/{service_id}", headers=headers)
+        assert clean.status_code == 200
 
 
 def test_holiday_closed_date_rejected_and_removed():
@@ -565,10 +637,11 @@ def test_slot_interval_respected_not_hardcoded_30():
         # Every slot starts exactly on the hour: the 30-min hardcode is gone.
         assert all(t.endswith(":00") for t in slots), f"Slots should be hourly with a 60-min interval: {slots}"
 
-        # Spacing is 60 minutes normally and 180 only across the lunch break (13:30-14:30).
+        # Spacing is a uniform 60 minutes (the old lunch-break 180 gap is gone).
         times = [int(t[:2]) * 60 + int(t[3:]) for t in slots]
         gaps = [times[i + 1] - times[i] for i in range(len(times) - 1)]
-        assert all(g == 60 or g == 180 for g in gaps), f"Unexpected slot spacing with 60-min interval: gaps {gaps}"
+        assert gaps, "Expected more than one slot"
+        assert all(g == 60 for g in gaps), f"Unexpected slot spacing with 60-min interval: gaps {gaps}"
     finally:
         client.put(f"/api/availability/schedule/{day}", headers=headers, json={
             "day_of_week": day,
@@ -614,7 +687,9 @@ def test_locations_endpoint_returns_both_seeded_locations():
     assert {"versailles", "amwaj"} <= slugs, f"Both seeded locations must exist, got {slugs}"
 
     versailles = next(l for l in locations if l["slug"] == "versailles")
-    assert versailles["google_maps_url"] == "https://maps.google.com/?ftid=0x151f4096b6ee7923:0x1de97506f65318e9"
+    assert versailles["google_maps_url"].startswith("https://www.google.com/maps?")
+    assert "daddr=Centre+Savoy,+XJJG+7H6,+Sarba" in versailles["google_maps_url"]
+    assert "ftid=0x151f4096b6ee7923:0x1de97506f65318e9" in versailles["google_maps_url"]
     amwaj = next(l for l in locations if l["slug"] == "amwaj")
     # Amwaj's map link is the established one and must never change.
     assert amwaj["google_maps_url"] == "https://maps.google.com/?q=Amwaj+Center+Jounieh+Lebanon"

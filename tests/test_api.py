@@ -88,9 +88,10 @@ def test_availability_slots():
     data = response.json()
     assert data["available"] is True
     assert len(data["slots"]) > 0
-    # Verify break exclusion: lunch break is 13:30 to 14:30
-    assert "13:30" not in data["slots"]
-    assert "14:00" not in data["slots"]
+    # Breaks were removed entirely: the former 13:30-14:30 lunch block must not
+    # introduce any artificial unavailability on open days.
+    assert "13:30" in data["slots"]
+    assert "14:00" in data["slots"]
 
 def test_sunday_closed():
     # Next Sunday

@@ -34,7 +34,6 @@ A complete, production-quality, mobile-first full-stack web application with aut
 - **Special Offers CRUD**: Add, edit, and deactivate promotions with auto-calculated discount percentages.
 - **Working Hours & Availability Engine**:
   - Configure daily opening and closing hours for all 7 days.
-  - Add and manage midday break intervals (e.g., lunch 13:30 - 14:30).
   - Add and manage salon holidays / closed dates.
 - **Gallery Manager**: Drag-and-drop / upload images with category tagging and featured flags.
 - **Salon Settings**: Live configuration of salon name, phone, WhatsApp number, Instagram URL, TikTok URL, address, and announcement banner text.
@@ -147,7 +146,7 @@ python -m pytest tests/test_api.py -v
 All tests verify:
 - Health check & public salon endpoints
 - Services & category listings
-- Dynamic availability slot calculation & break exclusions
+- Dynamic availability slot calculation
 - Sunday / holiday closure enforcement
 - Atomic double-booking collision prevention (HTTP 409)
 - Admin authentication & JWT token validation

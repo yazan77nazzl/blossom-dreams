@@ -1,5 +1,5 @@
 // Interactive 6-Step Luxury Booking Wizard for Blossom Dreams
-import { apiFetch, showToast, formatPrice, formatDuration, formatDatePretty, escapeHtml } from "./api.js";
+import { apiFetch, showToast, formatPrice, formatDuration, formatDatePretty, formatTimeDisplay, escapeHtml } from "./api.js";
 
 class BookingWizard {
   constructor() {
@@ -638,7 +638,7 @@ class BookingWizard {
     const isSelected = this.state.selectedTime === slot;
     return `
       <button data-time="${slot}" class="slot-btn py-2.5 px-2 rounded-xl text-xs font-bold text-slate-800 ${isSelected ? 'selected' : ''}">
-        ${slot}
+        ${formatTimeDisplay(slot)}
       </button>
     `;
   }
@@ -665,7 +665,7 @@ class BookingWizard {
           </div>
           <div class="flex justify-between">
             <span class="text-slate-500">Schedule:</span>
-            <strong class="text-pink-700">${formatDatePretty(this.state.selectedDate)} at ${this.state.selectedTime}</strong>
+            <strong class="text-pink-700">${formatDatePretty(this.state.selectedDate)} at ${formatTimeDisplay(this.state.selectedTime)}</strong>
           </div>
           <div class="flex justify-between">
             <span class="text-slate-500">Duration & Investment:</span>
@@ -828,7 +828,7 @@ class BookingWizard {
       `• Service: ${b.service_name}\n` +
       (locationLabel ? `• Location: ${locationLabel}\n` : ``) +
       `• Date: ${formatDatePretty(b.appointment_date)}\n` +
-      `• Time: ${b.appointment_time}\n` +
+      `• Time: ${formatTimeDisplay(b.appointment_time)}\n` +
       `• Client: ${b.customer_name}\n\n` +
       `Looking forward to visiting your atelier!`
     );
@@ -875,7 +875,7 @@ class BookingWizard {
             </div>
             <div class="flex justify-between">
               <span class="text-slate-500">Time:</span>
-              <strong class="text-pink-700">${b.appointment_time} (${formatDuration(b.duration_minutes)})</strong>
+              <strong class="text-pink-700">${formatTimeDisplay(b.appointment_time)} (${formatDuration(b.duration_minutes)})</strong>
             </div>
             <div class="flex justify-between">
               <span class="text-slate-500">Guest:</span>

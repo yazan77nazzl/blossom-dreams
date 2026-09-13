@@ -1,5 +1,5 @@
 // Blossom Dreams - Public Front-End Application
-import { apiFetch, showToast, formatPrice, formatDuration, formatDatePretty, escapeHtml } from "./api.js";
+import { apiFetch, showToast, formatPrice, formatDuration, formatDatePretty, formatTimeDisplay, escapeHtml } from "./api.js";
 import { bookingWizard } from "./booking.js";
 
 class BlossomApp {
@@ -562,7 +562,7 @@ class BlossomApp {
               <div class="space-y-1 pt-1">
                 <div>Treatment: <strong class="text-slate-900">${escapeHtml(b.service_name)}</strong></div>
                 <div>Date: <strong class="text-slate-800">${formatDatePretty(b.appointment_date)}</strong></div>
-                <div>Time: <strong class="text-pink-700">${b.appointment_time}</strong> (${formatDuration(b.duration_minutes)})</div>
+                <div>Time: <strong class="text-pink-700">${formatTimeDisplay(b.appointment_time)}</strong> (${formatDuration(b.duration_minutes)})</div>
                 <div>Guest: <strong class="text-slate-800">${escapeHtml(b.customer_name)}</strong></div>
                 <div>Total: <strong class="text-pink-700">${formatPrice(b.price, symbol)}</strong></div>
               </div>

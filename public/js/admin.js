@@ -1,5 +1,5 @@
 // Blossom Dreams - Admin Dashboard Controller & Analytics
-import { apiFetch, showToast, formatPrice, formatDuration, formatDatePretty, escapeHtml, setAuthToken, clearAuthToken, getAuthToken, getCurrentUser } from "./api.js";
+import { apiFetch, showToast, formatPrice, formatDuration, formatDatePretty, formatTimeDisplay, escapeHtml, setAuthToken, clearAuthToken, getAuthToken, getCurrentUser } from "./api.js";
 
 function formatDateTimePretty(dtStr) {
   if (!dtStr) return "";
@@ -251,9 +251,6 @@ class AdminApp {
     document.getElementById("btn-add-offer-modal").addEventListener("click", () => {
       this.openOfferModal();
     });
-    document.getElementById("btn-add-break-modal").addEventListener("click", () => {
-      this.openAddBreakModal();
-    });
     document.getElementById("btn-add-closed-modal").addEventListener("click", () => {
       this.openAddClosedDateModal();
     });
@@ -366,7 +363,7 @@ class AdminApp {
       stats.today_appointments.forEach(b => {
         html += `
           <tr class="hover:bg-slate-50/80 transition">
-            <td class="py-3 px-3 font-bold text-pink-700 font-mono">${b.appointment_time}</td>
+            <td class="py-3 px-3 font-bold text-pink-700 font-mono">${formatTimeDisplay(b.appointment_time)}</td>
             <td class="py-3 px-3 font-mono text-slate-500 font-bold">${b.booking_code}</td>
             <td class="py-3 px-3">
               <div class="font-bold text-slate-900">${escapeHtml(b.customer_name)}</div>
@@ -515,7 +512,7 @@ class AdminApp {
           <td class="py-3.5 px-4 font-mono font-bold text-slate-700">${b.booking_code}</td>
           <td class="py-3.5 px-4">
             <div class="font-bold text-slate-800">${formatDatePretty(b.appointment_date)}</div>
-            <div class="text-[11px] font-mono text-pink-700 font-bold">${b.appointment_time} (${formatDuration(b.duration_minutes)})</div>
+            <div class="text-[11px] font-mono text-pink-700 font-bold">${formatTimeDisplay(b.appointment_time)} (${formatDuration(b.duration_minutes)})</div>
           </td>
           <td class="py-3.5 px-4">
             <div class="font-bold text-slate-900">${escapeHtml(b.customer_name)}</div>
@@ -540,8 +537,11 @@ class AdminApp {
             <button data-id="${b.id}" class="btn-view-booking-detail text-pink-700 hover:text-pink-900 font-bold text-xs">
               View
             </button>
-            <button data-id="${b.id}" class="btn-cancel-booking text-rose-600 hover:text-rose-800 font-bold text-xs">
+            <button data-id="${b.id}" class="btn-cancel-booking text-amber-600 hover:text-amber-800 font-bold text-xs">
               Cancel
+            </button>
+            <button data-id="${b.id}" class="btn-delete-booking text-rose-600 hover:text-rose-800 font-bold text-xs">
+              Delete
             </button>
           </td>
         </tr>
@@ -600,7 +600,8 @@ class AdminApp {
     container.querySelectorAll(".btn-cancel-booking").forEach(btn => {
       btn.addEventListener("click", () => {
         const id = parseInt(btn.dataset.id);
-        this.showConfirmDialog("Cancel Appointment", "Are you sure you want to cancel this booking?", async () => {
+        const b = this.bookings.find(item => item.id === id);
+        this.showConfirmDialog("Cancel Appointment", `Are you sure you want to cancel booking ${b ? b.booking_code : "#" + id}? It will keep the slot blocked until you delete or clear it.`, async () => {
           try {
             await apiFetch(`/api/bookings/${id}/status`, {
               method: "PATCH",
@@ -614,6 +615,48 @@ class AdminApp {
           }
         });
       });
+    });
+
+    container.querySelectorAll(".btn-delete-booking").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const id = parseInt(btn.dataset.id);
+        const b = this.bookings.find(item => item.id === id);
+        if (b) this.confirmPermanentDeleteBooking(b);
+      });
+    });
+  }
+
+  confirmPermanentDeleteBooking(b) {
+    const root = document.getElementById("admin-modal-root");
+    root.innerHTML = `
+      <div class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay">
+        <div class="relative w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl modal-content-anim border border-slate-200">
+          <div class="text-center mb-4">
+            <span class="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center text-xl mx-auto mb-2">🗑</span>
+            <h4 class="font-serif font-bold text-slate-900 text-base">Delete Booking</h4>
+            <p class="text-xs text-slate-500 mt-1">Are you sure you want to permanently delete this booking?</p>
+            <p class="text-[10px] text-slate-400 mt-2 font-mono">${escapeHtml(b.booking_code)} — ${formatDatePretty(b.appointment_date)} at ${formatTimeDisplay(b.appointment_time)}</p>
+          </div>
+          <div class="flex gap-3 pt-2">
+            <button id="confirm-cancel-btn" class="btn-secondary flex-1 py-2.5 rounded-xl text-xs font-bold">Cancel</button>
+            <button id="confirm-delete-btn" class="bg-rose-600 hover:bg-rose-700 text-white flex-1 py-2.5 rounded-xl text-xs font-bold shadow-sm">Delete Booking</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const close = () => { root.innerHTML = ""; };
+    root.querySelector("#confirm-cancel-btn").addEventListener("click", close);
+    root.querySelector("#confirm-delete-btn").addEventListener("click", async () => {
+      close();
+      try {
+        await apiFetch(`/api/bookings/${b.id}`, { method: "DELETE" });
+        showToast(`Booking ${b.booking_code} permanently deleted.`);
+        await this.loadAllData();
+        this.renderCurrentTab();
+      } catch (e) {
+        showToast(e.message, "error");
+      }
     });
   }
 
@@ -669,7 +712,7 @@ class AdminApp {
           <div class="space-y-0.5 overflow-hidden">
             ${dayBookings.slice(0, 2).map(b => `
               <div class="text-[9px] font-semibold bg-pink-50 text-pink-900 px-1.5 py-0.5 rounded truncate">
-                ${b.appointment_time} ${escapeHtml(b.customer_name)}
+                ${formatTimeDisplay(b.appointment_time)} ${escapeHtml(b.customer_name)}
               </div>
             `).join('')}
             ${dayBookings.length > 2 ? `<div class="text-[8px] text-slate-400 font-bold">+${dayBookings.length - 2} more</div>` : ''}
@@ -987,38 +1030,7 @@ class AdminApp {
       });
     });
 
-    // 2. Breaks List
-    const breaksContainer = document.getElementById("admin-breaks-list");
-    if (config.breaks.length === 0) {
-      breaksContainer.innerHTML = `<div class="text-slate-400 py-2">No break intervals configured.</div>`;
-    } else {
-      const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-      breaksContainer.innerHTML = config.breaks.map(b => `
-        <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
-          <div>
-            <strong class="text-slate-800">${days[b.day_of_week]}:</strong>
-            <span class="text-slate-600 ml-1 font-mono">${b.start_time} - ${b.end_time}</span>
-            <span class="text-[10px] text-pink-700 ml-1 font-bold">(${escapeHtml(b.label)})</span>
-          </div>
-          <button data-id="${b.id}" class="btn-delete-break text-rose-600 hover:text-rose-800 font-bold text-xs">✕</button>
-        </div>
-      `).join('');
-
-      breaksContainer.querySelectorAll(".btn-delete-break").forEach(btn => {
-        btn.addEventListener("click", async () => {
-          const id = parseInt(btn.dataset.id);
-          try {
-            await apiFetch(`/api/availability/breaks/${id}`, { method: "DELETE" });
-            showToast("Break removed.");
-            this.renderAvailabilityTab();
-          } catch (e) {
-            showToast(e.message, "error");
-          }
-        });
-      });
-    }
-
-    // 3. Closed Dates List
+    // 2. Closed Dates List
     const closedContainer = document.getElementById("admin-closed-dates-list");
     if (config.closed_dates.length === 0) {
       closedContainer.innerHTML = `<div class="text-slate-400 py-2">No specific holidays or closed dates set.</div>`;
@@ -1491,7 +1503,7 @@ class AdminApp {
     const root = document.getElementById("admin-modal-root");
     const symbol = this.settings?.currency_symbol || "$";
     const clientWa = b.customer_phone.replace(/[^0-9]/g, "");
-    const directChatUrl = `https://wa.me/${clientWa}?text=${encodeURIComponent(`Hello ${b.customer_name}! 🌸 Regarding your appointment (#${b.booking_code}) at Blossom Dreams on ${b.appointment_date} at ${b.appointment_time}...`)}`;
+    const directChatUrl = `https://wa.me/${clientWa}?text=${encodeURIComponent(`Hello ${b.customer_name}! 🌸 Regarding your appointment (#${b.booking_code}) at Blossom Dreams on ${b.appointment_date} at ${formatTimeDisplay(b.appointment_time)}...`)}`;
 
     root.innerHTML = `
       <div class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay">
@@ -1525,7 +1537,7 @@ class AdminApp {
               </div>
               <div class="flex justify-between">
                 <span class="text-slate-400">Date & Time:</span>
-                <strong class="text-pink-700 font-mono">${formatDatePretty(b.appointment_date)} at ${b.appointment_time}</strong>
+                <strong class="text-pink-700 font-mono">${formatDatePretty(b.appointment_date)} at ${formatTimeDisplay(b.appointment_time)}</strong>
               </div>
               <div class="flex justify-between">
                 <span class="text-slate-400">Total Price:</span>
@@ -1566,6 +1578,10 @@ class AdminApp {
                 <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981z"/></svg>
                 <span>Direct WhatsApp Chat with Guest</span>
               </a>
+              <button id="delete-booking-detail-btn" class="w-full mt-2 py-3 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition">
+                <span>🗑</span>
+                <span>Delete Booking</span>
+              </button>
             </div>
           </div>
         </div>
@@ -1574,6 +1590,9 @@ class AdminApp {
 
     root.querySelector("#close-bdetail-modal").addEventListener("click", () => {
       root.innerHTML = "";
+    });
+    root.querySelector("#delete-booking-detail-btn").addEventListener("click", () => {
+      this.confirmPermanentDeleteBooking(b);
     });
   }
 
@@ -1674,80 +1693,7 @@ class AdminApp {
     });
   }
 
-  // --- BREAK & CLOSED DATE MODALS ---
-  openAddBreakModal() {
-    const root = document.getElementById("admin-modal-root");
-    const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-    const dayOptions = days.map((d, idx) => `<option value="${idx}">${d}</option>`).join('');
-    const locOptions = (this.locations || []).map(l => `<option value="${l.id}">${escapeHtml(l.name)}</option>`).join('');
-
-    root.innerHTML = `
-      <div class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay">
-        <div class="relative w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl modal-content-anim border border-slate-200">
-          <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-            <h4 class="font-serif font-bold text-slate-900 text-base">Add Midday Break</h4>
-            <button id="close-brk-modal" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">✕</button>
-          </div>
-          <form id="add-break-form" class="py-4 space-y-3 text-xs">
-            <div>
-              <label class="block font-bold text-slate-700 mb-1">Location</label>
-              <select id="brk-location" class="w-full px-3 py-2 rounded-xl border border-slate-200 font-semibold">
-                <option value="">All Locations (Global)</option>
-                ${locOptions}
-              </select>
-            </div>
-            <div>
-              <label class="block font-bold text-slate-700 mb-1">Day of Week</label>
-              <select id="brk-day" class="w-full px-3 py-2 rounded-xl border border-slate-200 font-semibold">
-                ${dayOptions}
-              </select>
-            </div>
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="block font-bold text-slate-700 mb-1">Start Time</label>
-                <input type="time" id="brk-start" required value="13:30" class="w-full px-3 py-2 rounded-xl border border-slate-200 font-mono font-semibold" />
-              </div>
-              <div>
-                <label class="block font-bold text-slate-700 mb-1">End Time</label>
-                <input type="time" id="brk-end" required value="14:30" class="w-full px-3 py-2 rounded-xl border border-slate-200 font-mono font-semibold" />
-              </div>
-            </div>
-            <div>
-              <label class="block font-bold text-slate-700 mb-1">Label</label>
-              <input type="text" id="brk-label" value="Lunch Break" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
-            </div>
-            <div class="pt-3 border-t border-slate-100 flex justify-end gap-2">
-              <button type="submit" class="btn-primary px-4 py-2 rounded-xl font-bold">Add Break</button>
-            </div>
-          </form>
-        </div>
-      </div>
-    `;
-
-    const close = () => { root.innerHTML = ""; };
-    root.querySelector("#close-brk-modal").addEventListener("click", close);
-    root.querySelector("#add-break-form").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      try {
-        await apiFetch("/api/availability/breaks", {
-          method: "POST",
-          body: {
-            day_of_week: parseInt(root.querySelector("#brk-day").value),
-            location_id: parseInt(root.querySelector("#brk-location").value) || null,
-            start_time: root.querySelector("#brk-start").value,
-            end_time: root.querySelector("#brk-end").value,
-            label: root.querySelector("#brk-label").value.trim()
-          }
-        });
-        showToast("Break added.");
-        close();
-        this.renderAvailabilityTab();
-      } catch (err) {
-        showToast(err.message, "error");
-      }
-    });
-  }
-
+  // --- CLOSED DATE MODALS ---
   openAddClosedDateModal() {
     const root = document.getElementById("admin-modal-root");
     const tomorrowStr = new Date(Date.now() + 86400000).toISOString().split('T')[0];

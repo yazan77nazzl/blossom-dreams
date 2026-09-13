@@ -170,6 +170,32 @@ def delete_service(service_id: int, current_admin: dict = Depends(get_current_ad
         cursor.execute("SELECT id FROM services WHERE id = ?", (service_id,))
         if not cursor.fetchone():
             raise HTTPException(status_code=404, detail="Service not found")
-        
-        cursor.execute("DELETE FROM services WHERE id = ?", (service_id,))
+
+        # Safety: bookings reference this service with ON DELETE RESTRICT, so a
+        # hard delete would violate the foreign key. Show a clear error instead
+        # of hiding it — real client history must never be silently removed.
+        cursor.execute(
+            "SELECT COUNT(*) as count FROM bookings WHERE service_id = ?",
+            (service_id,)
+        )
+        booking_count = cursor.fetchone()["count"]
+        if booking_count and booking_count > 0:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"This treatment cannot be deleted because it is linked to {booking_count} "
+                    f"existing booking{'s' if booking_count != 1 else ''}. "
+                    "You can hide it from the menu by toggling it inactive instead."
+                )
+            )
+
+        # Safe to delete: offers reference services with ON DELETE SET NULL, so
+        # they simply lose their service link (no unrelated records are removed).
+        try:
+            cursor.execute("DELETE FROM services WHERE id = ?", (service_id,))
+        except Exception as e:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unable to delete this treatment because it is referenced by other records: {e}"
+            )
     return {"status": "success", "message": "Service deleted"}
