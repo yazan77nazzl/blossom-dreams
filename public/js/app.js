@@ -293,7 +293,7 @@ class BlossomApp {
     if (!container) return;
 
     let html = `
-      <button data-slug="all" class="category-pill-btn px-5 py-2.5 rounded-full text-xs font-bold transition whitespace-nowrap ${this.activeCategorySlug === 'all' ? 'bg-[#C01838] text-white shadow-md shadow-pink-600/30' : 'bg-white text-slate-700 hover:bg-pink-50 border border-pink-100/90'}">
+      <button data-slug="all" class="category-pill-btn px-5 py-2.5 rounded-full text-xs font-bold transition whitespace-nowrap ${this.activeCategorySlug === 'all' ? 'bg-[#C026D3] text-white shadow-md shadow-pink-600/30' : 'bg-white text-slate-700 hover:bg-pink-50 border border-pink-100/90'}">
         ✨ All Treatments
       </button>
     `;
@@ -301,7 +301,7 @@ class BlossomApp {
     this.categories.forEach(cat => {
       const isActive = this.activeCategorySlug === cat.slug;
       html += `
-        <button data-slug="${cat.slug}" class="category-pill-btn px-5 py-2.5 rounded-full text-xs font-bold transition whitespace-nowrap ${isActive ? 'bg-[#C01838] text-white shadow-md shadow-pink-600/30' : 'bg-white text-slate-700 hover:bg-pink-50 border border-pink-100/90'}">
+        <button data-slug="${cat.slug}" class="category-pill-btn px-5 py-2.5 rounded-full text-xs font-bold transition whitespace-nowrap ${isActive ? 'bg-[#C026D3] text-white shadow-md shadow-pink-600/30' : 'bg-white text-slate-700 hover:bg-pink-50 border border-pink-100/90'}">
           ${escapeHtml(cat.name)}
         </button>
       `;

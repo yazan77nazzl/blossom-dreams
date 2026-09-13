@@ -1,4 +1,4 @@
-"""Generate the Blossom Dreams PWA icon set (Brand: raspberry velvet + rose gold).
+"""Generate the Blossom Dreams PWA icon set (Brand: fuchsia velvet + rose gold).
 
 Output (all PNG):
   public/images/icons/icon-192.png            (192x192, any)
@@ -18,8 +18,8 @@ from PIL import Image, ImageDraw
 
 OUT_DIR = Path(__file__).resolve().parent / "public" / "images" / "icons"
 
-GRAD_TOP = (216, 40, 80)      # #D82850 raspberry
-GRAD_BOTTOM = (107, 19, 50)   # #6B1332 deep velvet
+GRAD_TOP = (217, 70, 239)     # #D946EF fuchsia
+GRAD_BOTTOM = (112, 26, 117)  # #701A75 deep fuchsia velvet
 GOLD_TOP = (247, 224, 146)    # #F7E092
 GOLD_BOTTOM = (212, 164, 74)  # #D4A44A
 PETAL_EDGE = (162, 73, 45)    # #A2492D copper
