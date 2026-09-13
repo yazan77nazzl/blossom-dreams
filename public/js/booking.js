@@ -406,7 +406,7 @@ class BookingWizard {
       <!-- Calendar input -->
       <div class="p-4 rounded-2xl bg-white border border-pink-100 flex items-center justify-between">
         <div class="text-xs text-slate-600 font-medium">Or pick any specific date:</div>
-        <input type="date" id="wizard-date-input" value="${this.state.selectedDate}" min="${new Date().toISOString().split('T')[0]}"
+        <input type="date" id="wizard-date-input" value="${this.state.selectedDate}" min="${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}"
           class="text-xs px-3 py-1.5 rounded-xl border border-pink-200 text-slate-800 bg-pink-50/30 font-semibold" />
       </div>
     `;

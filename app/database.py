@@ -1,6 +1,7 @@
 ﻿import os
 import re
 import sqlite3
+from datetime import date as _date, datetime as _datetime, time as _time
 from pathlib import Path
 from contextlib import contextmanager
 from app.config import settings
@@ -9,6 +10,24 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 DB_PATH = BASE_DIR / "blossom_dreams.db"
 
 IS_POSTGRES = settings.DATABASE_URL.startswith("postgresql://") or settings.DATABASE_URL.startswith("postgres://")
+
+
+def normalize_db_value(value):
+    """PostgreSQL returns TIMESTAMP/DATE/TIME columns as datetime/date/time
+    objects, but the API layer (pydantic models like BookingResponse) and the
+    SQLite path both expect plain strings. Normalize at the cursor boundary so
+    every response works identically on SQLite and Postgres."""
+    if isinstance(value, (_datetime, _date, _time)):
+        return value.isoformat()
+    return value
+
+
+def normalize_db_row(row):
+    if row is None:
+        return row
+    if isinstance(row, dict):
+        return {key: normalize_db_value(value) for key, value in row.items()}
+    return tuple(normalize_db_value(value) for value in row)
 
 if IS_POSTGRES:
     import psycopg
@@ -42,13 +61,15 @@ if IS_POSTGRES:
             return self
 
         def fetchone(self):
-            return self._cursor.fetchone()
+            return normalize_db_row(self._cursor.fetchone())
 
         def fetchall(self):
-            return self._cursor.fetchall()
+            rows = self._cursor.fetchall()
+            return [normalize_db_row(row) for row in rows]
 
         def fetchmany(self, size=None):
-            return self._cursor.fetchmany(size) if size else self._cursor.fetchmany()
+            rows = self._cursor.fetchmany(size) if size else self._cursor.fetchmany()
+            return [normalize_db_row(row) for row in rows]
 
         def __iter__(self):
             return iter(self._cursor)

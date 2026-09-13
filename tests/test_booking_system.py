@@ -792,3 +792,84 @@ def test_availability_config_buffer_save_location():
     versailles_config = client.get(f"/api/availability/config?location_id={versailles_id}").json()
     versailles_day = next(s for s in versailles_config["schedule"] if s["day_of_week"] == day)
     assert versailles_day["buffer_minutes"] == 0
+
+
+# --- Regression: PostgreSQL 500 bug ---
+# Production runs on Neon PostgreSQL where TIMESTAMP columns come back as Python
+# datetime objects. BookingResponse.created_at is typed `str`, and pydantic v2
+# refuses to coerce datetime->str, so every booking endpoint returned HTTP 500
+# "Request failed with status 500" in production while all SQLite tests passed.
+# The fix normalizes datetime/date/time to ISO strings at the cursor boundary.
+def test_postgres_datetime_values_serialize_without_500():
+    from datetime import datetime, timezone
+    from app.database import normalize_db_row
+    from app.models import BookingResponse
+
+    row = {
+        "id": 1,
+        "booking_code": "BD-12345",
+        "service_id": 1,
+        "customer_name": "PG Client",
+        "customer_phone": "+961 70 000 000",
+        "appointment_date": "2026-10-05",
+        "appointment_time": "09:00",
+        "duration_minutes": 60,
+        "status": "confirmed",
+        "price": 35.0,
+        "created_at": datetime(2026, 9, 13, 12, 0, 0, tzinfo=timezone.utc),
+    }
+
+    normalized = normalize_db_row(row)
+    assert normalized["created_at"] == "2026-09-13T12:00:00+00:00"
+    assert isinstance(normalized["created_at"], str)
+
+    model = BookingResponse(**normalized)
+    assert model.created_at == "2026-09-13T12:00:00+00:00"
+
+    # The raw (un-normalized) datetime must NOT validate against the model —
+    # that is exactly the production 500 that the wrapper now prevents.
+    raw = normalize_db_row(dict(row))
+    raw["created_at"] = row["created_at"]
+    with pytest.raises(Exception):
+        BookingResponse(**raw)
+
+
+def test_booking_api_returns_plain_string_created_at():
+    tue = get_safe_weekday(1)
+    service = get_active_service()
+    slot = choose_free_slot(tue, service["id"])
+    payload = booking_payload(service, {"date": tue, "time": slot}, "+961 70 555 321")
+
+    create_res = client.post("/api/bookings", json=payload)
+    assert create_res.status_code == 201
+    booking = create_res.json()
+    assert isinstance(booking["created_at"], str)
+    assert booking["created_at"]
+
+
+# --- Regression: real WhatsApp icon ---
+def test_whatsapp_icon_is_official_glyph():
+    import pathlib
+    import re
+
+    repo_root = pathlib.Path(__file__).resolve().parent.parent
+    html = (repo_root / "public" / "index.html").read_text(encoding="utf-8")
+
+    # The official WhatsApp glyph used across the site (header, hero, offers,
+    # footer, floating pulse button, mobile bottom nav).
+    official_glyph = "M.057 24l1.687-6.163"
+    assert official_glyph in html
+
+    # Every .salon-whatsapp-link must render the real glyph, never a generic
+    # chat-bubble emoji / icon.
+    wa_links = re.findall(r'class="[^"]*\bsalon-whatsapp-link\b[^"]*"', html)
+    assert wa_links, "expected at least one .salon-whatsapp-link element"
+
+    link_blocks = re.split(r'class="[^"]*\bsalon-whatsapp-link\b', html)[1:]
+    assert link_blocks, "expected WhatsApp anchor bodies to inspect"
+    for block in link_blocks:
+        if "💬" in block or "💭" in block or "✉" in block or "🗨" in block:
+            raise AssertionError("generic chat bubble found inside a WhatsApp link")
+
+    assert "💬" not in html
+    assert "wa.me" in html or "whatsapp" in html or "salon-whatsapp-link" in html
