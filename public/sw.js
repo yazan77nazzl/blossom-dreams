@@ -15,7 +15,7 @@ const STATIC_CACHE = `${VERSION}-static`;
 const API_CACHE = `${VERSION}-api`;
 
 /* Keep the ?v= on these in sync with index.html asset versions. */
-const ASSET_VERSION = '6.1';
+const ASSET_VERSION = '6.2';
 
 const CORE_ASSETS = [
   '/',

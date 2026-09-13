@@ -1,25 +1,50 @@
-Please modify the project UI with the following requirements:
+Please update the landing page with the following exact changes:
 
-1. **Color Update**
+### 1. Main Color
 
-   * Replace the current burgundy/maroon color with a **fuchsia/pink color**.
-   * Apply the new fuchsia color consistently wherever the current burgundy/maroon color is used, including buttons, headings, borders, highlights, and interactive elements.
-   * Keep the rest of the existing color palette unchanged unless a small adjustment is necessary for visual consistency.
+* Replace the current color with **#F7A1B3 (Bubblegum)**.
+* Use `#F7A1B3` consistently throughout the relevant UI elements.
+* Remove the previous burgundy, maroon, and fuchsia colors where they are being used for the main accent.
+* Keep the overall design elegant and clean.
 
-2. **Hero Image**
+### 2. Brand / Hero Text
 
-   * The image at the beginning of the page should **NOT be inside a frame, card, border, or boxed container**.
-   * Place the image **clearly in the center of the screen** as the main visual element.
-   * Make the image responsive and properly scaled for desktop, tablet, and mobile screens.
-   * Add a **smooth and elegant entrance animation**, such as a subtle fade-in combined with a slight movement.
-   * Keep the image sharp and high-quality.
-   * Preserve the image's original aspect ratio and do not stretch or distort it.
-   * The image should feel like a prominent hero element rather than an image inside a container.
+* Replace **"Verdum Atelier"** with:
+  **"+22 years of experience"**
+* Make sure the old text "Verdum Atelier" is no longer displayed in this section.
+* Style the new text so it fits naturally with the existing typography and design.
 
-3. **Important**
+### 3. Replace the Statistics / Highlights
 
-   * Do not change or break any existing functionality.
-   * Do not remove existing components or content that are unrelated to these changes.
-   * Preserve the current design and structure as much as possible.
-   * Only make the changes requested above.
-   * Make sure the final result looks polished and works correctly across Desktop, Tablet, and Mobile.
+Replace the current text above the hero section with exactly:
+
+**100% Hygiene & Sterilization**
+**4.9 ★ Client Reviews**
+**2000+ Happy Clients**
+
+Keep these three items visually balanced and responsive.
+
+### 4. Hero Image Animation
+
+* The hero image must **NOT have any visible border, frame, card, outline, or boxed container**.
+* Remove any rounded corners or styling that makes the image look like it is inside a card.
+* The image should appear naturally on the page with **no visible edges or frame around it**.
+* When the page first loads, make the image **enter with a smooth, elegant animation**.
+* Use a modern entrance animation such as:
+
+  * fade-in
+  * slight scale-up
+  * subtle upward movement
+* The animation should start when the page loads and feel smooth and premium.
+* Do not make the animation too fast, flashy, or distracting.
+* Keep the image sharp, centered, and responsive.
+* Preserve the original aspect ratio and do not distort the image.
+
+### 5. Important
+
+* Do not change existing functionality.
+* Do not remove unrelated components.
+* Do not redesign the entire page.
+* Only make the requested visual and text changes.
+* Make sure everything works correctly on mobile, tablet, and desktop.
+* After making the changes, check the final UI for alignment, spacing, responsiveness, and animation quality.

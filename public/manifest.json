@@ -9,8 +9,8 @@
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#4A044E",
-  "theme_color": "#C026D3",
+  "background_color": "#5C1B3F",
+  "theme_color": "#F7A1B3",
   "categories": ["beauty", "lifestyle", "business"],
   "icons": [
     {

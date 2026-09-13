@@ -7,7 +7,7 @@ A complete, production-quality, mobile-first full-stack web application with aut
 ## 💎 Features
 
 ### 1. Public Client Experience (`/`)
-- **Romantic Luxury Brand Identity**: Inspired by Blossom Dreams' Instagram aesthetic with soft rose blush `#FFF5F7`, vibrant fuchsia `#C026D3`, gold accents `#D4AF37`, Playfair Display serif typography, and delicate floral motifs.
+- **Romantic Luxury Brand Identity**: Inspired by Blossom Dreams' Instagram aesthetic with soft rose blush `#FFF5F7`, bubblegum pink `#F7A1B3`, gold accents `#D4AF37`, Playfair Display serif typography, and delicate floral motifs.
 - **Mobile-First Responsive Design**: Optimized for Instagram profile visits on smartphones with touch-friendly navigation, zero horizontal scroll, and floating contact actions.
 - **Dynamic Services Menu**: Categorized under *Nails, Lashes, Brows, Skin & Facial, Laser Hair Removal, Glam & Makeup, and Piercing & Tattoo*, with real-time live search.
 - **Special Offers & Packages**: Displays promotional bundles with crossed-out original prices, prominent discount badges, and automatic expiration handling.

@@ -408,7 +408,7 @@ class AdminApp {
       svgHtml += `
         <div class="flex-1 flex flex-col items-center gap-1.5 group">
           <span class="text-[10px] font-mono font-bold text-slate-600 opacity-0 group-hover:opacity-100 transition">${c}</span>
-          <div class="w-full max-w-[36px] rounded-t-xl transition duration-500 ${isToday ? 'bg-gradient-to-t from-[#C026D3] to-[#D946EF]' : 'bg-pink-100 group-hover:bg-pink-300'}" style="height: ${Math.max(heightPercent, 12)}%;"></div>
+          <div class="w-full max-w-[36px] rounded-t-xl transition duration-500 ${isToday ? 'bg-gradient-to-t from-[#EE6A95] to-[#F7A1B3]' : 'bg-pink-100 group-hover:bg-pink-300'}" style="height: ${Math.max(heightPercent, 12)}%;"></div>
           <span class="text-[10px] font-bold uppercase tracking-wider ${isToday ? 'text-pink-700' : 'text-slate-400'}">${days[idx]}</span>
         </div>
       `;
