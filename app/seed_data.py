@@ -35,8 +35,8 @@ def seed_database():
                 '+96170882194',
                 'https://www.instagram.com/blossomdreams.lb/',
                 'https://www.tiktok.com/@blossomdreams.lb',
-                'Verdun, Luxury Fashion District, Beirut, Lebanon',
-                'https://maps.google.com/?q=Verdun+Beirut',
+                'Amwaj Center, Jounieh, Lebanon',
+                'https://maps.google.com/?q=Amwaj+Center+Jounieh+Lebanon',
                 'Monday - Saturday: 9:30 AM - 7:00 PM | Sunday: Closed',
                 '$',
                 '🌸 Spring Glamour at Blossom Dreams: Enjoy exclusive pampering packages. Book your appointment online today!'
@@ -49,6 +49,8 @@ def seed_database():
         cursor.execute("UPDATE salon_settings SET description = REPLACE(description, 'Blossom Dreams LB', 'Blossom Dreams') WHERE description LIKE '%Blossom Dreams LB%'")
         cursor.execute("UPDATE salon_settings SET tagline = REPLACE(tagline, 'Blossom Dreams LB', 'Blossom Dreams') WHERE tagline LIKE '%Blossom Dreams LB%'")
         cursor.execute("UPDATE salon_settings SET announcement_text = REPLACE(announcement_text, 'Blossom Dreams LB', 'Blossom Dreams') WHERE announcement_text LIKE '%Blossom Dreams LB%'")
+        # Relocate legacy "Verdun / Beirut" installations to Amwaj Center, Jounieh
+        cursor.execute("UPDATE salon_settings SET address = 'Amwaj Center, Jounieh, Lebanon', google_maps_url = 'https://maps.google.com/?q=Amwaj+Center+Jounieh+Lebanon' WHERE address LIKE '%Verdun%'")
 
         # 3. Weekly Availability Settings (0 = Monday, 6 = Sunday)
         days = [

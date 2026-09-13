@@ -44,7 +44,7 @@ class BookingWizard {
             <span class="w-9 h-9 rounded-xl bg-pink-100 text-pink-700 flex items-center justify-center text-lg shadow-xs">🌸</span>
             <div>
               <h3 class="text-base font-serif font-bold text-gray-900 leading-tight">Private Appointment Reservation</h3>
-              <p class="text-[10px] text-pink-700 font-bold tracking-widest uppercase mt-0.5">Blossom Dreams • Verdun Atelier</p>
+              <p class="text-[10px] text-pink-700 font-bold tracking-widest uppercase mt-0.5">Blossom Dreams • Jounieh</p>
             </div>
           </div>
           <button id="close-booking-modal" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition">
@@ -765,7 +765,7 @@ class BookingWizard {
 
           <div class="pt-3 text-[11px] text-slate-500 flex items-center gap-2">
             <span>📍</span>
-            <span>${escapeHtml(this.settings?.address || 'Verdun, Beirut, Lebanon')}</span>
+            <span>${escapeHtml(this.settings?.address || 'Amwaj Center, Jounieh, Lebanon')}</span>
           </div>
         </div>
 

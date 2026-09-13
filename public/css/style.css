@@ -809,6 +809,41 @@ body {
   box-shadow: 0 12px 32px -12px rgba(20, 4, 10, 0.5);
 }
 
+/* Salon multi-location map (Leaflet): branded pins & popups */
+#salon-map {
+  z-index: 0;
+  font-family: inherit;
+  height: 22rem;
+}
+@media (min-width: 640px) {
+  #salon-map { height: 24rem; }
+}
+#salon-map .leaflet-popup-content-wrapper {
+  border-radius: 14px;
+  border: 1px solid #F8CDD8;
+  box-shadow: 0 12px 30px -4px rgba(247, 161, 179, 0.4);
+  background: #FFFFFF;
+}
+#salon-map .leaflet-popup-content {
+  margin: 12px 14px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+#salon-map .leaflet-popup-tip {
+  background: #FFFFFF;
+  border: 1px solid #F8CDD8;
+}
+#salon-map .leaflet-control-attribution {
+  font-size: 9px;
+  background: rgba(255, 255, 255, 0.85);
+  color: #6E7A86;
+}
+#salon-map .bd-map-pin {
+  background: transparent;
+  border: none;
+  filter: drop-shadow(0 5px 8px rgba(139, 42, 92, 0.35));
+}
+
 /* Category pill & date strip snap + breathing micro-interaction */
 #categories-pills-container { scroll-snap-type: x proximity; }
 .category-pill-btn { scroll-snap-align: start; transition: transform 0.3s var(--ease-lux), box-shadow 0.3s var(--ease-lux), background 0.3s var(--ease-lux); }

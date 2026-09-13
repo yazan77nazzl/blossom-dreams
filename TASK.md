@@ -1,50 +1,130 @@
-Please update the landing page with the following exact changes:
+Please fully audit, fix, and test the entire booking system. Do not make assumptions — inspect the existing code, database, booking logic, availability rules, admin dashboard, and appointment scheduling flow before making changes.
 
-### 1. Main Color
+### 1. Fix the Booking Error
 
-* Replace the current color with **#F7A1B3 (Bubblegum)**.
-* Use `#F7A1B3` consistently throughout the relevant UI elements.
-* Remove the previous burgundy, maroon, and fuchsia colors where they are being used for the main accent.
-* Keep the overall design elegant and clean.
+* The booking system currently throws an error when a customer tries to make a reservation.
+* Find the actual root cause and fix it properly.
+* Test the complete booking flow from start to finish:
 
-### 2. Brand / Hero Text
+  1. Select a service.
+  2. Select a location.
+  3. Select a date.
+  4. Select an available time.
+  5. Enter customer information.
+  6. Submit the booking.
+  7. Confirm that the booking is successfully created.
+  8. Confirm that the booking appears correctly in the Admin dashboard.
+* Make sure errors are handled gracefully and users receive a clear message if something goes wrong.
 
-* Replace **"Verdum Atelier"** with:
-  **"+22 years of experience"**
-* Make sure the old text "Verdum Atelier" is no longer displayed in this section.
-* Style the new text so it fits naturally with the existing typography and design.
+### 2. Fix Appointment Availability
 
-### 3. Replace the Statistics / Highlights
+There is currently a serious availability issue:
 
-Replace the current text above the hero section with exactly:
+* Some days show booking times starting at **12:00 PM**, even though the business opening hours are configured to start at **9:00 AM**.
+* Investigate why the 9:00 AM–12:00 PM slots are missing.
+* Make sure the system generates available appointment times based on the actual configured business hours for each location/day.
+* Do NOT hardcode 12:00 PM or any other start time.
+* If the business is configured to open at 9:00 AM, available slots should begin from 9:00 AM, subject only to valid booking rules.
+* Check whether the issue is caused by:
 
-**100% Hygiene & Sterilization**
-**4.9 ★ Client Reviews**
-**2000+ Happy Clients**
+  * timezone handling
+  * date parsing
+  * opening-hours logic
+  * availability calculations
+  * existing bookings
+  * blocked dates/times
+  * service duration
+  * buffer time
+  * database values
+  * frontend filtering
+  * backend filtering
+* Fix the underlying issue rather than hiding it on the frontend.
 
-Keep these three items visually balanced and responsive.
+### 3. Appointment Scheduling Logic
 
-### 4. Hero Image Animation
+Review and correct the complete appointment scheduling system.
 
-* The hero image must **NOT have any visible border, frame, card, outline, or boxed container**.
-* Remove any rounded corners or styling that makes the image look like it is inside a card.
-* The image should appear naturally on the page with **no visible edges or frame around it**.
-* When the page first loads, make the image **enter with a smooth, elegant animation**.
-* Use a modern entrance animation such as:
+Make sure:
 
-  * fade-in
-  * slight scale-up
-  * subtle upward movement
-* The animation should start when the page loads and feel smooth and premium.
-* Do not make the animation too fast, flashy, or distracting.
-* Keep the image sharp, centered, and responsive.
-* Preserve the original aspect ratio and do not distort the image.
+* Opening and closing hours work correctly.
+* Different working hours for different days are respected.
+* Different locations can have different schedules if supported by the existing system.
+* Service duration is correctly respected.
+* Buffer time is correctly respected if configured.
+* Already-booked slots cannot be double-booked.
+* Unavailable/blocked times remain unavailable.
+* Available slots are generated consistently between the opening and closing hours.
+* Past time slots are not offered when booking for the current day.
+* Timezones are handled consistently.
+* Dates and times displayed to the customer match the actual stored appointment time.
 
-### 5. Important
+### 4. Admin Dashboard
 
-* Do not change existing functionality.
-* Do not remove unrelated components.
-* Do not redesign the entire page.
-* Only make the requested visual and text changes.
-* Make sure everything works correctly on mobile, tablet, and desktop.
-* After making the changes, check the final UI for alignment, spacing, responsiveness, and animation quality.
+Make sure the Admin can properly see and manage bookings.
+
+The Admin should be able to see:
+
+* Customer name
+* Customer contact information
+* Service
+* Location
+* Date
+* Appointment time
+* Booking status
+* Booking creation date/time
+
+Verify that newly created bookings immediately appear in the Admin dashboard.
+
+Also verify that booking statuses and appointment data are correctly synchronized between the customer booking system and Admin dashboard.
+
+### 5. Old / Test Data
+
+Inspect the database for old, invalid, duplicate, or test bookings.
+
+If there is clearly old/test booking data that is no longer needed, remove it safely.
+
+IMPORTANT:
+
+* Do not delete legitimate customer data.
+* Before deleting anything, identify whether the records are test/seed/demo/invalid data.
+* Clean up duplicate or corrupted booking records if they are clearly invalid.
+* Make sure the database remains consistent after cleanup.
+
+### 6. Full Testing
+
+Do comprehensive testing after making the fixes.
+
+Test at minimum:
+
+* Booking at 9:00 AM.
+* Booking at 10:00 AM.
+* Booking at 11:00 AM.
+* Booking at 12:00 PM.
+* Booking later in the day.
+* Different days of the week.
+* Different services.
+* Different locations.
+* A fully booked time slot.
+* A date with no availability.
+* Current date booking.
+* Future date booking.
+* Duplicate booking attempt.
+* Invalid booking submission.
+* Admin viewing the newly created booking.
+
+Test both frontend and backend/database behavior.
+
+### 7. Do Not Consider the Task Finished Until
+
+* The booking error is completely resolved.
+* 9:00 AM availability works correctly on days configured to start at 9:00 AM.
+* Appointment times are generated correctly according to the configured schedule.
+* Bookings are stored correctly in the database.
+* Bookings appear correctly in Admin.
+* Double bookings are prevented.
+* Timezones and dates are consistent.
+* Old/test data has been safely cleaned up where appropriate.
+* The entire booking flow has been tested successfully.
+* No unrelated functionality is broken.
+
+Please inspect the entire booking architecture first, identify the root causes, implement the fixes, run the relevant tests, and then verify the complete end-to-end booking flow before finishing.

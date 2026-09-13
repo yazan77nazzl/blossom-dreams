@@ -160,7 +160,6 @@ class BlossomApp {
     document.querySelectorAll(".salon-brand-name").forEach(el => el.innerText = s.salon_name);
     document.querySelectorAll(".salon-brand-tagline").forEach(el => el.innerText = s.tagline);
     document.querySelectorAll(".salon-phone-text").forEach(el => el.innerText = s.phone);
-    document.querySelectorAll(".salon-address-text").forEach(el => el.innerText = s.address);
     document.querySelectorAll(".salon-hours-text").forEach(el => el.innerText = s.opening_hours_text);
 
     // WhatsApp Links

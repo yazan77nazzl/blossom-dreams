@@ -6,7 +6,7 @@
   
   <!-- SEO & Luxury Branding Metadata -->
   <title>Blossom Dreams | Haute Beauté & Luxury Salon Beirut</title>
-  <meta name="description" content="Blossom Dreams in Verdun, Beirut. Lebanon's premier luxury salon for Russian manicures, BIAB builder gel, Russian volume lashes, HD brow lamination, hydrafacials, and aesthetic glam." />
+  <meta name="description" content="Blossom Dreams at Amwaj Center, Jounieh. Lebanon's premier luxury salon for Russian manicures, BIAB builder gel, Russian volume lashes, HD brow lamination, hydrafacials, and aesthetic glam." />
   <meta name="keywords" content="Blossom Dreams, beauty salon Beirut, Russian manicure Lebanon, BIAB nails Beirut, lash extensions, brow lamination, hydrafacial Lebanon" />
   
   <meta property="og:title" content="Blossom Dreams | Luxury Beauty Sanctuary" />
@@ -88,7 +88,11 @@
   </script>
 
   <!-- Luxury Design System Stylesheet -->
-  <link rel="stylesheet" href="/static/css/style.css?v=6.2" />
+  <link rel="stylesheet" href="/static/css/style.css?v=6.4" />
+
+  <!-- Leaflet (multi-location map) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 </head>
 <body class="bg-[#FBEDE6] text-[#5C1B3F] antialiased selection:bg-pink-200 selection:text-pink-950 pb-20 md:pb-0">
 
@@ -297,20 +301,8 @@
       <div class="relative mx-auto w-full max-w-4xl">
         <img src="/static/images/hero_bg.jpg" alt="Blossom Dreams Luxury Salon" class="hero-main-image" />
 
-        <!-- Floating Mini Card 1 (Bottom Left) -->
-        <div class="animate-float absolute -bottom-5 left-0 sm:-left-8 bg-white/95 backdrop-blur-md p-4 rounded-2xl shadow-xl border border-rose-100 flex items-center gap-3.5 z-20">
-          <div class="w-12 h-12 rounded-xl bg-rose-50 border border-rose-200 flex items-center justify-center text-xl flex-shrink-0">
-            💅
-          </div>
-          <div>
-            <div class="text-xs font-bold text-gray-900">Russian Cuticle Care</div>
-            <div class="text-[10px] text-rose-700 font-semibold">Flawless 4-Week Retention</div>
-          </div>
-        </div>
-
-        <!-- Floating Mini Card 2 (Top Right) -->
-        <div class="animate-float-delayed absolute -top-4 right-0 sm:-right-8 bg-white/95 backdrop-blur-md px-4 py-2.5 rounded-2xl shadow-xl border border-rose-100 flex items-center gap-2 z-20">
-          <span class="text-amber-500 text-sm">★★★★★</span>
+        <!-- Floating Mini Card (Top Right) -->
+        <div class="animate-float-delayed absolute -top-4 right-0 sm:-right-8 bg-white/95 backdrop-blur-md px-4 py-2.5 rounded-2xl shadow-xl border border-rose-100 z-20">
           <span class="text-xs font-bold text-gray-800 font-serif">+22 years of experience</span>
         </div>
 
@@ -428,7 +420,7 @@
               <span class="w-7 h-7 rounded-full bg-pink-600 text-white flex items-center justify-center font-bold text-xs flex-shrink-0">✓</span>
               <div>
                 <strong class="text-slate-900 text-xs block">Complimentary Rose Tea & Lounge Pampering</strong>
-                <span class="text-slate-500 text-[11px]">Enjoy complimentary organic infusions, sweet delights, and quiet luxury in our Verdun boutique.</span>
+                <span class="text-slate-500 text-[11px]">Enjoy complimentary organic infusions, sweet delights, and quiet luxury in our Jounieh boutique.</span>
               </div>
             </div>
           </div>
@@ -490,8 +482,8 @@
         
         <div class="lg:col-span-5 reveal-on-scroll">
           <span class="text-xs font-bold text-pink-700 uppercase tracking-widest block mb-2">Visit Our Boutique</span>
-          <h2 class="font-serif text-3xl sm:text-4xl font-extrabold text-gray-900">Find Us in Beirut</h2>
-          <p class="text-xs sm:text-sm text-slate-600 mt-2 leading-relaxed">Conveniently located in Verdun, Beirut's premier fashion avenue.</p>
+          <h2 class="font-serif text-3xl sm:text-4xl font-extrabold text-gray-900">Find Us in Jounieh</h2>
+          <p class="text-xs sm:text-sm text-slate-600 mt-2 leading-relaxed">Conveniently located at Amwaj Center, Jounieh, on Lebanon's vibrant coastal highway.</p>
 
           <div class="mt-8 space-y-6 text-xs text-slate-700">
             
@@ -499,9 +491,12 @@
               <div class="w-10 h-10 rounded-2xl bg-pink-100 text-pink-700 flex items-center justify-center flex-shrink-0 text-base">
                 📍
               </div>
-              <div>
-                <div class="font-bold text-gray-900 text-sm">Atelier Address</div>
-                <div class="salon-address-text mt-1 text-slate-600 leading-relaxed font-normal">Verdun, Luxury Fashion District, Beirut, Lebanon</div>
+              <div class="min-w-0">
+                <div class="font-bold text-gray-900 text-sm">Our Locations</div>
+                <div class="mt-1 text-slate-600 leading-relaxed font-normal">
+                  <div>Versailles Center, Sarba, Jounieh</div>
+                  <div class="mt-1">Amwaj Center, Jounieh</div>
+                </div>
               </div>
             </div>
 
@@ -539,22 +534,76 @@
           </div>
         </div>
 
-        <!-- Google Maps Embed -->
+        <!-- Salon Multi-Location Map -->
         <div class="lg:col-span-7 reveal-on-scroll delay-200">
           <div class="w-full h-88 sm:h-96 rounded-3xl overflow-hidden shadow-xl border-4 border-rose-100 relative">
-            <iframe 
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d13249.206584282382!2d35.4851!3d33.8869!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x151f17215880a78f%3A0x6b86f3dbcd4703a!2sVerdun%2C%20Beirut%2C%20Lebanon!5e0!3m2!1sen!2slb!4v1700000000000!5m2!1sen!2slb"
-              class="w-full h-full border-0" 
-              allowfullscreen="" 
-              loading="lazy" 
-              referrerpolicy="no-referrer-when-downgrade">
-            </iframe>
+            <div id="salon-map" class="w-full h-full z-0"></div>
           </div>
         </div>
 
       </div>
     </div>
   </section>
+
+  <!-- Salon Map with two location markers -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      var mapEl = document.getElementById('salon-map');
+      if (!mapEl || typeof L === 'undefined') return;
+
+      var locations = [
+        {
+          name: 'Versailles Center',
+          detail: 'Centre Versailles, Sarba, Jounieh, Lebanon',
+          lat: 33.9805127,
+          lng: 35.6261905
+        },
+        {
+          name: 'Amwaj Center, Jounieh',
+          detail: 'Amwaj Center, Main Street, Jounieh, Lebanon',
+          lat: 33.9833907,
+          lng: 35.630377
+        }
+      ];
+
+      var map = L.map('salon-map', {
+        scrollWheelZoom: false,
+        attributionControl: true
+      }).setView([33.982, 35.6283], 15);
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      }).addTo(map);
+
+      var pinIcon = L.divIcon({
+        className: 'bd-map-pin',
+        html: '<svg viewBox="0 0 24 24" width="34" height="34" aria-hidden="true">' +
+              '<path fill="#EE6A95" stroke="#FFFFFF" stroke-width="1.4" d="M12 0C7.6 0 4 3.6 4 8c0 5.4 8 16 8 16s8-10.6 8-16c0-4.4-3.6-8-8-8z"/>' +
+              '<circle cx="12" cy="8" r="3.2" fill="#FFFFFF"/></svg>',
+        iconSize: [34, 42],
+        iconAnchor: [17, 42],
+        popupAnchor: [0, -38]
+      });
+
+      var firstMarker = null;
+      locations.forEach(function (loc, index) {
+        var marker = L.marker([loc.lat, loc.lng], { icon: pinIcon })
+          .addTo(map)
+          .bindPopup(
+            '<strong style="color: #8B2A5C;">' + loc.name + '</strong>' +
+            '<br><span style="color: #5C1B3F; font-size: 11px;">' + loc.detail + '</span>'
+          );
+        if (index === 0) firstMarker = marker;
+      });
+
+      if (firstMarker) setTimeout(function () { firstMarker.openPopup(); }, 400);
+
+      function resizeMap() { map.invalidateSize(); }
+      window.addEventListener('resize', resizeMap);
+      setTimeout(resizeMap, 600);
+    });
+  </script>
 
   <!-- LUXURY FOOTER -->
   <footer class="bg-[#5C1B3F] text-white pt-16 pb-10 border-t border-velvet-900">
@@ -642,7 +691,7 @@
   </nav>
 
   <!-- Main JavaScript App -->
-  <script type="module" src="/static/js/app.js?v=6.2"></script>
+  <script type="module" src="/static/js/app.js?v=6.4"></script>
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {

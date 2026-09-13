@@ -241,7 +241,7 @@ def init_db():
             whatsapp_number TEXT DEFAULT '+96170000000',
             instagram_url TEXT DEFAULT 'https://www.instagram.com/blossomdreams.lb/',
             tiktok_url TEXT,
-            address TEXT DEFAULT 'Beirut, Lebanon',
+            address TEXT DEFAULT 'Amwaj Center, Jounieh, Lebanon',
             google_maps_url TEXT,
             opening_hours_text TEXT DEFAULT 'Monday - Saturday: 9:30 AM - 7:00 PM | Sunday: Closed',
             currency_symbol TEXT DEFAULT '$',
