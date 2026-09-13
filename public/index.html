@@ -88,7 +88,7 @@
   </script>
 
   <!-- Luxury Design System Stylesheet -->
-  <link rel="stylesheet" href="/static/css/style.css?v=6.6" />
+  <link rel="stylesheet" href="/static/css/style.css?v=6.7" />
 </head>
 <body class="bg-[#FBEDE6] text-[#8E3A62] antialiased selection:bg-pink-200 selection:text-pink-950 pb-20 md:pb-0">
 
@@ -268,6 +268,7 @@
               <span class="text-sm sm:text-base font-serif font-semibold text-white">
                 +22 years of experience
               </span>
+              <span class="text-lg font-serif font-bold text-[#FFE9C9]">✦</span>
             </div>
           </div>
 
@@ -449,19 +450,19 @@
   </section>
 
   <!-- LUXURY FOOTER -->
-  <footer class="bg-[#8E3A62] text-white pt-16 pb-10 border-t border-velvet-900">
+  <footer class="site-footer bg-[#8E3A62] text-white pt-10 sm:pt-16 pb-6 sm:pb-10 border-t border-velvet-900">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-10 pb-12 border-b border-velvet-900">
+      <div class="site-footer-grid grid grid-cols-1 md:grid-cols-4 gap-6 sm:gap-10 pb-6 sm:pb-12 border-b border-velvet-900">
         
-        <div class="md:col-span-2">
-          <div class="flex items-center gap-3 mb-4">
+        <div class="site-footer-brand md:col-span-2">
+          <div class="flex items-center gap-3 mb-2 sm:mb-4">
             <span class="text-2xl">🌸</span>
             <span class="salon-brand-name font-serif text-2xl font-bold text-white tracking-tight">BLOSSOM DREAMS</span>
           </div>
           <p class="salon-brand-tagline text-xs text-rose-200/60 max-w-sm leading-relaxed">
             Your sanctuary of elegance, radiance, and luxury beauty in Beirut. Meticulously designed for your comfort and timeless allure.
           </p>
-          <div class="mt-6 flex items-center gap-3">
+          <div class="mt-4 sm:mt-6 flex items-center gap-3">
             <a href="https://www.instagram.com/blossomdreams.lb/" target="_blank" rel="noopener noreferrer" title="Instagram"
               class="salon-instagram-link w-9 h-9 rounded-full bg-white/10 hover:bg-rose-600 flex items-center justify-center text-xs transition duration-300"
               aria-label="Follow Blossom Dreams on Instagram">
@@ -480,9 +481,9 @@
           </div>
         </div>
 
-        <div>
-          <h5 class="text-xs font-bold uppercase tracking-widest text-amber-300/90 mb-4">Explore Menu</h5>
-          <ul class="space-y-2.5 text-xs text-rose-200/60">
+        <div class="site-footer-links">
+          <h5 class="text-xs font-bold uppercase tracking-widest text-amber-300/90 mb-3">Explore Menu</h5>
+          <ul class="space-y-1.5 text-xs text-rose-200/60">
             <li><a href="#services" class="hover:text-white transition">All Treatments</a></li>
             <li><a href="#offers" class="hover:text-white transition">Seasonal Packages</a></li>
             <li><a href="#about" class="hover:text-white transition">Atelier Philosophy</a></li>
@@ -491,17 +492,9 @@
           </ul>
         </div>
 
-        <div>
-          <h5 class="text-xs font-bold uppercase tracking-widest text-amber-300/90 mb-4">Client Care</h5>
-          <ul class="space-y-2.5 text-xs text-rose-200/60">
-            <li><button class="hover:text-white transition" onclick="document.getElementById('btn-lookup-booking').click();">Verify Appointment Code</button></li>
-            <li><a href="/admin" class="hover:text-amber-300 font-bold transition text-amber-300/90">Owner Portal Access →</a></li>
-          </ul>
-        </div>
-
       </div>
 
-      <div class="pt-8 flex flex-col sm:flex-row items-center justify-between text-xs text-rose-200/50 gap-3">
+      <div class="site-footer-bottom pt-5 sm:pt-8 flex flex-col sm:flex-row items-center justify-between text-xs text-rose-200/50 gap-2 sm:gap-3">
         <div>© 2026 Blossom Dreams. All rights reserved.</div>
       </div>
     </div>
@@ -523,7 +516,7 @@
       <span class="text-[10px] font-bold mt-0.5">Home</span>
     </a>
     <a href="#services" class="flex flex-col items-center text-slate-500 hover:text-pink-700">
-      <svg class="w-[22px] h-[22px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12"/><path d="M6 3v5a6 6 0 0 0 12 0V3"/><path d="M8 21h8"/><path d="M12 14v7"/></svg>
+      <svg class="w-[22px] h-[22px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/><circle cx="18" cy="18" r="2"/></svg>
       <span class="text-[10px] font-bold mt-0.5">Services</span>
     </a>
     <button aria-label="Book an appointment" class="btn-open-booking -mt-6 w-13 h-13 rounded-full bg-gradient-to-tr from-[#EE6A95] to-[#F7A1B3] text-white flex items-center justify-center shadow-lg shadow-pink-600/35">
@@ -540,7 +533,7 @@
   </nav>
 
   <!-- Main JavaScript App -->
-  <script type="module" src="/static/js/app.js?v=6.6"></script>
+  <script type="module" src="/static/js/app.js?v=6.7"></script>
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {

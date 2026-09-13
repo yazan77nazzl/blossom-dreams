@@ -26,7 +26,7 @@
     }
   </script>
   
-  <link rel="stylesheet" href="/static/css/style.css?v=6.6" />
+  <link rel="stylesheet" href="/static/css/style.css?v=6.7" />
 </head>
 <body class="bg-[#F8FAFC] text-slate-800 antialiased font-sans">
 
@@ -96,31 +96,31 @@
         <!-- Navigation Tabs -->
         <nav class="p-4 space-y-1 text-xs font-semibold text-slate-600">
           <button data-tab="overview" class="admin-tab-btn w-full px-3.5 py-2.5 rounded-xl flex items-center gap-3 transition active">
-            <span>📊</span>
+            <svg class="admin-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V9M10 19V5M16 19v-8M22 19V3"/></svg>
             <span>Dashboard Overview</span>
           </button>
           <button data-tab="bookings" class="admin-tab-btn w-full px-3.5 py-2.5 rounded-xl flex items-center gap-3 transition">
-            <span>📅</span>
+            <svg class="admin-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>
             <span>Bookings & Calendar</span>
           </button>
           <button data-tab="services" class="admin-tab-btn w-full px-3.5 py-2.5 rounded-xl flex items-center gap-3 transition">
-            <span>💅</span>
+            <svg class="admin-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/><circle cx="18" cy="18" r="2"/></svg>
             <span>Services & Treatments</span>
           </button>
           <button data-tab="offers" class="admin-tab-btn w-full px-3.5 py-2.5 rounded-xl flex items-center gap-3 transition">
-            <span>🏷</span>
+            <svg class="admin-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 13.5 13.5 20.5a2 2 0 0 1-2.8 0L3.5 13.3V4h9.3l7.7 7.7a1.3 1.3 0 0 1 0 1.8Z"/><circle cx="8" cy="8.5" r="1.2"/></svg>
             <span>Special Offers</span>
           </button>
           <button data-tab="availability" class="admin-tab-btn w-full px-3.5 py-2.5 rounded-xl flex items-center gap-3 transition">
-            <span>⏱</span>
+            <svg class="admin-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
             <span>Hours & Availability</span>
           </button>
           <button data-tab="gallery" class="admin-tab-btn w-full px-3.5 py-2.5 rounded-xl flex items-center gap-3 transition">
-            <span>🖼</span>
+            <svg class="admin-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.5"/><path d="m21 15-4-4-7 7"/></svg>
             <span>Gallery Portfolio</span>
           </button>
           <button data-tab="settings" class="admin-tab-btn w-full px-3.5 py-2.5 rounded-xl flex items-center gap-3 transition">
-            <span>⚙️</span>
+            <svg class="admin-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-1.4 1.4-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-2v-.2a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L9 17l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H7.6v-2h.2a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L9 9l1.4-1.4.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.6v-.2h2v.2a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L20 9l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v2h-.2a1.7 1.7 0 0 0-1.8 1Z"/></svg>
             <span>Salon Settings</span>
           </button>
         </nav>
@@ -167,7 +167,7 @@
 
         <div class="flex items-center gap-3">
           <button id="btn-quick-new-booking" class="btn-primary px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm">
-            <span>+ Manual Booking</span>
+            <span>+ New Booking</span>
           </button>
           <a href="/" target="_blank" class="hidden sm:inline-flex items-center gap-1 text-xs font-bold text-pink-700 bg-pink-50 px-3.5 py-2 rounded-xl border border-pink-200 hover:bg-pink-100 transition">
             <span>View Public Site</span>
@@ -243,7 +243,7 @@
           </div>
 
           <!-- Today's Schedule Agenda Feed -->
-          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+          <div class="admin-bookings-card bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
             <div class="flex items-center justify-between mb-4">
               <div>
                 <h3 class="font-serif font-bold text-slate-900 text-base">Today's Salon Agenda</h3>
@@ -265,7 +265,7 @@
           <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
             
             <!-- Filters Bar -->
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-6 border-b border-slate-100">
+            <div class="admin-booking-filters flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-6 border-b border-slate-100">
               <div class="flex flex-wrap items-center gap-2.5">
                 <input type="date" id="filter-booking-date" class="text-xs px-3 py-2 rounded-xl border border-slate-200 font-medium" />
                 <select id="filter-booking-status" class="text-xs px-3 py-2 rounded-xl border border-slate-200 font-medium">
@@ -281,7 +281,7 @@
                 </button>
               </div>
 
-              <div class="flex items-center gap-3">
+              <div class="admin-booking-tools flex items-center gap-3">
                 <input type="text" id="filter-booking-search" placeholder="Search guest or #BD code..."
                   class="text-xs px-3.5 py-2 rounded-xl border border-slate-200 w-full sm:w-64" />
                 
@@ -394,7 +394,7 @@
                 </div>
               </div>
 
-              <div class="flex items-center gap-3 mb-5 p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex-wrap">
+                <div class="flex items-center gap-3 mb-5 p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex-wrap">
                 <label class="text-xs font-bold text-slate-700 whitespace-nowrap">Booking Buffer (min):</label>
                 <input type="number" id="avail-buffer-input" min="0" max="120" value="0" class="w-20 px-2.5 py-1.5 rounded-lg border border-slate-200 font-mono font-semibold text-xs" />
                 <button id="btn-save-buffer" class="btn-secondary px-3.5 py-1.5 rounded-xl text-xs font-bold">Save</button>
@@ -555,6 +555,6 @@
   <div id="admin-modal-root"></div>
 
   <!-- Admin Controller -->
-  <script type="module" src="/static/js/admin.js?v=6.6"></script>
+  <script type="module" src="/static/js/admin.js?v=6.7"></script>
 </body>
 </html>

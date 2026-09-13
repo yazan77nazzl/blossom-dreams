@@ -739,6 +739,17 @@ body {
 .h-4\.5 { height: 1.125rem; }
 .py-4\.5 { padding-top: 1.125rem; padding-bottom: 1.125rem; }
 
+.admin-nav-icon {
+  width: 1.05rem;
+  height: 1.05rem;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 /* Hide horizontal scrollbars on strip carousels (kept touch-scrollable) */
 .scrollbar-none { scrollbar-width: none; -ms-overflow-style: none; }
 .scrollbar-none::-webkit-scrollbar { display: none; }
@@ -885,3 +896,133 @@ aside[aria-label="WhatsApp Contact"] { bottom: max(6rem, calc(env(safe-area-inse
   min-width: 680px;
 }
 #admin-calendar-grid { min-width: 640px; }
+
+@media (max-width: 640px) {
+  .site-footer-grid {
+    gap: 1.5rem;
+  }
+
+  .site-footer-brand .salon-brand-tagline {
+    max-width: 22rem;
+    line-height: 1.5;
+  }
+
+  .site-footer-links {
+    padding-top: 0.25rem;
+  }
+
+  .site-footer-bottom {
+    text-align: center;
+  }
+}
+
+#admin-dashboard-view main,
+#admin-dashboard-view .admin-bookings-card {
+  min-width: 0;
+}
+
+#admin-modal-root .modal-content-anim {
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+}
+
+@media (max-width: 640px) {
+  #admin-dashboard-view main {
+    padding: 0.75rem;
+    overflow-x: hidden;
+  }
+
+  #admin-dashboard-view header {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+
+  #admin-page-title {
+    max-width: 8.5rem;
+    font-size: 0.95rem;
+    line-height: 1.2;
+  }
+
+  #btn-quick-new-booking {
+    padding-left: 0.7rem;
+    padding-right: 0.7rem;
+    font-size: 0.65rem;
+    white-space: nowrap;
+  }
+
+  .admin-bookings-card {
+    padding: 1rem;
+  }
+
+  .admin-booking-filters,
+  .admin-booking-tools {
+    align-items: stretch;
+  }
+
+  .admin-booking-filters > div,
+  .admin-booking-tools {
+    width: 100%;
+  }
+
+  .admin-booking-filters > div:first-child {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  }
+
+  .admin-booking-filters > div:first-child input,
+  .admin-booking-filters > div:first-child select {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .admin-booking-tools {
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .admin-booking-tools input {
+    width: 100%;
+  }
+
+  .admin-booking-tools > div {
+    width: 100%;
+    justify-content: center;
+  }
+
+  #bookings-table-view,
+  #today-agenda-container,
+  #admin-services-table-container,
+  #admin-offers-table-container {
+    margin-right: -0.25rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #admin-calendar-grid {
+    min-width: 600px;
+  }
+
+  #admin-schedule-list > div {
+    align-items: stretch;
+  }
+
+  #admin-schedule-list > div > div:nth-child(2) {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  #admin-schedule-list > div > div:nth-child(2) input,
+  #admin-schedule-list > div > div:nth-child(2) select {
+    flex: 1 1 7rem;
+    min-width: 0;
+  }
+
+  #admin-schedule-list > div > button {
+    width: 100%;
+  }
+
+  #admin-modal-root .modal-content-anim {
+    padding: 1rem;
+    border-radius: 1.25rem;
+  }
+}
