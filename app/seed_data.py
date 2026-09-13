@@ -46,11 +46,17 @@ def seed_database():
 
         # Upgrade any legacy "Blossom Dreams LB" branding on existing installations
         cursor.execute("UPDATE salon_settings SET salon_name = 'BLOSSOM DREAMS' WHERE salon_name = 'BLOSSOM DREAMS LB'")
-        cursor.execute("UPDATE salon_settings SET description = REPLACE(description, 'Blossom Dreams LB', 'Blossom Dreams') WHERE description LIKE '%Blossom Dreams LB%'")
-        cursor.execute("UPDATE salon_settings SET tagline = REPLACE(tagline, 'Blossom Dreams LB', 'Blossom Dreams') WHERE tagline LIKE '%Blossom Dreams LB%'")
-        cursor.execute("UPDATE salon_settings SET announcement_text = REPLACE(announcement_text, 'Blossom Dreams LB', 'Blossom Dreams') WHERE announcement_text LIKE '%Blossom Dreams LB%'")
+        for column in ("description", "tagline", "announcement_text"):
+            cursor.execute(f"""
+            UPDATE salon_settings SET {column} = REPLACE({column}, ?, ?)
+            WHERE {column} LIKE ?
+            """, ("Blossom Dreams LB", "Blossom Dreams", "%Blossom Dreams LB%"))
         # Relocate legacy "Verdun / Beirut" installations to Amwaj Center, Jounieh
-        cursor.execute("UPDATE salon_settings SET address = 'Amwaj Center, Jounieh, Lebanon', google_maps_url = 'https://maps.google.com/?q=Amwaj+Center+Jounieh+Lebanon' WHERE address LIKE '%Verdun%'")
+        cursor.execute("""
+        UPDATE salon_settings
+        SET address = ?, google_maps_url = ?
+        WHERE address LIKE ?
+        """, ("Amwaj Center, Jounieh, Lebanon", "https://maps.google.com/?q=Amwaj+Center+Jounieh+Lebanon", "%Verdun%"))
 
         # 3. Weekly Availability Settings (0 = Monday, 6 = Sunday)
         days = [
@@ -72,7 +78,11 @@ def seed_database():
 
         # Migrate legacy installs that still open at 09:30 to the current 09:00 opening time
         cursor.execute("UPDATE availability_settings SET open_time = '09:00' WHERE open_time = '09:30'")
-        cursor.execute("UPDATE salon_settings SET opening_hours_text = REPLACE(opening_hours_text, '9:30 AM', '9:00 AM') WHERE opening_hours_text LIKE '%9:30 AM%'")
+        cursor.execute("""
+        UPDATE salon_settings
+        SET opening_hours_text = REPLACE(opening_hours_text, ?, ?)
+        WHERE opening_hours_text LIKE ?
+        """, ("9:30 AM", "9:00 AM", "%9:30 AM%"))
 
         # 3b. Business Locations
         # Versailles Center uses the corrected Google Maps reference:
@@ -104,15 +114,17 @@ def seed_database():
                 INSERT INTO locations (slug, name, address, google_maps_url, latitude, longitude, display_order, is_active)
                 VALUES (?, ?, ?, ?, ?, ?, ?, TRUE)
                 """, (slug, name, address, maps_url, lat, lng, order))
-            else:
+            elif slug == "versailles":
                 # Versailles: replace the legacy ftid-only map link with the
-                # corrected reference. Amwaj is never clobbered; other admin
-                # edits are preserved.
+                # corrected reference. Amwaj is never touched. The LIKE pattern
+                # is passed as a bound parameter so no literal % stays inside
+                # the SQL text (psycopg treats % as a placeholder marker when
+                # the query is bound).
                 cursor.execute("""
                 UPDATE locations SET google_maps_url = ?
-                WHERE slug = 'versailles'
-                  AND (google_maps_url IS NULL OR google_maps_url = '' OR google_maps_url LIKE '%0x151f4096b6ee7923%')
-                """, (maps_url,))
+                WHERE slug = ?
+                  AND (google_maps_url IS NULL OR google_maps_url = '' OR google_maps_url LIKE ?)
+                """, (maps_url, slug, "%0x151f4096b6ee7923%"))
 
         # 4. Categories
         categories_data = [
