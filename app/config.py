@@ -1,7 +1,11 @@
-﻿import os
+﻿import logging
+import os
 from pathlib import Path
 from typing import List
 from dotenv import load_dotenv
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -61,9 +65,22 @@ class Settings:
         # Upload storage backend: "local" (default, dev/ephemeral) or "supabase"
         # (production — persistent free object storage for salon images).
         self.UPLOAD_STORAGE: str = os.environ.get("UPLOAD_STORAGE", "local").lower()
-        self.SUPABASE_URL: str = os.environ.get("SUPABASE_URL", "").rstrip("/")
+        raw_supabase_url = os.environ.get("SUPABASE_URL", "").strip()
+        if raw_supabase_url and not raw_supabase_url.startswith(("http://", "https://")):
+            logger.warning("SUPABASE_URL is missing http:// or https:// protocol; prepending https://")
+            raw_supabase_url = f"https://{raw_supabase_url}"
+        self.SUPABASE_URL: str = raw_supabase_url.rstrip("/")
         self.SUPABASE_SERVICE_ROLE_KEY: str = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
         self.SUPABASE_STORAGE_BUCKET: str = os.environ.get("SUPABASE_STORAGE_BUCKET", "uploads")
+
+        if self.SUPABASE_URL:
+            has_protocol = self.SUPABASE_URL.startswith("http://") or self.SUPABASE_URL.startswith("https://")
+            logger.info("SUPABASE_URL loaded: protocol=%s, host=%s, bucket=%s",
+                        "yes" if has_protocol else "NO",
+                        self.SUPABASE_URL.split("//")[-1] if has_protocol else self.SUPABASE_URL[:40],
+                        self.SUPABASE_STORAGE_BUCKET)
+        else:
+            logger.warning("SUPABASE_URL is not set")
 
         # Validate Supabase configuration if UPLOAD_STORAGE is set to "supabase"
         if self.UPLOAD_STORAGE == "supabase":

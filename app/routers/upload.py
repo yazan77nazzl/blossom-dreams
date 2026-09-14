@@ -27,8 +27,13 @@ async def _store_supabase(content: bytes, filename: str, content_type: str = "ap
             detail="Supabase storage is not configured (missing SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY).",
         )
     upload_url = f"{settings.SUPABASE_URL}/storage/v1/object/{settings.SUPABASE_STORAGE_BUCKET}/{filename}"
-    # Use 'apikey' header for new Supabase Secret Keys (sb_secret_...)
-    # Legacy service_role JWT keys would use 'Authorization: Bearer ...'
+    if not upload_url.startswith("http://") and not upload_url.startswith("https://"):
+        logger.error("SUPABASE_URL is missing http/https protocol. Configured value produces invalid URL: %s", upload_url[:80])
+        raise HTTPException(
+            status_code=503,
+            detail="Supabase URL is missing http/https protocol. Check SUPABASE_URL configuration.",
+        )
+    logger.info("Supabase upload target bucket: %s", settings.SUPABASE_STORAGE_BUCKET)
     headers = {
         "apikey": settings.SUPABASE_SERVICE_ROLE_KEY,
         "Authorization": f"Bearer {settings.SUPABASE_SERVICE_ROLE_KEY}",

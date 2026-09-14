@@ -1,22 +1,28 @@
-The Render logs show:
+The upload error on Render is now:
 
-GET /api/health → 200 OK
+`Could not reach the image storage service: Request URL is missing an 'http://' or 'https://' protocol.`
 
-but image uploads consistently show:
+The Render environment variable `SUPABASE_URL` is configured as:
 
-POST /api/upload → 502 Bad Gateway
+`https://jhfldeoquxqejwyeohhw.supabase.co`
 
-Supabase Storage bucket `uploads` exists and is Public. The same upload works locally.
+The Supabase `uploads` bucket exists and is Public.
 
-Please investigate `/api/upload` and identify the exact exception/error occurring when the backend attempts to upload to Supabase Storage on Render.
+Please inspect the actual code in `app/routers/upload.py` and `app/config.py` and determine why the HTTP request URL is being constructed without the `http://` or `https://` protocol.
 
-Check the actual exception handling and logging in `app/routers/upload.py` and the Supabase Storage client.
+Check:
 
-Do not change storage back to local.
-Do not create a new bucket.
-Do not change the Supabase bucket name.
-Do not hide the underlying exception.
+* How `SUPABASE_URL` is loaded from environment variables.
+* Whether the code accidentally strips `https://`.
+* Whether `.strip()`, URL parsing, or string concatenation is corrupting the URL.
+* How the Storage upload URL is constructed.
+* Whether Render is actually passing the expected environment variable to the running process.
 
-Add/fix useful server-side logging if necessary so the exact Supabase error is visible in Render logs, then fix the root cause.
+Add safe logging that shows the URL structure being used (but NEVER log `SUPABASE_SERVICE_ROLE_KEY` or any secret).
 
-After fixing, test POST `/api/upload` on Render and confirm it returns 200/201 instead of 502.
+Do not switch to local storage.
+Do not create another bucket.
+Do not hardcode the Supabase URL.
+Do not expose secrets.
+
+Fix the root cause and test `/api/upload` again on Render.
