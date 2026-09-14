@@ -64,34 +64,20 @@ class Settings:
 
         # Upload storage backend: "local" (default, dev/ephemeral) or "supabase"
         # (production — persistent free object storage for salon images).
-        self.UPLOAD_STORAGE: str = os.environ.get("UPLOAD_STORAGE", "local").lower()
-        self.SUPABASE_URL: str = os.environ.get("SUPABASE_URL", "").rstrip("/")
-        self.SUPABASE_SERVICE_ROLE_KEY: str = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
-        self.SUPABASE_STORAGE_BUCKET: str = os.environ.get("SUPABASE_STORAGE_BUCKET", "uploads")
+        self.UPLOAD_STORAGE: str = os.environ.get("UPLOAD_STORAGE", "local").strip().lower()
+        self.SUPABASE_URL: str = os.environ.get("SUPABASE_URL", "").strip().rstrip("/")
+        self.SUPABASE_SERVICE_ROLE_KEY: str = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "").strip()
+        self.SUPABASE_STORAGE_BUCKET: str = os.environ.get("SUPABASE_STORAGE_BUCKET", "uploads").strip()
 
         if self.SUPABASE_URL:
-            raw_val = os.environ.get("SUPABASE_URL", "")
             has_protocol = self.SUPABASE_URL.startswith("http://") or self.SUPABASE_URL.startswith("https://")
             hostname = self.SUPABASE_URL.split("//")[-1] if has_protocol else self.SUPABASE_URL[:40]
             logger.info("SUPABASE_URL parsed: protocol=%s, hostname=%s, bucket=%s",
                         "yes" if has_protocol else "NO",
                         hostname,
                         self.SUPABASE_STORAGE_BUCKET)
-            malformations = []
-            if any(c.isspace() for c in raw_val):
-                malformations.append("whitespace")
-            if '"' in raw_val or "'" in raw_val:
-                malformations.append("quotes")
-            if raw_val.startswith("SUPABASE_URL="):
-                malformations.append("duplicate_KEY_prefix")
-            if "/rest/v1/" in self.SUPABASE_URL:
-                malformations.append("/rest/v1/ in URL")
             if not has_protocol:
-                malformations.append("missing_protocol")
-            if malformations:
-                logger.warning("SUPABASE_URL malformations detected: %s", ", ".join(malformations))
-            else:
-                logger.info("SUPABASE_URL has no detected malformations")
+                logger.warning("SUPABASE_URL is missing http/https protocol!")
         else:
             logger.warning("SUPABASE_URL is not set")
 

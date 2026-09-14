@@ -1,31 +1,37 @@
-The Render deployment still returns:
+The Render traceback confirms:
 
-`Could not reach the image storage service: Request URL is missing an 'http://' or 'https://' protocol.`
+`httpx.UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.`
 
-Local diagnostics show the expected URL is correct:
+This happens inside `_store_supabase` when making the HTTP request.
 
-`https://jhfldeoquxqejwyeohhw.supabase.co`
+The diagnostic log we added is NOT appearing before the exception, so inspect the code directly.
 
-Do NOT add another URL fallback and do NOT make more speculative fixes.
+Open `app/routers/upload.py` and find the exact line that calls `httpx` (`client.post`, `client.put`, or equivalent).
 
-Trace the exact value passed as the URL argument to `httpx.AsyncClient().put()` (or the actual HTTP request used by `_store_supabase`) at runtime.
+Trace the variable used as the request URL backwards until you reach `settings.SUPABASE_URL`.
 
-I need you to identify the exact final request URL immediately before the HTTP request is executed.
+I want you to verify the exact construction.
 
-Log ONLY:
+The final Storage upload URL MUST be constructed as:
 
-* the final URL with the service-role secret completely removed
-* its `repr()`
-* the hostname
-* the protocol
+`{SUPABASE_URL}/storage/v1/object/{bucket}/{filename}`
 
-Do not log any secret values.
+where:
 
-Then inspect how that final URL is constructed in `app/routers/upload.py`.
+`SUPABASE_URL = https://jhfldeoquxqejwyeohhw.supabase.co`
 
-The important question is:
-Why does httpx report that the request URL has no http:// or https:// protocol if SUPABASE_URL itself is correct?
+Do not use `/rest/v1/`.
+Do not use `/public/` in the upload API URL.
+Do not strip the protocol.
+Do not use a relative URL.
+Do not hardcode the complete URL.
 
-Do not modify the code until you identify the exact malformed value.
+Also inspect whether the code is accidentally passing only a path such as:
 
-After identifying the cause, fix only the root cause and test `/api/upload`.
+`/storage/v1/object/...`
+
+to httpx instead of the complete absolute URL.
+
+Fix the exact construction bug and run a direct test of `_store_supabase` or `/api/upload`.
+
+Do not change the bucket or storage provider.
