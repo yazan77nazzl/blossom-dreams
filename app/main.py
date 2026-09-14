@@ -1,3 +1,4 @@
+import logging
 import os
 from pathlib import Path
 from contextlib import asynccontextmanager
@@ -10,6 +11,8 @@ from app.config import settings
 from app.database import init_db
 from app.seed_data import seed_database
 from app.routers import auth, services, categories, offers, bookings, availability, gallery, settings as salon_settings_router, upload, locations
+
+logging.basicConfig(level=logging.INFO)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 PUBLIC_DIR = BASE_DIR / "public"
