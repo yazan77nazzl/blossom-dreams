@@ -1,37 +1,29 @@
-The Render traceback confirms:
+The same Render error persists after the `.strip()` fix:
 
 `httpx.UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.`
 
-This happens inside `_store_supabase` when making the HTTP request.
+Do NOT make another speculative fix.
 
-The diagnostic log we added is NOT appearing before the exception, so inspect the code directly.
+Open `app/routers/upload.py` and inspect the exact HTTPX call that raises this exception.
 
-Open `app/routers/upload.py` and find the exact line that calls `httpx` (`client.post`, `client.put`, or equivalent).
+Before that exact call, add a temporary safe diagnostic that logs:
 
-Trace the variable used as the request URL backwards until you reach `settings.SUPABASE_URL`.
+`FINAL_UPLOAD_URL_REPR=<repr of the exact URL variable passed to httpx>`
 
-I want you to verify the exact construction.
+Also log:
 
-The final Storage upload URL MUST be constructed as:
+`SUPABASE_URL_REPR=<repr(settings.SUPABASE_URL)>`
 
-`{SUPABASE_URL}/storage/v1/object/{bucket}/{filename}`
+and:
 
-where:
+`UPLOAD_BUCKET_REPR=<repr(settings.SUPABASE_STORAGE_BUCKET)>`
 
-`SUPABASE_URL = https://jhfldeoquxqejwyeohhw.supabase.co`
+Do NOT log `SUPABASE_SERVICE_ROLE_KEY`.
 
-Do not use `/rest/v1/`.
-Do not use `/public/` in the upload API URL.
-Do not strip the protocol.
-Do not use a relative URL.
-Do not hardcode the complete URL.
+Then deploy this diagnostic to Render and reproduce ONE upload.
 
-Also inspect whether the code is accidentally passing only a path such as:
+The purpose is to see the exact string passed to httpx. Do not assume the problem is whitespace, URL construction, or environment configuration until the logged value proves it.
 
-`/storage/v1/object/...`
+If the final URL is valid (starts with https://), inspect the HTTPX call signature itself and verify that the URL argument is actually the full URL rather than a path or another variable.
 
-to httpx instead of the complete absolute URL.
-
-Fix the exact construction bug and run a direct test of `_store_supabase` or `/api/upload`.
-
-Do not change the bucket or storage provider.
+Do not change storage provider, bucket, or database.
