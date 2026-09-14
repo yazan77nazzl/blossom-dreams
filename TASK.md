@@ -1,28 +1,22 @@
-The upload error on Render is now:
+The Render upload error is now:
 
-`Could not reach the image storage service: Request URL is missing an 'http://' or 'https://' protocol.`
+`Could not reach the image storage service: [Errno -2] Name or service not known`
 
-The Render environment variable `SUPABASE_URL` is configured as:
+The expected Supabase project URL is:
 
 `https://jhfldeoquxqejwyeohhw.supabase.co`
 
-The Supabase `uploads` bucket exists and is Public.
+The `uploads` bucket exists and uploads work locally.
 
-Please inspect the actual code in `app/routers/upload.py` and `app/config.py` and determine why the HTTP request URL is being constructed without the `http://` or `https://` protocol.
+Do NOT make more code changes yet.
 
-Check:
+First diagnose the actual runtime configuration on Render:
 
-* How `SUPABASE_URL` is loaded from environment variables.
-* Whether the code accidentally strips `https://`.
-* Whether `.strip()`, URL parsing, or string concatenation is corrupting the URL.
-* How the Storage upload URL is constructed.
-* Whether Render is actually passing the expected environment variable to the running process.
+1. Log the parsed SUPABASE_URL safely (protocol + hostname only, never secrets).
+2. Log the final Supabase Storage upload URL hostname and path, without logging the service role key.
+3. Verify that the hostname is exactly `jhfldeoquxqejwyeohhw.supabase.co`.
+4. Check for whitespace, quotes, duplicate `SUPABASE_URL=`, `/rest/v1/`, or any other malformed value coming from the Render environment variable.
+5. Do not auto-correct or modify the URL yet; show the actual parsed hostname in Render logs.
+6. Do not expose `SUPABASE_SERVICE_ROLE_KEY`.
 
-Add safe logging that shows the URL structure being used (but NEVER log `SUPABASE_SERVICE_ROLE_KEY` or any secret).
-
-Do not switch to local storage.
-Do not create another bucket.
-Do not hardcode the Supabase URL.
-Do not expose secrets.
-
-Fix the root cause and test `/api/upload` again on Render.
+After adding only the necessary safe diagnostic logging, tell me exactly what hostname the running Render process is using.
