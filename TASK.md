@@ -1,22 +1,31 @@
-The Render upload error is now:
+The Render deployment still returns:
 
-`Could not reach the image storage service: [Errno -2] Name or service not known`
+`Could not reach the image storage service: Request URL is missing an 'http://' or 'https://' protocol.`
 
-The expected Supabase project URL is:
+Local diagnostics show the expected URL is correct:
 
 `https://jhfldeoquxqejwyeohhw.supabase.co`
 
-The `uploads` bucket exists and uploads work locally.
+Do NOT add another URL fallback and do NOT make more speculative fixes.
 
-Do NOT make more code changes yet.
+Trace the exact value passed as the URL argument to `httpx.AsyncClient().put()` (or the actual HTTP request used by `_store_supabase`) at runtime.
 
-First diagnose the actual runtime configuration on Render:
+I need you to identify the exact final request URL immediately before the HTTP request is executed.
 
-1. Log the parsed SUPABASE_URL safely (protocol + hostname only, never secrets).
-2. Log the final Supabase Storage upload URL hostname and path, without logging the service role key.
-3. Verify that the hostname is exactly `jhfldeoquxqejwyeohhw.supabase.co`.
-4. Check for whitespace, quotes, duplicate `SUPABASE_URL=`, `/rest/v1/`, or any other malformed value coming from the Render environment variable.
-5. Do not auto-correct or modify the URL yet; show the actual parsed hostname in Render logs.
-6. Do not expose `SUPABASE_SERVICE_ROLE_KEY`.
+Log ONLY:
 
-After adding only the necessary safe diagnostic logging, tell me exactly what hostname the running Render process is using.
+* the final URL with the service-role secret completely removed
+* its `repr()`
+* the hostname
+* the protocol
+
+Do not log any secret values.
+
+Then inspect how that final URL is constructed in `app/routers/upload.py`.
+
+The important question is:
+Why does httpx report that the request URL has no http:// or https:// protocol if SUPABASE_URL itself is correct?
+
+Do not modify the code until you identify the exact malformed value.
+
+After identifying the cause, fix only the root cause and test `/api/upload`.
