@@ -65,6 +65,24 @@ class Settings:
         self.SUPABASE_SERVICE_ROLE_KEY: str = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
         self.SUPABASE_STORAGE_BUCKET: str = os.environ.get("SUPABASE_STORAGE_BUCKET", "uploads")
 
+        # Validate Supabase configuration if UPLOAD_STORAGE is set to "supabase"
+        if self.UPLOAD_STORAGE == "supabase":
+            if not self.SUPABASE_URL:
+                raise RuntimeError(
+                    "SUPABASE_URL is required when UPLOAD_STORAGE=supabase. "
+                    "Set it to your Supabase project URL (e.g., https://<project-ref>.supabase.co)."
+                )
+            if not self.SUPABASE_SERVICE_ROLE_KEY:
+                raise RuntimeError(
+                    "SUPABASE_SERVICE_ROLE_KEY is required when UPLOAD_STORAGE=supabase. "
+                    "Get it from Supabase Dashboard → Settings → API → service_role key."
+                )
+            if not self.SUPABASE_STORAGE_BUCKET:
+                raise RuntimeError(
+                    "SUPABASE_STORAGE_BUCKET is required when UPLOAD_STORAGE=supabase. "
+                    "Set it to your storage bucket name (default: 'uploads')."
+                )
+
         # Default Admin Credentials for initial seeding
         self.ADMIN_USERNAME: str = os.environ.get("ADMIN_USERNAME", "admin")
         self.ADMIN_EMAIL: str = os.environ.get("ADMIN_EMAIL", "admin@blossomdreams.com")
