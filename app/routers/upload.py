@@ -24,7 +24,10 @@ async def _store_supabase(content: bytes, filename: str) -> str:
             detail="Supabase storage is not configured (missing SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY).",
         )
     upload_url = f"{settings.SUPABASE_URL}/storage/v1/object/{settings.SUPABASE_STORAGE_BUCKET}/{filename}"
+    # Use 'apikey' header for new Supabase Secret Keys (sb_secret_...)
+    # Legacy service_role JWT keys would use 'Authorization: Bearer ...'
     headers = {
+        "apikey": settings.SUPABASE_SERVICE_ROLE_KEY,
         "Authorization": f"Bearer {settings.SUPABASE_SERVICE_ROLE_KEY}",
         "x-upsert": "true",
     }
