@@ -185,9 +185,7 @@ class AdminApp {
     );
 
     // Quick Manual Booking button
-    document.getElementById("btn-quick-new-booking").addEventListener("click", () => {
-      this.openManualBookingModal();
-    });
+    
 
     // Booking Filters
     const bDate = document.getElementById("filter-booking-date");
