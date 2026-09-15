@@ -840,6 +840,69 @@ body {
   box-shadow: 0 12px 32px -12px rgba(20, 4, 10, 0.5);
 }
 
+/* Responsive header — adapts height & padding for every screen */
+.site-header .max-w-7xl {
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+@media (min-width: 640px) {
+  .site-header .max-w-7xl { padding-left: 1.5rem; padding-right: 1.5rem; }
+}
+@media (min-width: 1024px) {
+  .site-header .max-w-7xl { padding-left: 1.75rem; padding-right: 1.75rem; }
+}
+
+/* Header height responsiveness */
+@media (max-width: 639px) {
+  .site-header > div { height: 3.5rem; }
+}
+@media (min-width: 640px) {
+  .site-header > div { height: 4rem; }
+}
+@media (min-width: 1024px) {
+  .site-header > div { height: 5rem; }
+}
+
+/* Brand text — responsive, single-line, no overflow */
+.salon-brand-name {
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+@media (min-width: 640px) {
+  .salon-brand-name { font-size: 1.25rem; }
+}
+@media (min-width: 1024px) {
+  .salon-brand-name { font-size: 1.5rem; }
+}
+
+/* Header inner container spacing */
+.site-header .flex.items-center.justify-between > a {
+  flex-shrink: 0;
+}
+.site-header .flex.items-center.justify-between > nav,
+.site-header .flex.items-center.justify-between > div:last-child {
+  flex-shrink: 0;
+}
+
+/* Desktop navigation — ensure breathing room from the brand block */
+@media (min-width: 1024px) {
+  .site-header nav {
+    margin-left: 0.75rem;
+    gap: 1.75rem;
+  }
+}
+@media (max-width: 1023px) {
+  .site-header nav {
+    margin-left: 0;
+  }
+}
+
 /* Location cards: clickable Google Maps shortcuts */
 .location-card {
   -webkit-tap-highlight-color: transparent;
