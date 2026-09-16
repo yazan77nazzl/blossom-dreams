@@ -125,11 +125,55 @@ def init_db():
     with get_db() as conn:
         cursor = conn.cursor()
 
+        # 1. Create/update the schema
         for statement in SCHEMA.split(";\n"):
             statement = statement.strip()
-            if statement:
-                cursor.execute(statement)
+            if not statement:
+                continue
 
+            print(f"[DB INIT] Executing: {statement[:300]}", flush=True)
+
+            try:
+                cursor.execute(statement)
+            except Exception as e:
+                print(f"[DB INIT] FAILED: {e}", flush=True)
+                print(f"[DB INIT] SQL: {statement}", flush=True)
+                raise
+
+        # 2. Make sure the default organization exists
+        cursor.execute(
+            """
+            INSERT INTO organizations (slug, name)
+            VALUES (?, ?)
+            ON CONFLICT (slug) DO NOTHING
+            """,
+            ("blossom-dreams", "Blossom Dreams"),
+        )
+
+        cursor.execute(
+            """
+            SELECT id
+            FROM organizations
+            WHERE slug = ?
+            """,
+            ("blossom-dreams",),
+        )
+
+        organization = cursor.fetchone()
+
+        if not organization:
+            raise RuntimeError(
+                "Could not find or create Blossom Dreams organization"
+            )
+
+        organization_id = organization["id"]
+        cursor.execute(
+    "SELECT set_config('app.organization_id', %s, false)",
+    (str(organization_id),),
+)
+
+        # 3. Existing databases may have old tables without organization_id.
+        #    Add the column only when it does not already exist.
         tenant_tables = (
             "profiles",
             "admin_users",
@@ -145,6 +189,60 @@ def init_db():
             "location_availability_settings",
         )
 
+        for table in tenant_tables:
+            cursor.execute(
+                f"""
+                ALTER TABLE {table}
+                ADD COLUMN IF NOT EXISTS organization_id UUID
+                """
+            )
+
+        # 4. Put existing rows into the default Blossom Dreams organization.
+        for table in tenant_tables:
+            cursor.execute(
+                f"""
+                UPDATE {table}
+                SET organization_id = ?
+                WHERE organization_id IS NULL
+                """,
+                (organization_id,),
+            )
+
+        # 5. Add the foreign-key constraints only where possible.
+        #    DO NOT recreate them if they already exist.
+        for table in tenant_tables:
+            constraint_name = f"{table}_organization_id_fkey"
+
+            cursor.execute(
+                f"""
+                DO $$
+                BEGIN
+                    IF NOT EXISTS (
+                        SELECT 1
+                        FROM pg_constraint
+                        WHERE conname = '{constraint_name}'
+                    ) THEN
+                        ALTER TABLE {table}
+                        ADD CONSTRAINT {constraint_name}
+                        FOREIGN KEY (organization_id)
+                        REFERENCES organizations(id)
+                        ON DELETE CASCADE;
+                    END IF;
+                END
+                $$;
+                """
+            )
+
+        # 6. organization_id must be present for all tenant rows.
+        for table in tenant_tables:
+            cursor.execute(
+                f"""
+                ALTER TABLE {table}
+                ALTER COLUMN organization_id SET NOT NULL
+                """
+            )
+
+        # 7. Enable RLS and isolate every tenant table.
         for table in tenant_tables:
             cursor.execute(
                 f"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY"
@@ -172,3 +270,5 @@ def init_db():
                 )
                 """
             )
+
+        print("[DB INIT] Database initialization completed successfully.", flush=True)
