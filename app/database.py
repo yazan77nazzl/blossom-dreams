@@ -256,6 +256,16 @@ def init_db():
             )
 
                     # 6.5. Ensure the composite unique constraints required by seed_data.py.
+        # These are required for ON CONFLICT (...) to work on existing databases.
+
+        cursor.execute(
+            """
+            CREATE UNIQUE INDEX IF NOT EXISTS
+            ux_locations_org_slug
+            ON locations (organization_id, slug)
+            """
+        )
+
         cursor.execute(
             """
             CREATE UNIQUE INDEX IF NOT EXISTS
