@@ -124,11 +124,51 @@ CREATE INDEX IF NOT EXISTS idx_locations_org_active ON locations(organization_id
 def init_db():
     with get_db() as conn:
         cursor = conn.cursor()
+
         for statement in SCHEMA.split(";\n"):
-            if statement.strip(): cursor.execute(statement)
-        tenant_tables = ("profiles", "admin_users", "categories", "services", "offers", "bookings", "availability_settings", "closed_dates", "gallery_images", "salon_settings", "locations", "location_availability_settings")
+            statement = statement.strip()
+            if statement:
+                cursor.execute(statement)
+
+        tenant_tables = (
+            "profiles",
+            "admin_users",
+            "categories",
+            "services",
+            "offers",
+            "bookings",
+            "availability_settings",
+            "closed_dates",
+            "gallery_images",
+            "salon_settings",
+            "locations",
+            "location_availability_settings",
+        )
+
         for table in tenant_tables:
-            cursor.execute(f"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY")
-            cursor.execute(f"ALTER TABLE {table} FORCE ROW LEVEL SECURITY")
-            cursor.execute(f"DROP POLICY IF EXISTS organization_isolation ON {table}")
-            cursor.execute(f"CREATE POLICY organization_isolation ON {table} USING (organization_id::text = current_setting('app.organization_id', true)) WITH CHECK (organization_id::text = current_setting('app.organization_id', true))")
+            cursor.execute(
+                f"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY"
+            )
+
+            cursor.execute(
+                f"ALTER TABLE {table} FORCE ROW LEVEL SECURITY"
+            )
+
+            cursor.execute(
+                f"DROP POLICY IF EXISTS organization_isolation ON {table}"
+            )
+
+            cursor.execute(
+                f"""
+                CREATE POLICY organization_isolation
+                ON {table}
+                USING (
+                    organization_id::text =
+                    current_setting('app.organization_id', true)
+                )
+                WITH CHECK (
+                    organization_id::text =
+                    current_setting('app.organization_id', true)
+                )
+                """
+            )
