@@ -255,6 +255,29 @@ def init_db():
                 """
             )
 
+                    # 6.5. Ensure the composite unique constraints required by seed_data.py.
+        cursor.execute(
+            """
+            CREATE UNIQUE INDEX IF NOT EXISTS
+            ux_availability_settings_org_day
+            ON availability_settings (organization_id, day_of_week)
+            """
+        )
+
+        cursor.execute(
+            """
+            CREATE UNIQUE INDEX IF NOT EXISTS
+            ux_location_availability_settings_org_location_day
+            ON location_availability_settings (
+                organization_id,
+                location_id,
+                day_of_week
+            )
+            """
+        )
+
+        # 7. Enable RLS and isolate every tenant table.
+
         # 7. Enable RLS and isolate every tenant table.
         for table in tenant_tables:
             cursor.execute(
