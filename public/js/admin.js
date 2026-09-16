@@ -762,7 +762,7 @@ class AdminApp {
           <td class="py-3 px-4">
             <div class="flex items-center gap-3">
               <div class="w-11 h-11 rounded-xl bg-pink-100 overflow-hidden flex-shrink-0 border border-pink-200/80">
-                <img src="${s.image_url || '/static/images/nails_manicure.jpg'}" alt="${escapeHtml(s.name)}" class="w-full h-full object-cover" />
+                <img src="${s.image_url || ''}" alt="${escapeHtml(s.name)}" class="w-full h-full object-cover" />
               </div>
               <div>
                 <div class="font-bold text-slate-900">${escapeHtml(s.name)}</div>

@@ -73,7 +73,8 @@ def health_check():
     return {
         "status": "healthy",
         "app": "Blossom Dreams",
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "database": "postgresql"
     }
 
 # HTML Entry Points

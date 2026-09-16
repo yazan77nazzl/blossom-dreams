@@ -7,7 +7,8 @@ class AdminLoginRequest(BaseModel):
     password: str
 
 class AdminUserResponse(BaseModel):
-    id: int
+    id: str
+    organization_id: str
     username: str
     email: str
     full_name: str

@@ -187,7 +187,7 @@ class BookingWizard {
         <div data-id="${s.id}" class="wizard-service-item p-3.5 rounded-2xl border cursor-pointer transition flex items-center justify-between ${isSelected ? 'border-pink-600 bg-pink-50/70 ring-2 ring-pink-500/20' : 'border-pink-100 hover:border-pink-300 hover:bg-pink-50/30'}">
           <div class="flex items-center gap-3">
             <div class="w-12 h-12 rounded-xl bg-pink-100 overflow-hidden flex-shrink-0 border border-pink-200/80">
-              <img src="${s.image_url || '/static/images/nails_manicure.jpg'}" alt="${escapeHtml(s.name)}" class="w-full h-full object-cover" />
+              <img src="${s.image_url || ''}" alt="${escapeHtml(s.name)}" class="w-full h-full object-cover" />
             </div>
             <div>
               <h5 class="text-sm font-bold text-gray-900">${escapeHtml(s.name)}</h5>

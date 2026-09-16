@@ -1,5 +1,6 @@
 ﻿import logging
 import os
+import re
 from pathlib import Path
 from typing import List
 from dotenv import load_dotenv
@@ -18,30 +19,26 @@ class Settings:
         self.ENVIRONMENT: str = os.environ.get("ENVIRONMENT", "development").lower()
         self.IS_PRODUCTION: bool = self.ENVIRONMENT == "production"
 
-        # Database URL (supports postgresql:// or sqlite:///...)
-        default_sqlite_path = BASE_DIR / "blossom_dreams.db"
-        self.DATABASE_URL: str = os.environ.get("DATABASE_URL", "")
-        if self.IS_PRODUCTION and not self.DATABASE_URL:
-            raise RuntimeError(
-                "DATABASE_URL is required in production. Create a free Neon "
-                "Postgres database and set DATABASE_URL to its connection string "
-                "(postgresql://...?sslmode=require). See README 'Deployment'."
-            )
+        # PostgreSQL/Supabase is the application's only database.  Deliberately
+        # fail fast instead of ever creating or falling back to a local SQLite DB.
+        self.DATABASE_URL: str = os.environ.get("DATABASE_URL", "").strip()
         if not self.DATABASE_URL:
-            self.DATABASE_URL = f"sqlite:///{default_sqlite_path.as_posix()}"
+            raise RuntimeError("DATABASE_URL is required and must point to PostgreSQL.")
         # Fix Render/Heroku postgres:// schema prefix to postgresql://
         if self.DATABASE_URL.startswith("postgres://"):
             self.DATABASE_URL = self.DATABASE_URL.replace("postgres://", "postgresql://", 1)
+        if not self.DATABASE_URL.startswith(("postgresql://", "postgresql+psycopg://")):
+            raise RuntimeError("DATABASE_URL must be a PostgreSQL connection URL.")
+        # `pgbouncer=true` is a Supabase connection hint, not a psycopg/libpq
+        # parameter. Keep the pooler host/port and remove only that hint.
+        self.DATABASE_URL = re.sub(r"([?&])pgbouncer=true&?", r"\1", self.DATABASE_URL).rstrip("?&")
 
         # JWT Secret Key — must be explicitly set in production, otherwise admin
         # tokens would rotate on every restart.
         secret = os.environ.get("SECRET_KEY") or os.environ.get("BLOSSOM_SECRET_KEY")
-        if not secret and self.IS_PRODUCTION:
-            raise RuntimeError(
-                "SECRET_KEY is required in production. Generate one with:\n"
-                '  python -c "import secrets; print(secrets.token_urlsafe(48))"'
-            )
-        self.SECRET_KEY: str = secret or "blossom_dreams_lb_luxury_super_secret_key_2025"
+        if not secret:
+            raise RuntimeError("SECRET_KEY is required.")
+        self.SECRET_KEY: str = secret
         self.ALGORITHM: str = "HS256"
         self.ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
 
@@ -102,7 +99,9 @@ class Settings:
         # Default Admin Credentials for initial seeding
         self.ADMIN_USERNAME: str = os.environ.get("ADMIN_USERNAME", "admin")
         self.ADMIN_EMAIL: str = os.environ.get("ADMIN_EMAIL", "admin@blossomdreams.com")
-        self.ADMIN_PASSWORD: str = os.environ.get("ADMIN_PASSWORD", "BlossomAdmin2025!")
+        self.ADMIN_PASSWORD: str = os.environ.get("ADMIN_PASSWORD", "")
+        if not self.ADMIN_PASSWORD:
+            raise RuntimeError("ADMIN_PASSWORD is required for initial database seeding.")
         self.ADMIN_FULL_NAME: str = os.environ.get("ADMIN_FULL_NAME", "Blossom Admin")
 
 

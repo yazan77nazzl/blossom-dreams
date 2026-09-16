@@ -1,339 +1,134 @@
-﻿import os
-import re
-import sqlite3
-from datetime import date as _date, datetime as _datetime, time as _time
-from pathlib import Path
+"""PostgreSQL-only database access and idempotent application schema."""
 from contextlib import contextmanager
+from datetime import date as _date, datetime as _datetime, time as _time
+import re
+import psycopg
+from psycopg.rows import dict_row
 from app.config import settings
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-DB_PATH = BASE_DIR / "blossom_dreams.db"
+IS_POSTGRES = True
 
-IS_POSTGRES = settings.DATABASE_URL.startswith("postgresql://") or settings.DATABASE_URL.startswith("postgres://")
+def _normalise(value):
+    if isinstance(value, _time):
+        return value.strftime("%H:%M")
+    return value.isoformat() if isinstance(value, (_datetime, _date)) else value
 
+def _qmark_to_psycopg(sql: str) -> str:
+    """Convert qmark bind placeholders without touching quoted URL/text data."""
+    out, quoted, index = [], False, 0
+    while index < len(sql):
+        char = sql[index]
+        if char == "'":
+            out.append(char)
+            if quoted and index + 1 < len(sql) and sql[index + 1] == "'":
+                out.append("'")
+                index += 2
+                continue
+            quoted = not quoted
+        elif char == "?" and not quoted:
+            out.append("%s")
+        else:
+            out.append(char)
+        index += 1
+    return "".join(out)
 
-def normalize_db_value(value):
-    """PostgreSQL returns TIMESTAMP/DATE/TIME columns as datetime/date/time
-    objects, but the API layer (pydantic models like BookingResponse) and the
-    SQLite path both expect plain strings. Normalize at the cursor boundary so
-    every response works identically on SQLite and Postgres."""
-    if isinstance(value, (_datetime, _date, _time)):
-        return value.isoformat()
-    return value
+_TENANT_INSERT_TABLES = {
+    "profiles", "admin_users", "categories", "services", "offers", "bookings",
+    "availability_settings", "closed_dates", "gallery_images", "salon_settings",
+    "locations", "location_availability_settings",
+}
 
+def _bind_tenant_on_insert(sql: str) -> str:
+    """Add organization_id to legacy INSERTs that do not supply it explicitly."""
+    match = re.match(r"(\s*INSERT\s+INTO\s+)([a-z_]+)(\s*\()([^)]*)(\)\s*VALUES\s*\()", sql, re.I | re.S)
+    if not match or match.group(2).lower() not in _TENANT_INSERT_TABLES:
+        return sql
+    if "organization_id" in match.group(4).lower():
+        return sql
+    prefix = f"{match.group(1)}{match.group(2)}{match.group(3)}organization_id, {match.group(4)}{match.group(5)}current_setting('app.organization_id')::uuid, "
+    return prefix + sql[match.end():]
 
-def normalize_db_row(row):
-    if row is None:
-        return row
-    if isinstance(row, dict):
-        return {key: normalize_db_value(value) for key, value in row.items()}
-    return tuple(normalize_db_value(value) for value in row)
+class Cursor:
+    """Adapts existing qmark SQL to psycopg; there is intentionally no SQLite path."""
+    def __init__(self, cursor): self._cursor, self.lastrowid = cursor, None
+    def execute(self, query, params=None):
+        insert = bool(re.match(r"^\s*INSERT\s+INTO", query, re.I))
+        returning = bool(re.search(r"\bRETURNING\b", query, re.I))
+        sql = _bind_tenant_on_insert(_qmark_to_psycopg(query))
+        if insert and not returning: sql = sql.rstrip().rstrip(";") + " RETURNING id"
+        self._cursor.execute(sql, tuple(params) if params is not None else None)
+        if insert and not returning:
+            row = self._cursor.fetchone()
+            self.lastrowid = row["id"] if row else None
+        return self
+    def fetchone(self):
+        row = self._cursor.fetchone()
+        return {k: _normalise(v) for k, v in row.items()} if row else None
+    def fetchall(self):
+        return [{k: _normalise(v) for k, v in row.items()} for row in self._cursor.fetchall()]
 
-if IS_POSTGRES:
-    import psycopg
-    from psycopg.rows import dict_row
-
-    class PgCursorWrapper:
-        def __init__(self, raw_cursor):
-            self._cursor = raw_cursor
-            self.lastrowid = None
-
-        def execute(self, query, params=None):
-            sql = query
-            is_insert = bool(re.match(r'^\s*INSERT\s+INTO', sql, re.IGNORECASE))
-            has_returning = bool(re.search(r'\bRETURNING\b', sql, re.IGNORECASE))
-            
-            if is_insert and not has_returning:
-                sql = sql.rstrip().rstrip(';') + " RETURNING id;"
-            
-            # Convert ? placeholders to %s
-            sql = re.sub(r'\?', '%s', sql)
-            
-            if params is not None:
-                self._cursor.execute(sql, tuple(params))
-            else:
-                self._cursor.execute(sql)
-                
-            if is_insert and not has_returning:
-                res = self._cursor.fetchone()
-                if res:
-                    self.lastrowid = res["id"] if isinstance(res, dict) else res[0]
-            return self
-
-        def fetchone(self):
-            return normalize_db_row(self._cursor.fetchone())
-
-        def fetchall(self):
-            rows = self._cursor.fetchall()
-            return [normalize_db_row(row) for row in rows]
-
-        def fetchmany(self, size=None):
-            rows = self._cursor.fetchmany(size) if size else self._cursor.fetchmany()
-            return [normalize_db_row(row) for row in rows]
-
-        def __iter__(self):
-            return iter(self._cursor)
-
-    class PgConnectionWrapper:
-        def __init__(self, raw_conn):
-            self._conn = raw_conn
-
-        def cursor(self):
-            return PgCursorWrapper(self._conn.cursor())
-
-        def commit(self):
-            self._conn.commit()
-
-        def rollback(self):
-            self._conn.rollback()
-
-        def close(self):
-            self._conn.close()
-
-def get_sqlite_connection():
-    db_file = str(DB_PATH)
-    if settings.DATABASE_URL.startswith("sqlite:///"):
-        parsed = settings.DATABASE_URL.replace("sqlite:///", "")
-        if parsed:
-            db_file = parsed
-    conn = sqlite3.connect(db_file, check_same_thread=False, timeout=30.0)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA foreign_keys = ON;")
-    conn.execute("PRAGMA journal_mode = WAL;")
-    return conn
+class Connection:
+    def __init__(self, connection): self._connection = connection
+    def cursor(self): return Cursor(self._connection.cursor())
+    def commit(self): self._connection.commit()
+    def rollback(self): self._connection.rollback()
+    def close(self): self._connection.close()
 
 @contextmanager
 def get_db():
-    if IS_POSTGRES:
-        raw_conn = psycopg.connect(settings.DATABASE_URL, row_factory=dict_row)
-        conn = PgConnectionWrapper(raw_conn)
+    raw = psycopg.connect(settings.DATABASE_URL, row_factory=dict_row, prepare_threshold=None)
+    # Every request is bound to the public Blossom Dreams tenant. Admin users
+    # are also constrained by RLS; future domain-to-tenant routing can replace
+    # this lookup without touching data access code.
+    with raw.cursor() as setup_cursor:
         try:
-            yield conn
-            conn.commit()
-        except Exception:
-            conn.rollback()
-            raise
-        finally:
-            conn.close()
-    else:
-        conn = get_sqlite_connection()
-        try:
-            yield conn
-            conn.commit()
-        except Exception:
-            conn.rollback()
-            raise
-        finally:
-            conn.close()
+            setup_cursor.execute("SELECT id FROM organizations WHERE slug = %s", ("blossom-dreams",))
+            org = setup_cursor.fetchone()
+            if org:
+                setup_cursor.execute("SELECT set_config('app.organization_id', %s, false)", (str(org["id"]),))
+        except psycopg.errors.UndefinedTable:
+            raw.rollback()  # First schema initialization: organizations does not exist yet.
+    conn = Connection(raw)
+    try:
+        yield conn
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+SCHEMA = """
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+CREATE TABLE IF NOT EXISTS organizations (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), slug TEXT NOT NULL UNIQUE, name TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now());
+CREATE TABLE IF NOT EXISTS profiles (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE, email TEXT NOT NULL, full_name TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now(), UNIQUE (organization_id, email));
+CREATE TABLE IF NOT EXISTS admin_users (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE, profile_id UUID REFERENCES profiles(id) ON DELETE SET NULL, username TEXT NOT NULL, email TEXT NOT NULL, hashed_password TEXT NOT NULL, full_name TEXT NOT NULL, role TEXT NOT NULL DEFAULT 'admin', created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now(), UNIQUE (organization_id, username), UNIQUE (organization_id, email));
+CREATE TABLE IF NOT EXISTS categories (id BIGSERIAL PRIMARY KEY, organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE, name TEXT NOT NULL, slug TEXT NOT NULL, description TEXT, display_order INTEGER NOT NULL DEFAULT 0, icon TEXT NOT NULL DEFAULT 'sparkles', is_active BOOLEAN NOT NULL DEFAULT TRUE, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now(), UNIQUE (organization_id, slug));
+CREATE TABLE IF NOT EXISTS services (id BIGSERIAL PRIMARY KEY, organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE, category_id BIGINT NOT NULL REFERENCES categories(id) ON DELETE RESTRICT, name TEXT NOT NULL, slug TEXT NOT NULL, description TEXT, duration_minutes INTEGER NOT NULL DEFAULT 60 CHECK (duration_minutes > 0), price NUMERIC(10,2) NOT NULL CHECK (price >= 0), discount_price NUMERIC(10,2) CHECK (discount_price IS NULL OR discount_price >= 0), image_url TEXT, is_active BOOLEAN NOT NULL DEFAULT TRUE, is_featured BOOLEAN NOT NULL DEFAULT FALSE, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now(), UNIQUE (organization_id, slug));
+CREATE TABLE IF NOT EXISTS locations (id BIGSERIAL PRIMARY KEY, organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE, slug TEXT NOT NULL, name TEXT NOT NULL, address TEXT, google_maps_url TEXT, latitude DOUBLE PRECISION, longitude DOUBLE PRECISION, display_order INTEGER NOT NULL DEFAULT 0, is_active BOOLEAN NOT NULL DEFAULT TRUE, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now(), UNIQUE (organization_id, slug));
+CREATE TABLE IF NOT EXISTS offers (id BIGSERIAL PRIMARY KEY, organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE, service_id BIGINT REFERENCES services(id) ON DELETE SET NULL, title TEXT NOT NULL, description TEXT, original_price NUMERIC(10,2) NOT NULL CHECK (original_price >= 0), discounted_price NUMERIC(10,2) NOT NULL CHECK (discounted_price >= 0), discount_percent INTEGER, start_date DATE NOT NULL, end_date DATE NOT NULL CHECK (end_date >= start_date), image_url TEXT, is_active BOOLEAN NOT NULL DEFAULT TRUE, is_featured BOOLEAN NOT NULL DEFAULT FALSE, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now());
+CREATE TABLE IF NOT EXISTS bookings (id BIGSERIAL PRIMARY KEY, organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE, booking_code TEXT NOT NULL, service_id BIGINT NOT NULL REFERENCES services(id) ON DELETE RESTRICT, location_id BIGINT REFERENCES locations(id) ON DELETE SET NULL, customer_name TEXT NOT NULL, customer_phone TEXT NOT NULL, customer_email TEXT, notes TEXT, appointment_date DATE NOT NULL, appointment_time TIME NOT NULL, duration_minutes INTEGER NOT NULL CHECK (duration_minutes > 0), status TEXT NOT NULL DEFAULT 'pending', price NUMERIC(10,2) NOT NULL CHECK (price >= 0), created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now(), UNIQUE (organization_id, booking_code));
+CREATE TABLE IF NOT EXISTS availability_settings (id BIGSERIAL PRIMARY KEY, organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE, day_of_week INTEGER NOT NULL CHECK (day_of_week BETWEEN 0 AND 6), day_name TEXT NOT NULL, is_open BOOLEAN NOT NULL DEFAULT TRUE, open_time TIME NOT NULL DEFAULT '09:00', close_time TIME NOT NULL DEFAULT '19:00', slot_interval_minutes INTEGER NOT NULL DEFAULT 30, buffer_minutes INTEGER NOT NULL DEFAULT 0, UNIQUE (organization_id, day_of_week));
+CREATE TABLE IF NOT EXISTS closed_dates (id BIGSERIAL PRIMARY KEY, organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE, closed_date DATE NOT NULL, reason TEXT NOT NULL, UNIQUE (organization_id, closed_date));
+CREATE TABLE IF NOT EXISTS gallery_images (id BIGSERIAL PRIMARY KEY, organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE, title TEXT, caption TEXT, image_url TEXT NOT NULL, category TEXT NOT NULL DEFAULT 'All', is_featured BOOLEAN NOT NULL DEFAULT FALSE, display_order INTEGER NOT NULL DEFAULT 0, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now());
+CREATE TABLE IF NOT EXISTS salon_settings (id BIGSERIAL PRIMARY KEY, organization_id UUID NOT NULL UNIQUE REFERENCES organizations(id) ON DELETE CASCADE, salon_name TEXT NOT NULL, tagline TEXT, description TEXT, phone TEXT, whatsapp_number TEXT, instagram_url TEXT, tiktok_url TEXT, address TEXT, google_maps_url TEXT, opening_hours_text TEXT, currency_symbol TEXT NOT NULL DEFAULT '$', announcement_text TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now());
+CREATE TABLE IF NOT EXISTS location_availability_settings (id BIGSERIAL PRIMARY KEY, organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE, location_id BIGINT NOT NULL REFERENCES locations(id) ON DELETE CASCADE, day_of_week INTEGER NOT NULL CHECK (day_of_week BETWEEN 0 AND 6), day_name TEXT NOT NULL, is_open BOOLEAN NOT NULL DEFAULT TRUE, open_time TIME NOT NULL DEFAULT '09:00', close_time TIME NOT NULL DEFAULT '19:00', slot_interval_minutes INTEGER NOT NULL DEFAULT 30, buffer_minutes INTEGER NOT NULL DEFAULT 0, UNIQUE (organization_id, location_id, day_of_week));
+CREATE INDEX IF NOT EXISTS idx_categories_org ON categories(organization_id);
+CREATE INDEX IF NOT EXISTS idx_services_org_category ON services(organization_id, category_id);
+CREATE INDEX IF NOT EXISTS idx_offers_org_active ON offers(organization_id, is_active, end_date);
+CREATE INDEX IF NOT EXISTS idx_bookings_org_slot ON bookings(organization_id, location_id, appointment_date, appointment_time, status);
+CREATE INDEX IF NOT EXISTS idx_gallery_org_order ON gallery_images(organization_id, display_order);
+CREATE INDEX IF NOT EXISTS idx_locations_org_active ON locations(organization_id, is_active);
+"""
 
 def init_db():
-    TABLES_DDL = [
-        # 1. Admin Users
-        """
-        CREATE TABLE IF NOT EXISTS admin_users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            email TEXT UNIQUE NOT NULL,
-            hashed_password TEXT NOT NULL,
-            full_name TEXT NOT NULL,
-            role TEXT DEFAULT 'admin',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-        """,
-        # 2. Categories
-        """
-        CREATE TABLE IF NOT EXISTS categories (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT UNIQUE NOT NULL,
-            slug TEXT UNIQUE NOT NULL,
-            description TEXT,
-            display_order INTEGER DEFAULT 0,
-            icon TEXT DEFAULT 'sparkles',
-            is_active BOOLEAN DEFAULT 1
-        );
-        """,
-        # 3. Services
-        """
-        CREATE TABLE IF NOT EXISTS services (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            category_id INTEGER NOT NULL,
-            name TEXT NOT NULL,
-            slug TEXT NOT NULL,
-            description TEXT,
-            duration_minutes INTEGER NOT NULL DEFAULT 60,
-            price REAL NOT NULL,
-            discount_price REAL,
-            image_url TEXT,
-            is_active BOOLEAN DEFAULT 1,
-            is_featured BOOLEAN DEFAULT 0,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (category_id) REFERENCES categories (id) ON DELETE CASCADE
-        );
-        """,
-        # 4. Offers
-        """
-        CREATE TABLE IF NOT EXISTS offers (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            service_id INTEGER,
-            title TEXT NOT NULL,
-            description TEXT,
-            original_price REAL NOT NULL,
-            discounted_price REAL NOT NULL,
-            discount_percent INTEGER,
-            start_date TEXT NOT NULL,
-            end_date TEXT NOT NULL,
-            image_url TEXT,
-            is_active BOOLEAN DEFAULT 1,
-            is_featured BOOLEAN DEFAULT 0,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (service_id) REFERENCES services (id) ON DELETE SET NULL
-        );
-        """,
-        # 5. Bookings
-        """
-        CREATE TABLE IF NOT EXISTS bookings (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            booking_code TEXT UNIQUE NOT NULL,
-            service_id INTEGER NOT NULL,
-            customer_name TEXT NOT NULL,
-            customer_phone TEXT NOT NULL,
-            customer_email TEXT,
-            notes TEXT,
-            appointment_date TEXT NOT NULL,
-            appointment_time TEXT NOT NULL,
-            duration_minutes INTEGER NOT NULL,
-            status TEXT NOT NULL DEFAULT 'pending',
-            price REAL NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (service_id) REFERENCES services (id) ON DELETE RESTRICT
-        );
-        """,
-        # 6. Availability Settings
-        """
-        CREATE TABLE IF NOT EXISTS availability_settings (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            day_of_week INTEGER NOT NULL UNIQUE,
-            day_name TEXT NOT NULL,
-            is_open BOOLEAN DEFAULT 1,
-            open_time TEXT NOT NULL DEFAULT '09:30',
-            close_time TEXT NOT NULL DEFAULT '19:00',
-            slot_interval_minutes INTEGER DEFAULT 30
-        );
-        """,
-        # 7. Closed Dates
-        """
-        CREATE TABLE IF NOT EXISTS closed_dates (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            closed_date TEXT UNIQUE NOT NULL,
-            reason TEXT NOT NULL
-        );
-        """,
-        # 8. Gallery Images
-        """
-        CREATE TABLE IF NOT EXISTS gallery_images (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT,
-            caption TEXT,
-            image_url TEXT NOT NULL,
-            category TEXT DEFAULT 'All',
-            is_featured BOOLEAN DEFAULT 0,
-            display_order INTEGER DEFAULT 0,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-        """,
-        # 9. Salon Settings
-        """
-        CREATE TABLE IF NOT EXISTS salon_settings (
-            id INTEGER PRIMARY KEY CHECK (id = 1),
-            salon_name TEXT NOT NULL DEFAULT 'BLOSSOM DREAMS',
-            tagline TEXT DEFAULT 'Your sanctuary of elegance, radiance, and luxury beauty.',
-            description TEXT,
-            phone TEXT DEFAULT '+961 70 000 000',
-            whatsapp_number TEXT DEFAULT '+96170000000',
-            instagram_url TEXT DEFAULT 'https://www.instagram.com/blossomdreams.lb/',
-            tiktok_url TEXT,
-            address TEXT DEFAULT 'Amwaj Center, Jounieh, Lebanon',
-            google_maps_url TEXT,
-            opening_hours_text TEXT DEFAULT 'Monday - Saturday: 9:30 AM - 7:00 PM | Sunday: Closed',
-            currency_symbol TEXT DEFAULT '$',
-            announcement_text TEXT DEFAULT '✨ Welcome to Blossom Dreams. Pamper yourself with our signature treatments. Book online today!'
-        );
-        """,
-        # 10. Business Locations
-        """
-        CREATE TABLE IF NOT EXISTS locations (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            slug TEXT UNIQUE NOT NULL,
-            name TEXT NOT NULL,
-            address TEXT,
-            google_maps_url TEXT,
-            latitude REAL,
-            longitude REAL,
-            display_order INTEGER DEFAULT 0,
-            is_active BOOLEAN DEFAULT 1,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-        """,
-        # 11. Per-Location Availability Overrides (NULL/absent = use global
-        #     availability_settings). Separate table because the global settings
-        #     table carries a UNIQUE constraint on day_of_week that cannot be
-        #     dropped cheaply in SQLite.
-        """
-        CREATE TABLE IF NOT EXISTS location_availability_settings (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            location_id INTEGER NOT NULL,
-            day_of_week INTEGER NOT NULL,
-            day_name TEXT NOT NULL,
-            is_open BOOLEAN DEFAULT 1,
-            open_time TEXT NOT NULL DEFAULT '09:00',
-            close_time TEXT NOT NULL DEFAULT '19:00',
-            slot_interval_minutes INTEGER DEFAULT 30,
-            buffer_minutes INTEGER DEFAULT 0,
-            UNIQUE (location_id, day_of_week),
-            FOREIGN KEY (location_id) REFERENCES locations (id) ON DELETE CASCADE
-        );
-        """
-]
-
     with get_db() as conn:
         cursor = conn.cursor()
-        for ddl in TABLES_DDL:
-            statement = ddl
-            if IS_POSTGRES:
-                statement = re.sub(r'INTEGER\s+PRIMARY\s+KEY\s+AUTOINCREMENT', 'SERIAL PRIMARY KEY', statement, flags=re.IGNORECASE)
-                # PostgreSQL requires TRUE/FALSE boolean defaults; SQLite keeps
-                # its valid INTEGER (1/0) equivalents untouched.
-                statement = re.sub(r'\bBOOLEAN\s+DEFAULT\s+1\b', 'BOOLEAN DEFAULT TRUE', statement, flags=re.IGNORECASE)
-                statement = re.sub(r'\bBOOLEAN\s+DEFAULT\s+0\b', 'BOOLEAN DEFAULT FALSE', statement, flags=re.IGNORECASE)
-            cursor.execute(statement)
-
-        cursor.execute("""
-        CREATE INDEX IF NOT EXISTS idx_bookings_date_time 
-        ON bookings (appointment_date, appointment_time, status);
-        """)
-
-        _apply_column_migrations(cursor)
-
-
-def _column_exists(cursor, table: str, column: str) -> bool:
-    """Guarded column-existence check that works on both SQLite and Postgres."""
-    if IS_POSTGRES:
-        cursor.execute(
-            "SELECT 1 FROM information_schema.columns WHERE table_name = %s AND column_name = %s",
-            (table, column),
-        )
-        return cursor.fetchone() is not None
-    cursor.execute(f"PRAGMA table_info({table})")
-    return any(row["name"] == column for row in cursor.fetchall())
-
-
-def _apply_column_migrations(cursor) -> None:
-    """Idempotent ALTER TABLE migrations for features added after the base schema."""
-    migrations = [
-        ("bookings", "location_id", "INTEGER"),
-        ("availability_settings", "buffer_minutes", "INTEGER DEFAULT 0"),
-    ]
-    for table, column, column_ddl in migrations:
-        if _column_exists(cursor, table, column):
-            continue
-        cursor.execute(f"ALTER TABLE {table} ADD COLUMN {column} {column_ddl}")
+        for statement in SCHEMA.split(";\n"):
+            if statement.strip(): cursor.execute(statement)
+        tenant_tables = ("profiles", "admin_users", "categories", "services", "offers", "bookings", "availability_settings", "closed_dates", "gallery_images", "salon_settings", "locations", "location_availability_settings")
+        for table in tenant_tables:
+            cursor.execute(f"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY")
+            cursor.execute(f"ALTER TABLE {table} FORCE ROW LEVEL SECURITY")
+            cursor.execute(f"DROP POLICY IF EXISTS organization_isolation ON {table}")
+            cursor.execute(f"CREATE POLICY organization_isolation ON {table} USING (organization_id::text = current_setting('app.organization_id', true)) WITH CHECK (organization_id::text = current_setting('app.organization_id', true))")

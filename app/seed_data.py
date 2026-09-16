@@ -1,346 +1,62 @@
-import os
-from app.database import get_db
+"""Intentional fresh data for a new Blossom Dreams PostgreSQL installation.
+
+This file never reads, imports, or transforms SQLite data.
+"""
 from app.auth import get_password_hash
 from app.config import settings
+from app.database import get_db
+
+ORG_SLUG = "blossom-dreams"
 
 def seed_database():
     with get_db() as conn:
-        cursor = conn.cursor()
+        c = conn.cursor()
+        c.execute("INSERT INTO organizations (slug, name) VALUES (?, ?) ON CONFLICT (slug) DO UPDATE SET name = EXCLUDED.name RETURNING id", (ORG_SLUG, "Blossom Dreams"))
+        org_id = c.fetchone()["id"]
+        # The first seed run creates the tenant before get_db() can discover
+        # it, so establish the RLS context explicitly for this transaction.
+        c.execute("SELECT set_config('app.organization_id', ?, false)", (str(org_id),))
 
-        # 1. Admin User
-        admin_user = settings.ADMIN_USERNAME
-        cursor.execute("SELECT id FROM admin_users WHERE username = ?", (admin_user,))
-        if not cursor.fetchone():
-            hashed_pwd = get_password_hash(settings.ADMIN_PASSWORD)
-            cursor.execute("""
-            INSERT INTO admin_users (username, email, hashed_password, full_name, role)
-            VALUES (?, ?, ?, ?, ?)
-            """, (admin_user, settings.ADMIN_EMAIL, hashed_pwd, settings.ADMIN_FULL_NAME, "admin"))
-            print(f"[Seed] Created default admin user: {admin_user}")
+        c.execute("SELECT id FROM profiles WHERE organization_id = ? AND email = ?", (org_id, settings.ADMIN_EMAIL))
+        profile = c.fetchone()
+        if not profile:
+            c.execute("INSERT INTO profiles (organization_id, email, full_name) VALUES (?, ?, ?)", (org_id, settings.ADMIN_EMAIL, settings.ADMIN_FULL_NAME))
+            profile_id = c.lastrowid
+        else:
+            profile_id = profile["id"]
+        c.execute("SELECT id FROM admin_users WHERE organization_id = ? AND username = ?", (org_id, settings.ADMIN_USERNAME))
+        if not c.fetchone():
+            c.execute("INSERT INTO admin_users (organization_id, profile_id, username, email, hashed_password, full_name, role) VALUES (?, ?, ?, ?, ?, ?, 'admin')", (org_id, profile_id, settings.ADMIN_USERNAME, settings.ADMIN_EMAIL, get_password_hash(settings.ADMIN_PASSWORD), settings.ADMIN_FULL_NAME))
 
-        # 2. Salon Settings
-        cursor.execute("SELECT id FROM salon_settings WHERE id = 1")
-        if not cursor.fetchone():
-            cursor.execute("""
-            INSERT INTO salon_settings (
-                id, salon_name, tagline, description, phone, whatsapp_number,
-                instagram_url, tiktok_url, address, google_maps_url,
-                opening_hours_text, currency_symbol, announcement_text
-            ) VALUES (
-                1,
-                'BLOSSOM DREAMS',
-                'Your sanctuary of elegance, radiance, and luxury beauty.',
-                'Blossom Dreams is Lebanon''s premier destination for high-end aesthetic nail artistry, bespoke lash & brow styling, rejuvenating clinical facials, and luxury beauty pampering.',
-                '+961 70 882 194',
-                '+96170882194',
-                'https://www.instagram.com/blossomdreams.lb/',
-                'https://www.tiktok.com/@blossomdreams.lb',
-                'Amwaj Center, Jounieh, Lebanon',
-                'https://maps.google.com/?q=Amwaj+Center+Jounieh+Lebanon',
-                'Monday - Saturday: 9:00 AM - 7:00 PM | Sunday: Closed',
-                '$',
-                '🌸 Spring Glamour at Blossom Dreams: Enjoy exclusive pampering packages. Book your appointment online today!'
-            )
-            """)
-            print("[Seed] Created default salon settings.")
+        c.execute("SELECT id FROM salon_settings WHERE organization_id = ?", (org_id,))
+        if not c.fetchone():
+            c.execute("""INSERT INTO salon_settings (organization_id, salon_name, tagline, description, phone, whatsapp_number, instagram_url, tiktok_url, address, google_maps_url, opening_hours_text, currency_symbol, announcement_text)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", (org_id, "BLOSSOM DREAMS", "Your sanctuary of elegance, radiance, and luxury beauty.", "Luxury beauty treatments tailored to you.", "+961 70 882 194", "+96170882194", "https://www.instagram.com/blossomdreams.lb/", "https://www.tiktok.com/@blossomdreams.lb", "Amwaj Center, Jounieh, Lebanon", "https://maps.google.com/?q=Amwaj+Center+Jounieh+Lebanon", "Monday - Saturday: 9:00 AM - 7:00 PM | Sunday: Closed", "$", "Welcome to Blossom Dreams. Book your appointment online today!"))
 
-        # Upgrade any legacy "Blossom Dreams LB" branding on existing installations
-        cursor.execute("UPDATE salon_settings SET salon_name = 'BLOSSOM DREAMS' WHERE salon_name = 'BLOSSOM DREAMS LB'")
-        cursor.execute(
-            "UPDATE salon_settings SET description = REPLACE(description, ?, ?) WHERE description LIKE ?",
-            ("Blossom Dreams LB", "Blossom Dreams", "%Blossom Dreams LB%")
-        )
-        cursor.execute(
-            "UPDATE salon_settings SET tagline = REPLACE(tagline, ?, ?) WHERE tagline LIKE ?",
-            ("Blossom Dreams LB", "Blossom Dreams", "%Blossom Dreams LB%")
-        )
-        cursor.execute(
-            "UPDATE salon_settings SET announcement_text = REPLACE(announcement_text, ?, ?) WHERE announcement_text LIKE ?",
-            ("Blossom Dreams LB", "Blossom Dreams", "%Blossom Dreams LB%")
-        )
-        # Relocate legacy "Verdun / Beirut" installations to Amwaj Center, Jounieh
-        cursor.execute(
-            "UPDATE salon_settings SET address = ?, google_maps_url = ? WHERE address LIKE ?",
-            ("Amwaj Center, Jounieh, Lebanon", "https://maps.google.com/?q=Amwaj+Center+Jounieh+Lebanon", "%Verdun%")
-        )
+        for day, name, is_open in ((0,"Monday",True),(1,"Tuesday",True),(2,"Wednesday",True),(3,"Thursday",True),(4,"Friday",True),(5,"Saturday",True),(6,"Sunday",False)):
+            c.execute("""INSERT INTO availability_settings (organization_id, day_of_week, day_name, is_open, open_time, close_time, slot_interval_minutes, buffer_minutes)
+                VALUES (?, ?, ?, ?, '09:00', '19:00', 30, 0) ON CONFLICT (organization_id, day_of_week) DO NOTHING""", (org_id, day, name, is_open))
 
-        # 3. Weekly Availability Settings (0 = Monday, 6 = Sunday)
-        days = [
-            (0, "Monday", 1, "09:00", "19:00", 30),
-            (1, "Tuesday", 1, "09:00", "19:00", 30),
-            (2, "Wednesday", 1, "09:00", "19:00", 30),
-            (3, "Thursday", 1, "09:00", "19:00", 30),
-            (4, "Friday", 1, "09:00", "19:00", 30),
-            (5, "Saturday", 1, "09:00", "19:00", 30),
-            (6, "Sunday", 0, "09:00", "19:00", 30),
-        ]
-        for day in days:
-            cursor.execute("SELECT id FROM availability_settings WHERE day_of_week = ?", (day[0],))
-            if not cursor.fetchone():
-                cursor.execute("""
-                INSERT INTO availability_settings (day_of_week, day_name, is_open, open_time, close_time, slot_interval_minutes)
-                VALUES (?, ?, ?, ?, ?, ?)
-                """, (day[0], day[1], bool(day[2]), day[3], day[4], day[5]))
+        c.execute("""INSERT INTO locations (organization_id, slug, name, address, google_maps_url, display_order, is_active)
+            VALUES (?, 'amwaj', 'Amwaj Center', 'Amwaj Center, Jounieh, Lebanon', 'https://maps.google.com/?q=Amwaj+Center+Jounieh+Lebanon', 1, TRUE)
+            ON CONFLICT (organization_id, slug) DO NOTHING""", (org_id,))
 
-        # Migrate legacy installs that still open at 09:30 to the current 09:00 opening time
-        cursor.execute("UPDATE availability_settings SET open_time = '09:00' WHERE open_time = '09:30'")
-        cursor.execute(
-            "UPDATE salon_settings SET opening_hours_text = REPLACE(opening_hours_text, ?, ?) WHERE opening_hours_text LIKE ?",
-            ("9:30 AM", "9:00 AM", "%9:30 AM%")
-        )
-
-        # 3b. Business Locations
-        # Versailles Center uses the corrected Google Maps reference:
-        # https://www.google.com/maps?geocode=...daddr=Centre+Savoy,+XJJG+7H6,+Sarba...&ftid=0x151f4096b6ee7923:0x1de97506f65318e9
-        versailles_maps_url = (
-            "https://www.google.com/maps?geocode=FVZlBgId-qQfAg%3D%3D;FeKABgIdjp0fAikjee62lkAfFTHpGFP2BnXpHQ%3D%3D"
-            "&daddr=Centre+Savoy,+XJJG+7H6,+Sarba&saddr=33.9735896,35.6282820&dirflg=d"
-            "&ftid=0x151f4096b6ee7923:0x1de97506f65318e9"
-            "&lucs=,94297699,100795621,94231188,94280568,47071704,94218641,94282134,94286869,100820247,100822504"
-            "&g_ep=CAISEjI2LjM2LjMuOTczNTQ4ODUxMBgAILq3CypdLDk0Mjk3Njk5LDEwMDc5NTYyMSw5NDIzMTE4OCw5NDI4MDU2OCw0NzA3MTcwNCw5NDIxODY0MSw5NDI4MjEzNCw5NDI4Njg2OSwxMDA4MjAyNDcsMTAwODIyNTA0QgJMQg%3D%3D"
-            "&skid=0f2ba6b9-e5e3-45ac-902c-c1454b1e5484&g_st=iw"
-        )
-        locations_data = [
-            (
-                "versailles", "Versailles Center", "Centre Savoy, Sarba, Jounieh, Lebanon",
-                versailles_maps_url,
-                None, None, 1,
-            ),
-            (
-                "amwaj", "Amwaj Center", "Amwaj Center, Jounieh, Lebanon",
-                "https://maps.google.com/?q=Amwaj+Center+Jounieh+Lebanon",
-                33.9833907, 35.630377, 2,
-            ),
-        ]
-        for slug, name, address, maps_url, lat, lng, order in locations_data:
-            cursor.execute("SELECT id FROM locations WHERE slug = ?", (slug,))
-            if not cursor.fetchone():
-                cursor.execute("""
-                INSERT INTO locations (slug, name, address, google_maps_url, latitude, longitude, display_order, is_active)
-                VALUES (?, ?, ?, ?, ?, ?, ?, TRUE)
-                """, (slug, name, address, maps_url, lat, lng, order))
-            else:
-                # Versailles: replace the legacy ftid-only map link with the
-                # corrected reference. Amwaj is never clobbered; other admin
-                # edits are preserved.
-                cursor.execute("""
-                UPDATE locations SET google_maps_url = ?
-                WHERE slug = 'versailles'
-                  AND (google_maps_url IS NULL OR google_maps_url = '' OR google_maps_url LIKE ?)
-                """, (maps_url, "%0x151f4096b6ee7923%"))
-
-        # 4. Categories
-        categories_data = [
-            ("Nails", "nails", "Luxury Russian manicures, BIAB overlays, gel enhancements, and bespoke nail couture.", 1, "hand"),
-            ("Lashes", "lashes", "Custom lash extensions, mega volume, classic sets, and lifting infusions.", 2, "eye"),
-            ("Brows", "brows", "Micro-sculpting, lamination, tinting, and high-definition shaping.", 3, "sparkles"),
-            ("Skin & Facial", "skin-facial", "Advanced clinical glow facials, dermaplaning, and hydration therapies.", 4, "flower"),
-            ("Laser Hair Removal", "laser", "Painless medical-grade diode laser hair removal for silky smooth skin.", 5, "zap"),
-            ("Glam & Makeup", "makeup", "Red carpet glam, evening elegance, and bridal bespoke makeup.", 6, "heart"),
-            ("Piercing & Tattoo", "piercing-tattoo", "Hygienic curated ear styling and delicate fine-line aesthetic tattoos.", 7, "star"),
-        ]
-        
-        category_id_map = {}
-        for cat in categories_data:
-            cursor.execute("SELECT id FROM categories WHERE slug = ?", (cat[1],))
-            row = cursor.fetchone()
-            if not row:
-                cursor.execute("""
-                INSERT INTO categories (name, slug, description, display_order, icon, is_active)
-                VALUES (?, ?, ?, ?, ?, TRUE)
-                """, cat)
-                category_id_map[cat[1]] = cursor.lastrowid
-            else:
-                category_id_map[cat[1]] = row["id"]
-
-        # 5. Services
-        services_data = [
-            # Nails
-            (
-                "nails", "Signature Russian Manicure", "russian-manicure",
-                "Meticulous dry cuticle diamond e-file care, precise nail shaping, and flawless single-tone gel polish finish.",
-                60, 35.0, 30.0, "/static/images/nails_manicure.jpg", 1, 1
-            ),
-            (
-                "nails", "BIAB Builder Gel Overlay", "biab-builder-gel",
-                "Nourishing Builder in a Bottle gel overlay that fortifies weak natural nails while promoting long-term growth and high-gloss beauty.",
-                75, 45.0, None, "/static/images/nails_biab.jpg", 1, 1
-            ),
-            (
-                "nails", "Full Set Gel Sculpted Extensions", "gel-sculpted-extensions",
-                "Handcrafted custom extensions with luxury French tips or custom Ombré styling, lightweight and durable.",
-                90, 65.0, 55.0, "/static/images/nails_extensions.jpg", 1, 0
-            ),
-            (
-                "nails", "Deluxe Spa Pedicure & Foot Bath", "deluxe-spa-pedicure",
-                "Rose water soaking bath, organic sugar scrub exfoliation, hot towel wrap, callous removal, and lasting gel polish.",
-                60, 40.0, None, "/static/images/nails_pedicure.jpg", 1, 0
-            ),
-            (
-                "nails", "Haute Couture Nail Art (Add-on)", "haute-nail-art",
-                "Intricate hand-painted flowers, 3D chrome swirls, pearl embellishments, and custom luxury designs.",
-                30, 20.0, None, "/static/images/nails_art.jpg", 1, 0
-            ),
-
-            # Lashes
-            (
-                "lashes", "Classic Silk Individual Lashes", "classic-silk-lashes",
-                "Natural 1:1 application of premium lightweight silk lashes that enhance your natural eye shape.",
-                90, 50.0, None, "/static/images/lashes_classic.jpg", 1, 0
-            ),
-            (
-                "lashes", "Russian Mega Volume Lashes", "russian-volume-lashes",
-                "Ultra-dense, fluffy 4D-6D handmade fans creating a dramatic, sultry gaze with featherweight softness.",
-                120, 75.0, 65.0, "/static/images/lashes_volume.jpg", 1, 1
-            ),
-            (
-                "lashes", "Keratin Lash Lift & Deep Tint", "keratin-lash-lift-tint",
-                "Lifts and curls your natural lashes from root to tip infused with nourishing keratin and jet-black tint.",
-                60, 40.0, 35.0, "/static/images/lashes_lift.jpg", 1, 1
-            ),
-
-            # Brows
-            (
-                "brows", "Signature Brow Lamination & Tint", "brow-lamination-tint",
-                "Restructures brow hairs into full, feathered perfection; includes organic castor oil treatment and custom tint.",
-                45, 45.0, 38.0, "/static/images/brows_lamination.jpg", 1, 1
-            ),
-            (
-                "brows", "HD Precision Brow Sculpt & Mapping", "hd-brow-sculpt",
-                "Golden-ratio brow mapping, waxing, micro-tweezing, and long-lasting henna/hybrid tinting.",
-                30, 25.0, None, "/static/images/brows_sculpt.jpg", 1, 0
-            ),
-
-            # Skin & Facial
-            (
-                "skin-facial", "Hydrafacial Radiance Glow", "hydrafacial-glow",
-                "Non-invasive multi-step treatment combining vortex extraction, chemical peeling, and hyaluronic acid hydration infusion.",
-                60, 85.0, 70.0, "/static/images/facial_hydra.jpg", 1, 1
-            ),
-            (
-                "skin-facial", "Dermaplaning & Glass Skin Treatment", "dermaplaning-glass-skin",
-                "Gentle surgical blade exfoliation removing dead skin cells and peach fuzz, followed by collagen-infusion sheet mask.",
-                45, 55.0, None, "/static/images/facial_dermaplane.jpg", 1, 0
-            ),
-            (
-                "skin-facial", "24K Gold Luxury Anti-Aging Facial", "24k-gold-luxury-facial",
-                "Pure 24K gold foil sheets, lymphatic face massage, peptide serums, and LED light therapy to boost firmness and elasticity.",
-                75, 110.0, 95.0, "/static/images/facial_gold.jpg", 1, 1
-            ),
-
-            # Laser
-            (
-                "laser", "Full Body Laser Hair Removal", "laser-full-body",
-                "Full body medical triple-wavelength diode laser with ice-cooling technology for virtually painless, permanent hair reduction.",
-                90, 150.0, 125.0, "/static/images/laser_full_body.jpg", 1, 1
-            ),
-            (
-                "laser", "Underarms & Bikini Line Laser", "laser-underarms-bikini",
-                "Fast, targeted, cooling-assisted laser session for silky underarms and clean bikini contours.",
-                30, 45.0, None, "/static/images/laser_bikini.jpg", 1, 0
-            ),
-
-            # Glam & Makeup
-            (
-                "makeup", "Evening Red Carpet Glam", "evening-glam-makeup",
-                "Full professional makeup application including skin prep, contouring, dramatic or soft smokey eyes, and luxury mink lashes.",
-                75, 70.0, 60.0, "/static/images/makeup_glam.jpg", 1, 1
-            ),
-            (
-                "makeup", "Bridal Consultation & Trial Makeup", "bridal-trial-makeup",
-                "Dedicated bridal session to design and customize your dream wedding look, skin tone matching, and veil placement preview.",
-                90, 90.0, None, "/static/images/makeup_bridal.jpg", 1, 0
-            ),
-
-            # Piercing & Tattoo
-            (
-                "piercing-tattoo", "Curated Ear Piercing (Single/Pair)", "curated-ear-piercing",
-                "Sterile needle piercing with titanium/14k gold jewelry selection, anatomic placement consultation, and aftercare kit.",
-                30, 30.0, None, "/static/images/piercing.jpg", 1, 0
-            ),
-            (
-                "piercing-tattoo", "Fine Line Delicate Tattoo (Micro)", "fine-line-tattoo",
-                "Single-needle minimalist floral, script, or geometric tattoo design by our certified tattoo artist.",
-                60, 60.0, None, "/static/images/tattoo.jpg", 1, 0
-            ),
-        ]
-
-        service_id_map = {}
-        for item in services_data:
-            cat_slug, name, slug, desc, duration, price, disc_price, img, active, feat = item
-            cat_id = category_id_map.get(cat_slug)
-            if not cat_id:
-                continue
-
-            cursor.execute("SELECT id FROM services WHERE slug = ?", (slug,))
-            row = cursor.fetchone()
-            if not row:
-                cursor.execute("""
-                INSERT INTO services (category_id, name, slug, description, duration_minutes, price, discount_price, image_url, is_active, is_featured)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """, (cat_id, name, slug, desc, duration, price, disc_price, img, bool(active), bool(feat)))
-                service_id_map[slug] = cursor.lastrowid
-            else:
-                service_id_map[slug] = row["id"]
-
-        # 6. Special Offers
-        offers_data = [
-            (
-                "Blossom Bridal Glow Duo",
-                "Indulge in our signature Hydrafacial Radiance treatment paired with Keratin Lash Lift & Tint for the ultimate luminous glow.",
-                125.0, 89.0, 29, "2025-01-01", "2027-12-31",
-                "/static/images/offer_glow_duo.jpg", 1, 1,
-                service_id_map.get("hydrafacial-glow")
-            ),
-            (
-                "Russian Mega Volume + Brow Lamination Glam",
-                "Get runway-ready with dramatic fluffy Russian volume lashes combined with full featherweight brow lamination and custom tint.",
-                120.0, 85.0, 29, "2025-01-01", "2027-12-31",
-                "/static/images/offer_lash_brow.jpg", 1, 1,
-                service_id_map.get("russian-volume-lashes")
-            ),
-            (
-                "BIAB Manicure & Deluxe Pedicure Pamper",
-                "Treat yourself to flawless BIAB gel strength overlay and a soothing rose petal spa pedicure.",
-                85.0, 59.0, 31, "2025-01-01", "2027-12-31",
-                "/static/images/offer_mani_pedi.jpg", 1, 1,
-                service_id_map.get("biab-builder-gel")
-            ),
-            (
-                "Summer Full Body Laser Transformation",
-                "Medical-grade ice diode laser session for complete silky-smooth confidence with zero downtime.",
-                150.0, 115.0, 23, "2025-01-01", "2027-12-31",
-                "/static/images/offer_laser.jpg", 1, 0,
-                service_id_map.get("laser-full-body")
-            )
-        ]
-
-        for offer in offers_data:
-            cursor.execute("SELECT id FROM offers WHERE title = ?", (offer[0],))
-            if not cursor.fetchone():
-                cursor.execute("""
-                INSERT INTO offers (
-                    title, description, original_price, discounted_price, discount_percent,
-                    start_date, end_date, image_url, is_active, is_featured, service_id
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """, offer[:8] + (bool(offer[8]), bool(offer[9])) + offer[10:])
-
-        # 7. Gallery Images
-        gallery_data = [
-            ("French Ombre Almond Nails", "Hand-sculpted Russian manicure with delicate chrome pearl powder", "/static/images/gallery_1.jpg", "Nails", 1, 1),
-            ("Fluffy Russian Volume Fans", "Bespoke eye styling with silk volume lashes", "/static/images/gallery_2.jpg", "Lashes", 1, 2),
-            ("Feathered Brow Lamination", "Naturally lifted brows with custom organic tint", "/static/images/gallery_3.jpg", "Brows", 1, 3),
-            ("Hydrafacial Glass Skin Glow", "Deep pore vortex extraction and peptide hydration", "/static/images/gallery_4.jpg", "Skin & Facial", 1, 4),
-            ("Bridal Makeup & Veil Artistry", "Timeless romantic bridal glam with luminous base", "/static/images/gallery_5.jpg", "Glam & Makeup", 1, 5),
-            ("Curated Gold Ear Piercings", "14K solid gold huggies and diamond studs styling", "/static/images/gallery_6.jpg", "Piercing & Tattoo", 1, 6),
-        ]
-
-        cursor.execute("SELECT COUNT(*) as count FROM gallery_images")
-        if cursor.fetchone()["count"] == 0:
-            for item in gallery_data:
-                cursor.execute("""
-                INSERT INTO gallery_images (title, caption, image_url, category, is_featured, display_order)
-                VALUES (?, ?, ?, ?, ?, ?)
-                """, (item[0], item[1], item[2], item[3], bool(item[4]), item[5]))
-
-        print("[Seed] Seed data successfully applied!")
+        categories = [("Nails", "nails", "Luxury manicure and nail care.", 1, "hand"), ("Lashes & Brows", "lashes-brows", "Custom lash and brow treatments.", 2, "eye"), ("Skin & Facial", "skin-facial", "Radiance and skin treatments.", 3, "sparkles")]
+        category_ids = {}
+        for name, slug, description, order, icon in categories:
+            c.execute("""INSERT INTO categories (organization_id, name, slug, description, display_order, icon) VALUES (?, ?, ?, ?, ?, ?)
+                ON CONFLICT (organization_id, slug) DO UPDATE SET name = EXCLUDED.name RETURNING id""", (org_id, name, slug, description, order, icon))
+            category_ids[slug] = c.fetchone()["id"]
+        services = [("nails", "Signature Manicure", "signature-manicure", "Detailed manicure with a polished finish.", 60, 35, "/static/images/nails_manicure.jpg", True), ("lashes-brows", "Keratin Lash Lift", "keratin-lash-lift", "Lift and tint for naturally defined lashes.", 60, 40, "/static/images/lashes_lift.jpg", True), ("skin-facial", "Hydrafacial Radiance", "hydrafacial-radiance", "A deeply cleansing hydration facial.", 60, 85, "/static/images/facial_hydra.jpg", True)]
+        service_ids = {}
+        for cat, name, slug, description, duration, price, image, featured in services:
+            c.execute("""INSERT INTO services (organization_id, category_id, name, slug, description, duration_minutes, price, image_url, is_featured)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (organization_id, slug) DO UPDATE SET name = EXCLUDED.name RETURNING id""", (org_id, category_ids[cat], name, slug, description, duration, price, image, featured))
+            service_ids[slug] = c.fetchone()["id"]
+        c.execute("SELECT id FROM offers WHERE organization_id = ? AND title = ?", (org_id, "Radiance Duo"))
+        if not c.fetchone():
+            c.execute("""INSERT INTO offers (organization_id, service_id, title, description, original_price, discounted_price, discount_percent, start_date, end_date, image_url, is_active, is_featured)
+                VALUES (?, ?, 'Radiance Duo', 'Hydrafacial and lash lift seasonal package.', 125, 89, 29, CURRENT_DATE, CURRENT_DATE + 365, '/static/images/offer_glow_duo.jpg', TRUE, TRUE)""", (org_id, service_ids["hydrafacial-radiance"]))
+        for title, caption, image, category, order in (("Signature Manicure", "A polished manicure finish.", "/static/images/gallery_1.jpg", "Nails", 1), ("Radiant Skin", "Fresh facial results.", "/static/images/gallery_4.jpg", "Skin & Facial", 2)):
+            c.execute("SELECT id FROM gallery_images WHERE organization_id = ? AND image_url = ?", (org_id, image))
+            if not c.fetchone(): c.execute("INSERT INTO gallery_images (organization_id, title, caption, image_url, category, is_featured, display_order) VALUES (?, ?, ?, ?, ?, TRUE, ?)", (org_id, title, caption, image, category, order))

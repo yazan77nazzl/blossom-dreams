@@ -10,7 +10,7 @@ def login(form_data: AdminLoginRequest):
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT id, username, email, hashed_password, full_name, role FROM admin_users WHERE username = ? OR email = ?",
+            "SELECT id, organization_id, username, email, hashed_password, full_name, role FROM admin_users WHERE username = ? OR email = ?",
             (form_data.username, form_data.username)
         )
         user = cursor.fetchone()
@@ -22,12 +22,13 @@ def login(form_data: AdminLoginRequest):
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    access_token = create_access_token(data={"sub": user["username"], "user_id": user["id"]})
+    access_token = create_access_token(data={"sub": user["username"], "user_id": str(user["id"]), "organization_id": str(user["organization_id"])})
     return {
         "access_token": access_token,
         "token_type": "bearer",
         "user": {
-            "id": user["id"],
+            "id": str(user["id"]),
+            "organization_id": str(user["organization_id"]),
             "username": user["username"],
             "email": user["email"],
             "full_name": user["full_name"],

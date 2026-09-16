@@ -46,16 +46,20 @@ def get_current_admin(credentials: Optional[HTTPAuthorizationCredentials] = Depe
     token = credentials.credentials
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get("sub")
-        if username is None:
+        user_id: str = payload.get("user_id")
+        organization_id: str = payload.get("organization_id")
+        if not user_id or not organization_id:
             raise credentials_exception
     except JWTError:
         raise credentials_exception
 
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT id, username, email, full_name, role FROM admin_users WHERE username = ?", (username,))
+        cursor.execute("SELECT id, organization_id, username, email, full_name, role FROM admin_users WHERE id = ? AND organization_id = ?", (user_id, organization_id))
         row = cursor.fetchone()
         if row is None:
             raise credentials_exception
-        return dict(row)
+        admin = dict(row)
+        admin["id"] = str(admin["id"])
+        admin["organization_id"] = str(admin["organization_id"])
+        return admin

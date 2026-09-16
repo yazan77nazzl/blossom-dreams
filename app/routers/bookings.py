@@ -31,17 +31,10 @@ def _validate_date_time(date_str: str, time_str: str) -> None:
 
 def _acquire_write_lock(conn, cursor, date_str: str) -> None:
     """
-    Serializes concurrent booking writes for the same date so the conflict check +
-    insert below is atomic:
-      - PostgreSQL: transaction-scoped advisory lock keyed by the appointment date.
-      - SQLite:     explicit BEGIN IMMEDIATE reserves the write lock up front.
-    Any concurrent duplicate attempt blocks here until the transaction commits,
-    then re-reads the (now updated) bookings table and correctly receives a conflict.
+    Serializes concurrent booking writes for the same date using PostgreSQL's
+    transaction-scoped advisory lock. The lock is held until commit.
     """
-    if IS_POSTGRES:
-        cursor.execute("SELECT pg_advisory_xact_lock(hashtext(?))", (f"blossom_booking:{date_str}",))
-    else:
-        cursor.execute("BEGIN IMMEDIATE")
+    cursor.execute("SELECT pg_advisory_xact_lock(hashtext(?))", (f"blossom_booking:{date_str}",))
 
 @router.post("", response_model=BookingResponse, status_code=status.HTTP_201_CREATED)
 def create_booking(booking_in: BookingCreate):
@@ -106,7 +99,7 @@ def create_booking(booking_in: BookingCreate):
           AND created_at >= {recent_window}
         LIMIT 1
         """
-        recent_window = "NOW() - INTERVAL '5 minutes'" if IS_POSTGRES else "datetime('now', '-5 minutes')"
+        recent_window = "NOW() - INTERVAL '5 minutes'"
         cursor.execute(
             duplicate_sql.format(recent_window=recent_window),
             (

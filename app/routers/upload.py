@@ -37,9 +37,6 @@ async def _store_supabase(content: bytes, filename: str, content_type: str = "ap
     }
     try:
         async with httpx.AsyncClient(timeout=60.0) as client:
-            logger.info("FINAL_UPLOAD_URL_REPR=%r", upload_url)
-            logger.info("SUPABASE_URL_REPR=%r", settings.SUPABASE_URL)
-            logger.info("UPLOAD_BUCKET_REPR=%r", settings.SUPABASE_STORAGE_BUCKET)
             response = await client.post(upload_url, content=content, headers=headers)
     except httpx.HTTPError as exc:
         logger.exception("Supabase storage upload request failed: %s", exc)

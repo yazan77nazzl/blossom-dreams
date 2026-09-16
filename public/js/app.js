@@ -26,12 +26,23 @@ class BlossomApp {
     } catch (e) {
       console.error("Initialization error:", e);
       this.forceRevealAll();
+      this.renderLoadError();
       showToast("Unable to load salon details. Please refresh the page.", "error");
     }
   }
 
   forceRevealAll() {
     document.querySelectorAll('.reveal-on-scroll:not(.is-revealed)').forEach(el => el.classList.add('is-revealed'));
+  }
+
+  renderLoadError() {
+    const message = '<div class="col-span-full py-12 text-center text-slate-500"><p class="text-sm">Salon information is temporarily unavailable. Please try again shortly.</p></div>';
+    ["offers-container", "services-grid-container", "gallery-container"].forEach(id => {
+      const element = document.getElementById(id);
+      if (element) element.innerHTML = message;
+    });
+    const categories = document.getElementById("categories-pills-container");
+    if (categories) categories.innerHTML = '';
   }
 
   setupIntersectionObserver() {
@@ -68,12 +79,12 @@ class BlossomApp {
 
   async loadInitialData() {
     const [settings, categories, services, offers, gallery, locations] = await Promise.all([
-      apiFetch("/api/settings").catch(() => null),
-      apiFetch("/api/categories").catch(() => []),
-      apiFetch("/api/services").catch(() => []),
-      apiFetch("/api/offers").catch(() => []),
-      apiFetch("/api/gallery").catch(() => []),
-      apiFetch("/api/locations").catch(() => []),
+      apiFetch("/api/settings"),
+      apiFetch("/api/categories"),
+      apiFetch("/api/services"),
+      apiFetch("/api/offers"),
+      apiFetch("/api/gallery"),
+      apiFetch("/api/locations"),
     ]);
 
     this.settings = settings;
@@ -166,20 +177,20 @@ class BlossomApp {
     document.querySelectorAll(".salon-hours-text").forEach(el => el.innerText = s.opening_hours_text);
 
     // WhatsApp Links
-    const rawWa = (s.whatsapp_number || "+96170882194").replace(/[^0-9]/g, "");
+    const rawWa = (s.whatsapp_number || "").replace(/[^0-9]/g, "");
     const waUrl = `https://wa.me/${rawWa}?text=${encodeURIComponent("Hello Blossom Dreams! 🌸 I would like to inquire about booking a salon appointment.")}`;
     document.querySelectorAll(".salon-whatsapp-link").forEach(el => {
       el.href = waUrl;
     });
 
     // Instagram Links
-    const igUrl = s.instagram_url || "https://www.instagram.com/blossomdreams.lb/";
+    const igUrl = s.instagram_url || "#";
     document.querySelectorAll(".salon-instagram-link").forEach(el => {
       el.href = igUrl;
     });
 
     // TikTok Links
-    const tiktokUrl = s.tiktok_url || "https://www.tiktok.com/@blossomdreams.lb";
+    const tiktokUrl = s.tiktok_url || "#";
     document.querySelectorAll(".salon-tiktok-link").forEach(el => {
       el.href = tiktokUrl;
     });
@@ -253,7 +264,7 @@ class BlossomApp {
 
           <!-- Offer Image with smooth zoom -->
           <div class="relative h-56 sm:h-60 overflow-hidden bg-pink-100">
-            <img src="${off.image_url || '/static/images/offer_glow_duo.jpg'}" alt="${escapeHtml(off.title)}"
+            <img src="${off.image_url || ''}" alt="${escapeHtml(off.title)}"
               class="w-full h-full object-cover group-hover:scale-108 transition duration-700 ease-out" />
             <div class="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent"></div>
             
@@ -363,7 +374,7 @@ class BlossomApp {
         <div class="luxury-card flex flex-col group border border-pink-100/80 reveal-on-scroll delay-${(idx % 4) * 100}">
           <!-- Treatment Image with Overlay & Zoom -->
           <div class="relative h-52 overflow-hidden bg-pink-50">
-            <img src="${s.image_url || '/static/images/nails_manicure.jpg'}" alt="${escapeHtml(s.name)}"
+            <img src="${s.image_url || ''}" alt="${escapeHtml(s.name)}"
               class="w-full h-full object-cover group-hover:scale-108 transition duration-700 ease-out" />
             
             <div class="absolute top-3 left-3 flex flex-col gap-1.5 z-10">
