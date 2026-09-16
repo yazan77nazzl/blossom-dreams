@@ -113,12 +113,6 @@ CREATE TABLE IF NOT EXISTS closed_dates (id BIGSERIAL PRIMARY KEY, organization_
 CREATE TABLE IF NOT EXISTS gallery_images (id BIGSERIAL PRIMARY KEY, organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE, title TEXT, caption TEXT, image_url TEXT NOT NULL, category TEXT NOT NULL DEFAULT 'All', is_featured BOOLEAN NOT NULL DEFAULT FALSE, display_order INTEGER NOT NULL DEFAULT 0, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now());
 CREATE TABLE IF NOT EXISTS salon_settings (id BIGSERIAL PRIMARY KEY, organization_id UUID NOT NULL UNIQUE REFERENCES organizations(id) ON DELETE CASCADE, salon_name TEXT NOT NULL, tagline TEXT, description TEXT, phone TEXT, whatsapp_number TEXT, instagram_url TEXT, tiktok_url TEXT, address TEXT, google_maps_url TEXT, opening_hours_text TEXT, currency_symbol TEXT NOT NULL DEFAULT '$', announcement_text TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now());
 CREATE TABLE IF NOT EXISTS location_availability_settings (id BIGSERIAL PRIMARY KEY, organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE, location_id BIGINT NOT NULL REFERENCES locations(id) ON DELETE CASCADE, day_of_week INTEGER NOT NULL CHECK (day_of_week BETWEEN 0 AND 6), day_name TEXT NOT NULL, is_open BOOLEAN NOT NULL DEFAULT TRUE, open_time TIME NOT NULL DEFAULT '09:00', close_time TIME NOT NULL DEFAULT '19:00', slot_interval_minutes INTEGER NOT NULL DEFAULT 30, buffer_minutes INTEGER NOT NULL DEFAULT 0, UNIQUE (organization_id, location_id, day_of_week));
-CREATE INDEX IF NOT EXISTS idx_categories_org ON categories(organization_id);
-CREATE INDEX IF NOT EXISTS idx_services_org_category ON services(organization_id, category_id);
-CREATE INDEX IF NOT EXISTS idx_offers_org_active ON offers(organization_id, is_active, end_date);
-CREATE INDEX IF NOT EXISTS idx_bookings_org_slot ON bookings(organization_id, location_id, appointment_date, appointment_time, status);
-CREATE INDEX IF NOT EXISTS idx_gallery_org_order ON gallery_images(organization_id, display_order);
-CREATE INDEX IF NOT EXISTS idx_locations_org_active ON locations(organization_id, is_active);
 """
 
 def init_db():
@@ -196,6 +190,25 @@ def init_db():
                 ADD COLUMN IF NOT EXISTS organization_id UUID
                 """
             )
+                    # 6.5. Create indexes only after organization_id exists.
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_categories_org ON categories(organization_id)"
+        )
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_services_org_category ON services(organization_id, category_id)"
+        )
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_offers_org_active ON offers(organization_id, is_active, end_date)"
+        )
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_bookings_org_slot ON bookings(organization_id, location_id, appointment_date, appointment_time, status)"
+        )
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_gallery_org_order ON gallery_images(organization_id, display_order)"
+        )
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_locations_org_active ON locations(organization_id, is_active)"
+        )
 
         # 4. Put existing rows into the default Blossom Dreams organization.
         for table in tenant_tables:
