@@ -1387,6 +1387,7 @@ class AdminApp {
     });
 
     root.querySelector("#service-form").addEventListener("submit", async (e) => {
+      console.log("SERVICE FORM SUBMIT FIRED");
       e.preventDefault();
       const discVal = root.querySelector("#srv-discount").value;
       const payload = {
@@ -1401,6 +1402,7 @@ class AdminApp {
         is_featured: root.querySelector("#srv-featured").checked
       };
 
+      console.log("SENDING POST /api/services", payload);
       try {
         if (isEdit) {
           await apiFetch(`/api/services/${existing.id}`, { method: "PUT", body: payload });
