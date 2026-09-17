@@ -1394,9 +1394,9 @@ class AdminApp {
         name: root.querySelector("#srv-name").value.trim(),
         duration_minutes: parseInt(root.querySelector("#srv-duration").value),
         price: parseFloat(root.querySelector("#srv-price").value),
-        discount_price: discVal && parseFloat(discVal) > 0 ? parseFloat(discVal) : null,
+        discount_price: discVal && parseFloat(discVal) > 0 ? parseFloat(discVal) : 0,
         description: root.querySelector("#srv-desc").value.trim(),
-        image_url: root.querySelector("#srv-image").value.trim() || null,
+        image_url: root.querySelector("#srv-image").value.trim(),
         is_active: root.querySelector("#srv-active").checked,
         is_featured: root.querySelector("#srv-featured").checked
       };

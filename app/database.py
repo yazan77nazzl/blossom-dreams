@@ -68,27 +68,65 @@ class Cursor:
         return [{k: _normalise(v) for k, v in row.items()} for row in self._cursor.fetchall()]
 
 class Connection:
-    def __init__(self, connection): self._connection = connection
-    def cursor(self): return Cursor(self._connection.cursor())
+    def __init__(self, connection, organization_id: str | None = None):
+        self._connection = connection
+        self._organization_id = organization_id
+
+    def cursor(self):
+        return Cursor(self._connection.cursor(), self._organization_id)
+
     def commit(self): self._connection.commit()
     def rollback(self): self._connection.rollback()
     def close(self): self._connection.close()
 
+
+class Cursor:
+    """Adapts existing qmark SQL to psycopg; there is intentionally no SQLite path."""
+    def __init__(self, cursor, organization_id: str | None = None):
+        self._cursor, self.lastrowid = cursor, None
+        self._organization_id = organization_id
+
+    def execute(self, query, params=None):
+        # Prepend SET LOCAL for RLS to work with PgBouncer transaction pooling.
+        # Each transaction gets a fresh backend connection; SET LOCAL ensures
+        # app.organization_id is set for the current transaction only.
+        if self._organization_id:
+            sql = f"SET LOCAL app.organization_id = '{self._organization_id}'; " + query
+        else:
+            sql = query
+        insert = bool(re.match(r"^\s*INSERT\s+INTO", sql, re.I))
+        returning = bool(re.search(r"\bRETURNING\b", sql, re.I))
+        sql = _bind_tenant_on_insert(_qmark_to_psycopg(sql))
+        if insert and not returning: sql = sql.rstrip().rstrip(";") + " RETURNING id"
+        self._cursor.execute(sql, tuple(params) if params is not None else None)
+        if insert and not returning:
+            row = self._cursor.fetchone()
+            self.lastrowid = row["id"] if row else None
+        return self
+
+    def fetchone(self):
+        row = self._cursor.fetchone()
+        return {k: _normalise(v) for k, v in row.items()} if row else None
+
+    def fetchall(self):
+        return [{k: _normalise(v) for k, v in row.items()} for row in self._cursor.fetchall()]
+
+
 @contextmanager
 def get_db():
     raw = psycopg.connect(settings.DATABASE_URL, row_factory=dict_row, prepare_threshold=None)
-    # Every request is bound to the public Blossom Dreams tenant. Admin users
-    # are also constrained by RLS; future domain-to-tenant routing can replace
-    # this lookup without touching data access code.
+    # Look up the Blossom Dreams organization ID once per connection.
+    # This ID is then passed to each Cursor to emit SET LOCAL at transaction start.
+    organization_id = None
     with raw.cursor() as setup_cursor:
         try:
             setup_cursor.execute("SELECT id FROM organizations WHERE slug = %s", ("blossom-dreams",))
             org = setup_cursor.fetchone()
             if org:
-                setup_cursor.execute("SELECT set_config('app.organization_id', %s, false)", (str(org["id"]),))
+                organization_id = str(org["id"])
         except psycopg.errors.UndefinedTable:
             raw.rollback()  # First schema initialization: organizations does not exist yet.
-    conn = Connection(raw)
+    conn = Connection(raw, organization_id)
     try:
         yield conn
         conn.commit()
