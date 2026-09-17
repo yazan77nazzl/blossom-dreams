@@ -9,7 +9,7 @@ router = APIRouter(prefix="/api/settings", tags=["settings"])
 def get_settings():
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM salon_settings ORDER BY created_at ASC LIMIT 1")
+        cursor.execute("SELECT * FROM salon_settings ORDER BY id ASC LIMIT 1")
         row = cursor.fetchone()
         if not row:
             raise HTTPException(status_code=404, detail="Settings not found")
@@ -19,7 +19,7 @@ def get_settings():
 def update_settings(settings: SalonSettingsUpdate, current_admin: dict = Depends(get_current_admin)):
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM salon_settings ORDER BY created_at ASC LIMIT 1")
+        cursor.execute("SELECT * FROM salon_settings ORDER BY id ASC LIMIT 1")
         row = cursor.fetchone()
         if not row:
             raise HTTPException(status_code=404, detail="Settings not found")

@@ -214,6 +214,28 @@ def init_db():
     (str(organization_id),),
 )
 
+        # 2.5. Clean up deleted image URLs from production database.
+        # These images were removed but their URLs remain in services/offers records.
+        # Set image_url to NULL where it references the deleted files.
+        deleted_images = (
+            "/static/images/nails_manicure.jpg",
+            "/static/images/lashes_lift.jpg",
+            "/static/images/facial_hydra.jpg",
+        )
+        for img in deleted_images:
+            cursor.execute(
+                "UPDATE services SET image_url = NULL WHERE image_url = ?",
+                (img,),
+            )
+            cursor.execute(
+                "UPDATE offers SET image_url = NULL WHERE image_url = ?",
+                (img,),
+            )
+            cursor.execute(
+                "UPDATE gallery_images SET image_url = NULL WHERE image_url = ?",
+                (img,),
+            )
+
         # 3. Existing databases may have old tables without organization_id.
         #    Add the column only when it does not already exist.
         tenant_tables = (
