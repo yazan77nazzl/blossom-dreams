@@ -8,56 +8,8 @@ IMAGES_DIR.mkdir(parents=True, exist_ok=True)
 # Aesthetic palette inspired by Blossom Dreams
 # Soft blush, luxury rose, champagne gold accents, rich deep magenta
 IMAGE_CONFIGS = [
-    # Nails
-    ("nails_manicure.jpg", "RUSSIAN MANICURE", "Precision E-file Cuticle Care & Gel Finish", "#FFF0F5", "#E6739F", "#9D174D"),
-    ("nails_biab.jpg", "BIAB BUILDER GEL", "Natural Strengthening & High-Gloss Overlay", "#FDF2F8", "#DB2777", "#831843"),
-    ("nails_extensions.jpg", "SCULPTED EXTENSIONS", "French Ombre & Bespoke Length", "#FFF1F2", "#E11D48", "#881337"),
-    ("nails_pedicure.jpg", "DELUXE SPA PEDICURE", "Rose Petal Soak, Scrub & Gel Polish", "#FDF4FF", "#C026D3", "#701A75"),
-    ("nails_art.jpg", "HAUTE COUTURE NAIL ART", "3D Pearls, Chrome & Hand-Painted Florals", "#FFF0F3", "#F43F5E", "#9F1239"),
-
-    # Lashes
-    ("lashes_classic.jpg", "CLASSIC SILK LASHES", "Individual 1:1 Featherweight Natural Set", "#FAF5FF", "#9333EA", "#581C87"),
-    ("lashes_volume.jpg", "RUSSIAN MEGA VOLUME", "Fluffy 4D-6D Handmade Fans & Sultry Gaze", "#FDF2F8", "#BE185D", "#831843"),
-    ("lashes_lift.jpg", "KERATIN LASH LIFT & TINT", "Root-to-Tip Infusion & Deep Jet Tint", "#FFF1F5", "#FB7185", "#9F1239"),
-
-    # Brows
-    ("brows_lamination.jpg", "BROW LAMINATION & TINT", "Full Feathered Restructuring & Castor Care", "#FDF4F5", "#E11D48", "#881337"),
-    ("brows_sculpt.jpg", "HD PRECISION BROW SCULPT", "Golden-Ratio Mapping, Wax & Hybrid Tint", "#FFF0F5", "#DB2777", "#9D174D"),
-
-    # Skin & Facial
-    ("facial_hydra.jpg", "HYDRAFACIAL RADIANCE", "Vortex Extraction & Hyaluronic Infusion", "#F0FDFA", "#0D9488", "#115E59"),
-    ("facial_dermaplane.jpg", "DERMAPLANING RADIANCE", "Glass Skin Exfoliation & Collagen Mask", "#FFF7ED", "#EA580C", "#9A3412"),
-    ("facial_gold.jpg", "24K GOLD LUXURY FACIAL", "Pure Gold Foil & Lymphatic LED Therapy", "#FEFCE8", "#CA8A04", "#713F12"),
-
-    # Laser
-    ("laser_full_body.jpg", "TRIPLE-WAVELENGTH LASER", "Ice-Cooling Full Body Permanent Smoothness", "#F0FDF4", "#16A34A", "#14532D"),
-    ("laser_bikini.jpg", "UNDERARMS & BIKINI LASER", "Targeted Ice-Diode Precision Comfort", "#FDF2F8", "#DB2777", "#831843"),
-
-    # Makeup
-    ("makeup_glam.jpg", "EVENING RED CARPET GLAM", "Sculpted Glow, Smokey Eyes & Mink Lashes", "#FAF5FF", "#A855F7", "#6B21A8"),
-    ("makeup_bridal.jpg", "BRIDAL BESPOKE ARTISTRY", "Timeless Luminous Luxury for Your Dream Day", "#FFF1F2", "#BE185D", "#831843"),
-
-    # Piercing & Tattoo
-    ("piercing.jpg", "CURATED EAR PIERCING", "Solid 14K Gold & Titanium Fine Ear Styling", "#FEFCE8", "#EAB308", "#854D0E"),
-    ("tattoo.jpg", "FINE LINE AESTHETIC TATTOO", "Minimalist Floral & Delicate Single Needle", "#F3F4F6", "#4B5563", "#1F2937"),
-
-    # Offers
-    ("offer_glow_duo.jpg", "BLOSSOM BRIDAL GLOW DUO", "Hydrafacial + Lash Lift Special Package", "#FDF2F8", "#BE185D", "#831843"),
-    ("offer_lash_brow.jpg", "VOLUME LASH & BROW DUO", "Russian Mega Volume + Brow Lamination", "#FFF1F5", "#E11D48", "#881337"),
-    ("offer_mani_pedi.jpg", "BIAB & SPA PEDICURE DUO", "Flawless Builder Nails & Rose Spa Care", "#FDF4FF", "#C026D3", "#701A75"),
-    ("offer_laser.jpg", "FULL BODY LASER PACKAGE", "Complete 3-Session Summer Radiance", "#F0FDF4", "#059669", "#064E3B"),
-
-    # Gallery
-    ("gallery_1.jpg", "FRENCH OMBRE ALMOND NAILS", "Blossom Dreams Signature Art", "#FFF0F5", "#DB2777", "#831843"),
-    ("gallery_2.jpg", "FLUFFY RUSSIAN VOLUME FANS", "Custom Lash Curation", "#FAF5FF", "#9333EA", "#581C87"),
-    ("gallery_3.jpg", "FEATHERED BROW LAMINATION", "Organic Nourishing Lift", "#FDF4F5", "#E11D48", "#881337"),
-    ("gallery_4.jpg", "HYDRAFACIAL GLASS SKIN", "Vortex Deep Pore Extraction", "#F0FDFA", "#0D9488", "#115E59"),
-    ("gallery_5.jpg", "BRIDAL MAKEUP & VEIL ART", "Timeless Elegance & Glow", "#FFF1F2", "#BE185D", "#831843"),
-    ("gallery_6.jpg", "CURATED GOLD PIERCINGS", "14K Gold Ear Constellation", "#FEFCE8", "#CA8A04", "#713F12"),
-
     # Hero & About
     ("hero_bg.jpg", "BLOSSOM DREAMS", "Sanctuary of Luxury Beauty & Glamour", "#FDF2F8", "#BE185D", "#831843"),
-    ("about_salon.jpg", "OUR ATELIER & PHILOSOPHY", "Bespoke Excellence in Beirut", "#FFF1F2", "#E11D48", "#881337"),
 ]
 
 def hex_to_rgb(hex_color):
