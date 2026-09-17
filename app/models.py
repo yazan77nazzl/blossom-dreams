@@ -249,5 +249,5 @@ class SalonSettingsResponse(BaseModel):
     address: Optional[str] = None
     google_maps_url: Optional[str] = None
     opening_hours_text: Optional[str] = None
-    currency_symbol: str
+    currency_symbol: Optional[str] = None
     announcement_text: Optional[str] = None
