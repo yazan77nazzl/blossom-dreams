@@ -47,16 +47,19 @@ def seed_database():
             c.execute("""INSERT INTO categories (organization_id, name, slug, description, display_order, icon) VALUES (?, ?, ?, ?, ?, ?)
                 ON CONFLICT (organization_id, slug) DO UPDATE SET name = EXCLUDED.name RETURNING id""", (org_id, name, slug, description, order, icon))
             category_ids[slug] = c.fetchone()["id"]
-        services = [("nails", "Signature Manicure", "signature-manicure", "Detailed manicure with a polished finish.", 60, 35, True), ("lashes-brows", "Keratin Lash Lift", "keratin-lash-lift", "Lift and tint for naturally defined lashes.", 60, 40, True), ("skin-facial", "Hydrafacial Radiance", "hydrafacial-radiance", "A deeply cleansing hydration facial.", 60, 85, True)]
-        service_ids = {}
-        for cat, name, slug, description, duration, price, featured in services:
-            c.execute("""INSERT INTO services (organization_id, category_id, name, slug, description, duration_minutes, price, is_featured)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (organization_id, slug) DO UPDATE SET name = EXCLUDED.name RETURNING id""", (org_id, category_ids[cat], name, slug, description, duration, price, featured))
-            service_ids[slug] = c.fetchone()["id"]
-        c.execute("SELECT id FROM offers WHERE organization_id = ? AND title = ?", (org_id, "Radiance Duo"))
-        if not c.fetchone():
-            c.execute("""INSERT INTO offers (organization_id, service_id, title, description, original_price, discounted_price, discount_percent, start_date, end_date, is_active, is_featured)
-                VALUES (?, ?, 'Radiance Duo', 'Hydrafacial and lash lift seasonal package.', 125, 89, 29, CURRENT_DATE, CURRENT_DATE + 365, TRUE, TRUE)""", (org_id, service_ids["hydrafacial-radiance"]))
+        # Seed services only if none exist for this organization
+        c.execute("SELECT COUNT(*) as cnt FROM services WHERE organization_id = ?", (org_id,))
+        if c.fetchone()["cnt"] == 0:
+            services = [("nails", "Signature Manicure", "signature-manicure", "Detailed manicure with a polished finish.", 60, 35, True), ("lashes-brows", "Keratin Lash Lift", "keratin-lash-lift", "Lift and tint for naturally defined lashes.", 60, 40, True), ("skin-facial", "Hydrafacial Radiance", "hydrafacial-radiance", "A deeply cleansing hydration facial.", 60, 85, True)]
+            service_ids = {}
+            for cat, name, slug, description, duration, price, featured in services:
+                c.execute("""INSERT INTO services (organization_id, category_id, name, slug, description, duration_minutes, price, is_featured)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (organization_id, slug) DO UPDATE SET name = EXCLUDED.name RETURNING id""", (org_id, category_ids[cat], name, slug, description, duration, price, featured))
+                service_ids[slug] = c.fetchone()["id"]
+            c.execute("SELECT id FROM offers WHERE organization_id = ? AND title = ?", (org_id, "Radiance Duo"))
+            if not c.fetchone():
+                c.execute("""INSERT INTO offers (organization_id, service_id, title, description, original_price, discounted_price, discount_percent, start_date, end_date, is_active, is_featured)
+                    VALUES (?, ?, 'Radiance Duo', 'Hydrafacial and lash lift seasonal package.', 125, 89, 29, CURRENT_DATE, CURRENT_DATE + 365, TRUE, TRUE)""", (org_id, service_ids["hydrafacial-radiance"]))
         for title, caption, category, order in (("Signature Manicure", "A polished manicure finish.", "Nails", 1), ("Radiant Skin", "Fresh facial results.", "Skin & Facial", 2)):
             c.execute("SELECT id FROM gallery_images WHERE organization_id = ? AND title = ?", (org_id, title))
             if not c.fetchone(): c.execute("INSERT INTO gallery_images (organization_id, title, caption, image_url, category, is_featured, display_order) VALUES (?, ?, ?, '/static/images/hero_bg.jpg', ?, TRUE, ?)", (org_id, title, caption, category, order))
