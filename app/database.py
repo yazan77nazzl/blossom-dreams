@@ -48,25 +48,6 @@ def _bind_tenant_on_insert(sql: str) -> str:
     prefix = f"{match.group(1)}{match.group(2)}{match.group(3)}organization_id, {match.group(4)}{match.group(5)}current_setting('app.organization_id')::uuid, "
     return prefix + sql[match.end():]
 
-class Cursor:
-    """Adapts existing qmark SQL to psycopg; there is intentionally no SQLite path."""
-    def __init__(self, cursor): self._cursor, self.lastrowid = cursor, None
-    def execute(self, query, params=None):
-        insert = bool(re.match(r"^\s*INSERT\s+INTO", query, re.I))
-        returning = bool(re.search(r"\bRETURNING\b", query, re.I))
-        sql = _bind_tenant_on_insert(_qmark_to_psycopg(query))
-        if insert and not returning: sql = sql.rstrip().rstrip(";") + " RETURNING id"
-        self._cursor.execute(sql, tuple(params) if params is not None else None)
-        if insert and not returning:
-            row = self._cursor.fetchone()
-            self.lastrowid = row["id"] if row else None
-        return self
-    def fetchone(self):
-        row = self._cursor.fetchone()
-        return {k: _normalise(v) for k, v in row.items()} if row else None
-    def fetchall(self):
-        return [{k: _normalise(v) for k, v in row.items()} for row in self._cursor.fetchall()]
-
 class Connection:
     def __init__(self, connection, organization_id: str | None = None):
         self._connection = connection
@@ -136,6 +117,25 @@ def get_db():
                 organization_id = str(org["id"])
         except psycopg.errors.UndefinedTable:
             raw.rollback()  # First schema initialization: organizations does not exist yet.
+
+    # Ensure organization_id is set for RLS to work properly.
+    # During initial schema setup (before seed), organizations table may not have the row yet.
+    # After seed, it must exist.
+    if organization_id is None:
+        # Check if we're in initial setup by seeing if tables exist
+        with raw.cursor() as check_cursor:
+            try:
+                check_cursor.execute("SELECT 1 FROM organizations LIMIT 1")
+                check_cursor.fetchone()
+                # Table exists but no blossom-dreams org - this is a config error
+                raise RuntimeError(
+                    "Organization 'blossom-dreams' not found in database. "
+                    "Run seed_data.py or ensure the organization exists."
+                )
+            except psycopg.errors.UndefinedTable:
+                # Tables don't exist yet - this is initial setup, allow None
+                pass
+
     conn = Connection(raw, organization_id)
     try:
         yield conn
