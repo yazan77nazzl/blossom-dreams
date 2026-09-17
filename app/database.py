@@ -85,15 +85,20 @@ class Cursor:
     def __init__(self, cursor, organization_id: str | None = None):
         self._cursor, self.lastrowid = cursor, None
         self._organization_id = organization_id
+        self._skip_org_context = False
 
-    def execute(self, query, params=None):
+    def execute(self, query, params=None, skip_org_context=False):
         # Prepend SET LOCAL for RLS to work with PgBouncer transaction pooling.
         # Each transaction gets a fresh backend connection; SET LOCAL ensures
         # app.organization_id is set for the current transaction only.
-        if self._organization_id:
-            sql = f"SET LOCAL app.organization_id = '{self._organization_id}'; " + query
-        else:
-            sql = query
+        # Skip for DDL (CREATE/ALTER/DROP/etc.) — they don't need RLS context.
+        # Execute SET LOCAL as a separate command to avoid multi-command
+        # prepared statement issues with PgBouncer/psycopg.
+        ddl = bool(re.match(r"^\s*(CREATE|ALTER|DROP|TRUNCATE|COMMENT|GRANT|REVOKE|ANALYZE|VACUUM|REINDEX)\b", query, re.I))
+        use_org = self._organization_id and not ddl and not skip_org_context
+        if use_org:
+            self._cursor.execute(f"SET LOCAL app.organization_id = '{self._organization_id}'")
+        sql = query
         insert = bool(re.match(r"^\s*INSERT\s+INTO", sql, re.I))
         returning = bool(re.search(r"\bRETURNING\b", sql, re.I))
         sql = _bind_tenant_on_insert(_qmark_to_psycopg(sql))
@@ -103,6 +108,11 @@ class Cursor:
             row = self._cursor.fetchone()
             self.lastrowid = row["id"] if row else None
         return self
+
+    def execute_no_org(self, query, params=None):
+        """Execute without prepending SET LOCAL app.organization_id.
+        For init_db bootstrap operations that run before RLS is fully configured."""
+        return self.execute(query, params, skip_org_context=True)
 
     def fetchone(self):
         row = self._cursor.fetchone()
@@ -173,7 +183,7 @@ def init_db():
                 raise
 
         # 2. Make sure the default organization exists
-        cursor.execute(
+        cursor.execute_no_org(
             """
             INSERT INTO organizations (slug, name)
             VALUES (?, ?)
@@ -182,7 +192,7 @@ def init_db():
             ("blossom-dreams", "Blossom Dreams"),
         )
 
-        cursor.execute(
+        cursor.execute_no_org(
             """
             SELECT id
             FROM organizations
@@ -199,7 +209,7 @@ def init_db():
             )
 
         organization_id = organization["id"]
-        cursor.execute(
+        cursor.execute_no_org(
     "SELECT set_config('app.organization_id', %s, false)",
     (str(organization_id),),
 )
@@ -250,7 +260,7 @@ def init_db():
 
         # 4. Put existing rows into the default Blossom Dreams organization.
         for table in tenant_tables:
-            cursor.execute(
+            cursor.execute_no_org(
                 f"""
                 UPDATE {table}
                 SET organization_id = ?
