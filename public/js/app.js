@@ -429,7 +429,11 @@ this.availability = availability;
         (this.categories.find(c => c.slug === this.activeCategorySlug)?.id === s.category_id);
 
       // Filter by nail subcategory when Nails category is selected
-      const matchSubcat = this.activeCategorySlug !== "nails" ||\n        this.activeNailSubcategory === "all" ||\n        (s.nail_subcategory_id && this.nailSubcategories.find(ns => ns.slug === this.activeNailSubcategory)?.id === s.nail_subcategory_id);
+      const matchSubcat = (
+        this.activeCategorySlug !== "nails" ||
+        this.activeNailSubcategory === "all" ||
+        (s.nail_subcategory_id && this.nailSubcategories.find(ns => ns.slug === this.activeNailSubcategory)?.id === s.nail_subcategory_id)
+      )
 
       const matchSearch = !this.searchQuery || 
         s.name.toLowerCase().includes(this.searchQuery) || 
