@@ -31,6 +31,9 @@ def seed_database():
         )
         admin_row = c.fetchone()
         hashed_pw = get_password_hash(settings.ADMIN_PASSWORD)
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info("Seeding admin user: org_id=%s username=%s email=%s hash_len=%d", org_id, settings.ADMIN_USERNAME, settings.ADMIN_EMAIL, len(hashed_pw))
         if admin_row:
             c.execute(
                 """
@@ -40,6 +43,7 @@ def seed_database():
                 """,
                 (hashed_pw, profile_id, settings.ADMIN_EMAIL, settings.ADMIN_FULL_NAME, 'admin', admin_row["id"])
             )
+            logger.info("Updated existing admin user id=%s", admin_row["id"])
         else:
             c.execute(
                 """
@@ -48,6 +52,7 @@ def seed_database():
                 """,
                 (org_id, profile_id, settings.ADMIN_USERNAME, settings.ADMIN_EMAIL, hashed_pw, settings.ADMIN_FULL_NAME)
             )
+            logger.info("Inserted new admin user")
 
         c.execute("SELECT id FROM salon_settings WHERE organization_id = ?", (org_id,))
         if not c.fetchone():

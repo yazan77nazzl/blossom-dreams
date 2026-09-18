@@ -1,4 +1,4 @@
-import logging
+﻿import logging
 from fastapi import APIRouter, HTTPException, Depends, status
 from app.database import get_db
 from app.auth import verify_password, get_password_hash, create_access_token, get_current_admin
@@ -11,30 +11,20 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 @router.post("/login", response_model=TokenResponse)
 def login(form_data: AdminLoginRequest):
     logger.info("Login attempt for username: %s", form_data.username)
-    print(f"[AUTH DEBUG] Login attempt for username: {form_data.username}", flush=True)
     with get_db() as conn:
         cursor = conn.cursor()
-        sql = "SELECT id, organization_id, username, email, hashed_password, full_name, role FROM admin_users WHERE username ILIKE ? OR email ILIKE ?"
-        logger.info("Executing login query: %s with params (%s, %s)", sql, form_data.username, form_data.username)
-        print(f"[AUTH DEBUG] Executing login query: {sql} with params ({form_data.username}, {form_data.username})", flush=True)
-        cursor.execute(sql, (form_data.username, form_data.username))
+        cursor.execute(
+            "SELECT id, organization_id, username, email, hashed_password, full_name, role FROM admin_users WHERE username ILIKE ? OR email ILIKE ?",
+            (form_data.username, form_data.username)
+        )
         user = cursor.fetchone()
-        if user:
-            logger.info("Query returned user id=%s org_id=%s username=%s email=%s", user["id"], user["organization_id"], user["username"], user["email"])
-            print(f"[AUTH DEBUG] Query returned user id={user['id']} org_id={user['organization_id']} username={user['username']} email={user['email']}", flush=True)
-        else:
-            logger.info("Query returned no rows")
-            print("[AUTH DEBUG] Query returned no rows", flush=True)
 
     if user:
         logger.info("User found: username=%s email=%s", user["username"], user["email"])
-        print(f"[AUTH DEBUG] User found: username={user['username']} email={user['email']}", flush=True)
         password_verified = verify_password(form_data.password, user["hashed_password"])
         logger.info("Password verified: %s", password_verified)
-        print(f"[AUTH DEBUG] Password verified: {password_verified}", flush=True)
     else:
         logger.info("User not found")
-        print("[AUTH DEBUG] User not found", flush=True)
         password_verified = False
 
     if not user or not password_verified:
