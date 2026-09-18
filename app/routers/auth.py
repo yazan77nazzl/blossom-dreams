@@ -10,7 +10,7 @@ def login(form_data: AdminLoginRequest):
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT id, organization_id, username, email, hashed_password, full_name, role FROM admin_users WHERE username = ? OR email = ?",
+            "SELECT id, organization_id, username, email, hashed_password, full_name, role FROM admin_users WHERE username ILIKE ? OR email ILIKE ?",
             (form_data.username, form_data.username)
         )
         user = cursor.fetchone()
