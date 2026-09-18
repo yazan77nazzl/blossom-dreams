@@ -115,7 +115,10 @@ class OfferResponse(OfferBase):
 
 # --- Booking Schemas ---
 class BookingCreate(BaseModel):
-    service_id: int
+    service_ids: List[int] = Field(default_factory=list, description="List of service IDs")
+    offer_ids: List[int] = Field(default_factory=list, description="List of offer IDs")
+    # Backward compatibility single service_id (optional)
+    service_id: Optional[int] = None
     location_id: Optional[int] = None
     customer_name: str = Field(..., min_length=2, max_length=120, description="Full name of the client")
     customer_phone: str = Field(..., min_length=5, max_length=30, description="Phone / WhatsApp number")
