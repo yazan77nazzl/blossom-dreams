@@ -94,6 +94,7 @@ class AdminApp {
     if (loginForm) {
       loginForm.addEventListener("submit", async (e) => {
         e.preventDefault();
+        console.log("[admin.js] Login form submitted");
         const usernameInput = document.getElementById("login-username").value.trim();
         const passwordInput = document.getElementById("login-password").value;
         const errorBox = document.getElementById("login-error-msg");

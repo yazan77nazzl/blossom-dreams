@@ -1,0 +1,48 @@
+INFO:app.config:SUPABASE_URL parsed: protocol=yes, hostname=jhfldeoquxqejwyeohhw.supabase.co, bucket=uploads
+INFO:     Started server process [12952]
+INFO:     Waiting for application startup.
+[Server] Initializing database...
+[DB INIT] Executing: CREATE EXTENSION IF NOT EXISTS pgcrypto
+[DB INIT] Executing: CREATE TABLE IF NOT EXISTS organizations (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), slug TEXT NOT NULL UNIQUE, name TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now())
+[DB INIT] Executing: CREATE TABLE IF NOT EXISTS profiles (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE, email TEXT NOT NULL, full_name TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+[DB INIT] Executing: CREATE TABLE IF NOT EXISTS admin_users (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE, profile_id UUID REFERENCES profiles(id) ON DELETE SET NULL, username TEXT NOT NULL, email TEXT NOT NULL, hashed_password TEXT NOT NULL,
+[DB INIT] Executing: CREATE TABLE IF NOT EXISTS categories (id BIGSERIAL PRIMARY KEY, organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE, name TEXT NOT NULL, slug TEXT NOT NULL, description TEXT, display_order INTEGER NOT NULL DEFAULT 0, icon TEXT NOT NULL DEFAULT 'sparkles', is_active BOOLEAN 
+[DB INIT] Executing: CREATE TABLE IF NOT EXISTS services (id BIGSERIAL PRIMARY KEY, organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE, category_id BIGINT NOT NULL REFERENCES categories(id) ON DELETE RESTRICT, name TEXT NOT NULL, slug TEXT NOT NULL, description TEXT, duration_minutes INTEGER NO
+[DB INIT] Executing: CREATE TABLE IF NOT EXISTS locations (id BIGSERIAL PRIMARY KEY, organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE, slug TEXT NOT NULL, name TEXT NOT NULL, address TEXT, google_maps_url TEXT, latitude DOUBLE PRECISION, longitude DOUBLE PRECISION, display_order INTEGER NOT N
+[DB INIT] Executing: CREATE TABLE IF NOT EXISTS offers (id BIGSERIAL PRIMARY KEY, organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE, service_id BIGINT REFERENCES services(id) ON DELETE SET NULL, title TEXT NOT NULL, description TEXT, original_price NUMERIC(10,2) NOT NULL CHECK (original_price 
+[DB INIT] Executing: CREATE TABLE IF NOT EXISTS bookings (id BIGSERIAL PRIMARY KEY, organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE, booking_code TEXT NOT NULL, service_id BIGINT NOT NULL REFERENCES services(id) ON DELETE RESTRICT, location_id BIGINT REFERENCES locations(id) ON DELETE SET NU
+[DB INIT] Executing: CREATE TABLE IF NOT EXISTS availability_settings (id BIGSERIAL PRIMARY KEY, organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE, day_of_week INTEGER NOT NULL CHECK (day_of_week BETWEEN 0 AND 6), day_name TEXT NOT NULL, is_open BOOLEAN NOT NULL DEFAULT TRUE, open_time TIME NO
+[DB INIT] Executing: CREATE TABLE IF NOT EXISTS closed_dates (id BIGSERIAL PRIMARY KEY, organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE, closed_date DATE NOT NULL, reason TEXT NOT NULL, UNIQUE (organization_id, closed_date))
+[DB INIT] Executing: CREATE TABLE IF NOT EXISTS gallery_images (id BIGSERIAL PRIMARY KEY, organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE, title TEXT, caption TEXT, image_url TEXT NOT NULL, category TEXT NOT NULL DEFAULT 'All', is_featured BOOLEAN NOT NULL DEFAULT FALSE, display_order INTEGE
+[DB INIT] Executing: CREATE TABLE IF NOT EXISTS salon_settings (id BIGSERIAL PRIMARY KEY, organization_id UUID NOT NULL UNIQUE REFERENCES organizations(id) ON DELETE CASCADE, salon_name TEXT NOT NULL, tagline TEXT, description TEXT, phone TEXT, whatsapp_number TEXT, instagram_url TEXT, tiktok_url TEXT, address TEXT, goo
+[DB INIT] Executing: CREATE TABLE IF NOT EXISTS location_availability_settings (id BIGSERIAL PRIMARY KEY, organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE, location_id BIGINT NOT NULL REFERENCES locations(id) ON DELETE CASCADE, day_of_week INTEGER NOT NULL CHECK (day_of_week BETWEEN 0 AND 6),
+[DB INIT] Database initialization completed successfully.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+[Server] Checking seed data...
+[Server] Blossom Dreams is ready in DEVELOPMENT mode!
+INFO:     127.0.0.1:59230 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59250 - "GET /api/settings HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59281 - "GET /api/services HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59307 - "GET /api/categories HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59338 - "GET /api/offers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59364 - "GET /api/gallery HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56679 - "GET /api/locations HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58780 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58806 - "POST /api/auth/login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63871 - "POST /api/auth/login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63877 - "POST /api/services HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:63901 - "GET /api/categories HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51976 - "POST /api/auth/login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51983 - "POST /api/services HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51212 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51226 - "GET /api/settings HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51232 - "GET /api/services HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51236 - "GET /api/categories HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51240 - "GET /api/offers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51246 - "GET /api/gallery HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51250 - "GET /api/locations HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51255 - "POST /api/auth/login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51259 - "POST /api/services HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51267 - "GET /api/services HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51319 - "GET /api/settings HTTP/1.1" 200 OK

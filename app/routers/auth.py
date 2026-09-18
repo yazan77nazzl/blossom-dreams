@@ -1,12 +1,16 @@
+import logging
 from fastapi import APIRouter, HTTPException, Depends, status
 from app.database import get_db
 from app.auth import verify_password, get_password_hash, create_access_token, get_current_admin
 from app.models import AdminLoginRequest, TokenResponse, AdminUserResponse, ChangePasswordRequest
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 @router.post("/login", response_model=TokenResponse)
 def login(form_data: AdminLoginRequest):
+    logger.info("Login attempt for username: %s", form_data.username)
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute(
