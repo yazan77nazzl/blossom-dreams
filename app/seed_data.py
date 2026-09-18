@@ -26,19 +26,28 @@ def seed_database():
             profile_id = profile["id"]
         # Upsert admin user so password/hash stays in sync with settings.ADMIN_PASSWORD
         c.execute(
-            """
-            INSERT INTO admin_users (organization_id, profile_id, username, email, hashed_password, full_name, role)
-            VALUES (?, ?, ?, ?, ?, ?, 'admin')
-            ON CONFLICT (organization_id, username) DO UPDATE SET
-                hashed_password = EXCLUDED.hashed_password,
-                profile_id = EXCLUDED.profile_id,
-                email = EXCLUDED.email,
-                full_name = EXCLUDED.full_name,
-                role = EXCLUDED.role
-            """,
-            (org_id, profile_id, settings.ADMIN_USERNAME, settings.ADMIN_EMAIL,
-             get_password_hash(settings.ADMIN_PASSWORD), settings.ADMIN_FULL_NAME)
+            "SELECT id FROM admin_users WHERE organization_id = ? AND username = ?",
+            (org_id, settings.ADMIN_USERNAME)
         )
+        admin_row = c.fetchone()
+        hashed_pw = get_password_hash(settings.ADMIN_PASSWORD)
+        if admin_row:
+            c.execute(
+                """
+                UPDATE admin_users
+                SET hashed_password = ?, profile_id = ?, email = ?, full_name = ?, role = ?
+                WHERE id = ?
+                """,
+                (hashed_pw, profile_id, settings.ADMIN_EMAIL, settings.ADMIN_FULL_NAME, 'admin', admin_row["id"])
+            )
+        else:
+            c.execute(
+                """
+                INSERT INTO admin_users (organization_id, profile_id, username, email, hashed_password, full_name, role)
+                VALUES (?, ?, ?, ?, ?, ?, 'admin')
+                """,
+                (org_id, profile_id, settings.ADMIN_USERNAME, settings.ADMIN_EMAIL, hashed_pw, settings.ADMIN_FULL_NAME)
+            )
 
         c.execute("SELECT id FROM salon_settings WHERE organization_id = ?", (org_id,))
         if not c.fetchone():
