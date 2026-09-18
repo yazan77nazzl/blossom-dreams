@@ -33,6 +33,11 @@ def seed_database():
         hashed_pw = get_password_hash(settings.ADMIN_PASSWORD)
         import logging
         logger = logging.getLogger(__name__)
+        # Diagnostics: confirm password env var present and hash verifies in-memory
+        logger.info("ADMIN_PASSWORD configured: length=%d", len(settings.ADMIN_PASSWORD))
+        from app.auth import verify_password
+        in_mem_ok = verify_password(settings.ADMIN_PASSWORD, hashed_pw)
+        logger.info("In-memory verify_password(ADMIN_PASSWORD, new_hash) = %s", in_mem_ok)
         logger.info("Seeding admin user: org_id=%s username=%s email=%s hash_len=%d", org_id, settings.ADMIN_USERNAME, settings.ADMIN_EMAIL, len(hashed_pw))
         if admin_row:
             c.execute(
