@@ -170,9 +170,11 @@ def init_db():
     try:
         with raw.cursor() as cur:
             cur.execute(
-                "INSERT INTO organizations (slug, name) VALUES (%s, %s) ON CONFLICT (slug) DO NOTHING",
+                "INSERT INTO organizations (slug, name) VALUES (%s, %s) "
+                "ON CONFLICT (slug) DO UPDATE SET name = EXCLUDED.name RETURNING id",
                 ("blossom-dreams", "Blossom Dreams")
             )
+            organization_id = str(cur.fetchone()[0])
         raw.commit()
     finally:
         raw.close()
@@ -195,9 +197,9 @@ def init_db():
                 print(f"[DB INIT] SQL: {statement}", flush=True)
                 raise
         cursor.execute_no_org(
-    "SELECT set_config('app.organization_id', %s, false)",
-    (str(organization_id),),
-)
+            "SELECT set_config('app.organization_id', %s, false)",
+            (organization_id,),
+        )
 
         # 2.5. Clean up deleted image URLs from production database.
         # These images were removed but their URLs remain in services/offers records.
