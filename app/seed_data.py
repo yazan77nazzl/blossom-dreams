@@ -48,6 +48,7 @@ def seed_database():
                 ON CONFLICT (organization_id, slug) DO UPDATE SET name = EXCLUDED.name RETURNING id""", (org_id, name, slug, description, order, icon))
             category_ids[slug] = c.fetchone()["id"]
         # Seed services only if none exist for this organization
+        # DEBUG: this guard prevents re-seeding on every deploy
         c.execute("SELECT COUNT(*) as cnt FROM services WHERE organization_id = ?", (org_id,))
         if c.fetchone()["cnt"] == 0:
             services = [("nails", "Signature Manicure", "signature-manicure", "Detailed manicure with a polished finish.", 60, 35, True), ("lashes-brows", "Keratin Lash Lift", "keratin-lash-lift", "Lift and tint for naturally defined lashes.", 60, 40, True), ("skin-facial", "Hydrafacial Radiance", "hydrafacial-radiance", "A deeply cleansing hydration facial.", 60, 85, True)]
