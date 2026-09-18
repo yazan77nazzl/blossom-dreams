@@ -103,7 +103,10 @@ def seed_database():
         # Seed nail subcategories
         nail_subcategory_ids = seed_nail_subcategories(c, org_id)
 
-        categories = [("Nails", "nails", "Luxury manicure and nail care.", 1, "hand"), ("Lashes & Brows", "lashes-brows", "Custom lash and brow treatments.", 2, "eye"), ("Skin & Facial", "skin-facial", "Radiance and skin treatments.", 3, "sparkles")]
+        categories = [
+            ("Nails", "nails", "Luxury manicure and nail care.", 1, "hand"),
+            ("Lashes & Brows", "lashes-brows", "Custom lash and brow treatments.", 2, "eye"),
+        ]
         category_ids = {}
         for name, slug, description, order, icon in categories:
             c.execute("""INSERT INTO categories (organization_id, name, slug, description, display_order, icon) VALUES (?, ?, ?, ?, ?, ?)
