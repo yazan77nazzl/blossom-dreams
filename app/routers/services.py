@@ -25,6 +25,7 @@ def format_service_row(row) -> dict:
 def get_services(
     category_id: Optional[int] = None,
     category_slug: Optional[str] = None,
+    subcategory: Optional[str] = None,
     search: Optional[str] = None,
     featured_only: bool = False,
     include_inactive: bool = False
@@ -50,11 +51,15 @@ def get_services(
             query += " AND c.slug = ?"
             params.append(category_slug)
 
+        if subcategory:
+            query += " AND s.subcategory = ?"
+            params.append(subcategory)
+
         if featured_only:
             query += " AND s.is_featured = TRUE"
 
         if search:
-            query += " AND (s.name LIKE ? OR s.description LIKE ?)"
+            query += " AND (s.name ILIKE ? OR s.description ILIKE ?)"
             term = f"%{search}%"
             params.extend([term, term])
 
@@ -87,13 +92,14 @@ def create_service(srv: ServiceCreate, current_admin: dict = Depends(get_current
             cursor.execute("""
             INSERT INTO services (
                 category_id, name, slug, description, duration_minutes,
-                price, discount_price, image_url, is_active, is_featured
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                price, discount_price, image_url, is_active, is_featured, subcategory
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 srv.category_id, srv.name, slug, srv.description, srv.duration_minutes,
                 srv.price, srv.discount_price, srv.image_url,
                 bool(srv.is_active),
-                bool(srv.is_featured)
+                bool(srv.is_featured),
+                srv.subcategory
             ))
             new_id = cursor.lastrowid
         except Exception as e:
@@ -150,6 +156,9 @@ def update_service(service_id: int, srv: ServiceUpdate, current_admin: dict = De
         if srv.is_featured is not None:
             updates.append("is_featured = ?")
             params.append(srv.is_featured)
+        if srv.subcategory is not None:
+            updates.append("subcategory = ?")
+            params.append(srv.subcategory)
 
         if updates:
             params.append(service_id)

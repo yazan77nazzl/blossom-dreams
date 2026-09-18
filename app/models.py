@@ -58,6 +58,7 @@ class ServiceBase(BaseModel):
     image_url: Optional[str] = None
     is_active: Optional[bool] = True
     is_featured: Optional[bool] = False
+    subcategory: Optional[str] = None
 
 class ServiceCreate(ServiceBase):
     pass
@@ -73,6 +74,7 @@ class ServiceUpdate(BaseModel):
     image_url: Optional[str] = None
     is_active: Optional[bool] = None
     is_featured: Optional[bool] = None
+    subcategory: Optional[str] = None
 
 class ServiceResponse(ServiceBase):
     id: int

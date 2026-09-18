@@ -11,8 +11,19 @@ class BlossomApp {
     this.gallery = [];
     this.locations = [];
     this.activeCategorySlug = "all";
+    this.activeNailSubcategory = "all";
     this.searchQuery = "";
     this.countdownTimer = null;
+
+    // Nail subcategories - data-driven, can be extended
+    this.nailSubcategories = [
+      { slug: "all", name: "All Nails" },
+      { slug: "manicure", name: "Manicure" },
+      { slug: "gel", name: "Gel" },
+      { slug: "extensions", name: "Extensions" },
+      { slug: "pedicure", name: "Pedicure" },
+      { slug: "nail-art", name: "Nail Art" },
+    ];
   }
 
   async init() {
@@ -357,7 +368,55 @@ this.availability = availability;
     container.querySelectorAll(".category-pill-btn").forEach(btn => {
       btn.addEventListener("click", () => {
         this.activeCategorySlug = btn.dataset.slug;
+        // Reset nail subcategory when switching main categories
+        if (this.activeCategorySlug !== "nails") {
+          this.activeNailSubcategory = "all";
+        }
         this.renderCategoryPills();
+        this.renderServicesList();
+      });
+    });
+
+    // Render secondary nail subcategory pills if Nails is selected
+    this.renderNailSubcategoryPills();
+  }
+
+  // --- Nail Subcategory Filter ---
+  renderNailSubcategoryPills() {
+    const container = document.getElementById("nail-subcategories-container");
+    if (!container) return;
+
+    // Only show for Nails category
+    if (this.activeCategorySlug !== "nails") {
+      container.innerHTML = "";
+      container.classList.add("hidden");
+      return;
+    }
+
+    container.classList.remove("hidden");
+
+    let html = `
+      <div class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory" role="tablist" aria-label="Nail treatment types">
+    `;
+
+    this.nailSubcategories.forEach(subcat => {
+      const isActive = this.activeNailSubcategory === subcat.slug;
+      html += `
+        <button data-subcategory="${subcat.slug}" 
+          class="nail-subcat-btn px-4 py-2 rounded-full text-[11px] font-semibold transition whitespace-nowrap snap-start ${isActive ? 'bg-[#EE6A95] text-white shadow-sm shadow-pink-600/20' : 'bg-white text-slate-600 hover:bg-pink-50 border border-pink-100/90'}"
+          role="tab" aria-selected="${isActive}">
+          ${escapeHtml(subcat.name)}
+        </button>
+      `;
+    });
+
+    html += `</div>`;
+    container.innerHTML = html;
+
+    container.querySelectorAll(".nail-subcat-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        this.activeNailSubcategory = btn.dataset.subcategory;
+        this.renderNailSubcategoryPills();
         this.renderServicesList();
       });
     });
@@ -373,13 +432,18 @@ this.availability = availability;
     let filtered = this.services.filter(s => {
       const matchCat = this.activeCategorySlug === "all" || 
         (this.categories.find(c => c.slug === this.activeCategorySlug)?.id === s.category_id);
-      
+
+      // Filter by nail subcategory when Nails category is selected
+      const matchSubcat = this.activeCategorySlug !== "nails" || 
+        this.activeNailSubcategory === "all" || 
+        s.subcategory === this.activeNailSubcategory;
+
       const matchSearch = !this.searchQuery || 
         s.name.toLowerCase().includes(this.searchQuery) || 
         (s.description && s.description.toLowerCase().includes(this.searchQuery)) ||
         (s.category_name && s.category_name.toLowerCase().includes(this.searchQuery));
 
-      return matchCat && matchSearch;
+      return matchCat && matchSubcat && matchSearch;
     });
 
     if (filtered.length === 0) {

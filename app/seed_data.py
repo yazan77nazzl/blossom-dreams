@@ -103,17 +103,17 @@ def seed_database():
         c.execute("SELECT COUNT(*) as cnt FROM services WHERE organization_id = ?", (org_id,))
         if c.fetchone()["cnt"] == 0:
             services = [
-                ("nails", "Signature Manicure", "signature-manicure", "Luxury manicure with cuticle care, shaping, and premium polish.", 60, 45.00, True),
-                ("nails", "Gel Polish", "gel-polish", "Long-lasting gel color with UV cure.", 45, 35.00, False),
-                ("lashes-brows", "Keratin Lash Lift", "keratin-lash-lift", "Natural lash lift with keratin treatment for strength.", 60, 55.00, True),
-                ("lashes-brows", "Brow Lamination", "brow-lamination", "Brow shaping and lamination for fuller look.", 45, 40.00, False),
-                ("skin-facial", "Hydrafacial Radiance", "hydrafacial-radiance", "Deep cleansing, extraction, and hydration facial.", 75, 85.00, True),
-                ("skin-facial", "LED Light Therapy", "led-light-therapy", "Anti-aging LED treatment for collagen boost.", 30, 45.00, False),
+                ("nails", "Signature Manicure", "signature-manicure", "Luxury manicure with cuticle care, shaping, and premium polish.", 60, 45.00, True, "manicure"),
+                ("nails", "Gel Polish", "gel-polish", "Long-lasting gel color with UV cure.", 45, 35.00, False, "gel"),
+                ("lashes-brows", "Keratin Lash Lift", "keratin-lash-lift", "Natural lash lift with keratin treatment for strength.", 60, 55.00, True, None),
+                ("lashes-brows", "Brow Lamination", "brow-lamination", "Brow shaping and lamination for fuller look.", 45, 40.00, False, None),
+                ("skin-facial", "Hydrafacial Radiance", "hydrafacial-radiance", "Deep cleansing, extraction, and hydration facial.", 75, 85.00, True, None),
+                ("skin-facial", "LED Light Therapy", "led-light-therapy", "Anti-aging LED treatment for collagen boost.", 30, 45.00, False, None),
             ]
             service_ids = {}
-            for cat, name, slug, description, duration, price, featured in services:
-                c.execute("""INSERT INTO services (organization_id, category_id, name, slug, description, duration_minutes, price, is_featured)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (organization_id, slug) DO UPDATE SET name = EXCLUDED.name RETURNING id""", (org_id, category_ids[cat], name, slug, description, duration, price, featured))
+            for cat, name, slug, description, duration, price, featured, subcategory in services:
+                c.execute("""INSERT INTO services (organization_id, category_id, name, slug, description, duration_minutes, price, is_featured, subcategory)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (organization_id, slug) DO UPDATE SET name = EXCLUDED.name RETURNING id""", (org_id, category_ids[cat], name, slug, description, duration, price, featured, subcategory))
                 service_ids[slug] = c.fetchone()["id"]
         for title, caption, category, order in (("Signature Manicure", "A polished manicure finish.", "Nails", 1), ("Radiant Skin", "Fresh facial results.", "Skin & Facial", 2)):
             c.execute("SELECT id FROM gallery_images WHERE organization_id = ? AND title = ?", (org_id, title))

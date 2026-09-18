@@ -1,29 +1,75 @@
-The same Render error persists after the `.strip()` fix:
+### New Task — Fix Multi-Service Selection
 
-`httpx.UnsupportedProtocol: Request URL is missing an 'http://' or 'https://' protocol.`
+The booking flow must support **true multi-select** for Services and Offers.
 
-Do NOT make another speculative fix.
+#### Flow
 
-Open `app/routers/upload.py` and inspect the exact HTTPX call that raises this exception.
+When the user clicks:
 
-Before that exact call, add a temporary safe diagnostic that logs:
+**Our Bespoke Menu → Signature Treatments → Book**
 
-`FINAL_UPLOAD_URL_REPR=<repr of the exact URL variable passed to httpx>`
+open:
 
-Also log:
+**Step 1 — Choose Services & Offers**
 
-`SUPABASE_URL_REPR=<repr(settings.SUPABASE_URL)>`
+NOT Location.
 
-and:
+The clicked service should be pre-selected, but the user must be able to select **unlimited additional services**.
 
-`UPLOAD_BUCKET_REPR=<repr(settings.SUPABASE_STORAGE_BUCKET)>`
+Example:
 
-Do NOT log `SUPABASE_SERVICE_ROLE_KEY`.
+☑ Service A
+☑ Service B
+☑ Service C
+☑ Service D
 
-Then deploy this diagnostic to Render and reproduce ONE upload.
+Selecting a new service must **never remove previous selections**. Clicking a selected item should remove only that item.
 
-The purpose is to see the exact string passed to httpx. Do not assume the problem is whitespace, URL construction, or environment configuration until the logged value proves it.
+#### Selection
 
-If the final URL is valid (starts with https://), inspect the HTTPX call signature itself and verify that the URL argument is actually the full URL rather than a path or another variable.
+Support all combinations:
 
-Do not change storage provider, bucket, or database.
+* Multiple Services
+* Multiple Offers
+* Services + Offers
+* Offers only
+
+Use independent checkboxes and true multi-select behavior, **not radio/single-select logic**.
+
+`selectedServiceIds` and `selectedOfferIds` must remain arrays and must only add/remove the clicked ID. Never replace the array with a single ID.
+
+#### UI
+
+Keep the selection summary updated with:
+
+* Selected items
+* Total price
+* Total duration
+* Checkbox state
+* Selected card styling
+
+#### Final Flow
+
+**Book → Services & Offers → Continue → Location → Date → Time → Guest Details → Confirmation**
+
+Location must never appear before Step 1 is completed.
+
+#### Implementation
+
+Inspect the **actual current code** in `public/js/booking.js` and find the real source of the single-select behavior, including `open()`, `renderStep1()`, event handlers, and selection state.
+
+**Do not just provide code for manual copy/paste. Apply the fix directly to the repository.**
+
+Then verify:
+
+1. Book opens Step 1.
+2. Clicked service is pre-selected.
+3. Multiple services stay selected simultaneously.
+4. Multiple offers work the same way.
+5. Removing one item does not affect others.
+6. Selections persist through all booking steps.
+7. Price and duration recalculate correctly.
+8. Location appears only after Continue.
+9. Final booking contains all selected services/offers.
+
+After completing the task, report the files changed and confirm the multi-select flow was tested.

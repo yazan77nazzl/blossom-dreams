@@ -914,6 +914,17 @@ body {
 #categories-pills-container { scroll-snap-type: x proximity; }
 .category-pill-btn { scroll-snap-align: start; transition: transform 0.3s var(--ease-lux), box-shadow 0.3s var(--ease-lux), background 0.3s var(--ease-lux); }
 .category-pill-btn:active { transform: scale(0.96); }
+
+/* Nail subcategory pills - slightly smaller than main category tabs */
+.nail-subcat-btn { scroll-snap-align: start; transition: transform 0.3s var(--ease-lux), box-shadow 0.3s var(--ease-lux), background 0.3s var(--ease-lux); }
+.nail-subcat-btn:active { transform: scale(0.96); }
+
+/* Scrollbar hiding for horizontal scroll containers */
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
+.scrollbar-none::-webkit-scrollbar { display: none; }
+
 #date-scroll-strip { scroll-snap-type: x proximity; padding-bottom: 0.75rem; }
 .cal-date-btn { scroll-snap-align: center; touch-action: manipulation; }
 .cal-date-btn.selected { animation: heroScaleIn 0.4s var(--ease-lux); }

@@ -353,6 +353,12 @@ def init_db():
             """
         )
 
+        # 6.6. Add subcategory column to services table for nail sub-filtering
+        cursor.execute("""
+            ALTER TABLE services
+            ADD COLUMN IF NOT EXISTS subcategory VARCHAR(50)
+        """)
+
         cursor.execute(
             """
             CREATE UNIQUE INDEX IF NOT EXISTS
