@@ -5,11 +5,13 @@ class BookingWizard {
   constructor() {
     this.modal = null;
     this.services = [];
+    this.offers = [];
     this.settings = null;
     this.locations = [];
     this.state = {
-      step: 1, // 1: Service, 2: Location, 3: Date, 4: Time, 5: Details, 6: Confirmation
-      selectedService: null,
+      step: 1, // 1: Services & Offers, 2: Location, 3: Date, 4: Time, 5: Details, 6: Confirmation
+      selectedServiceIds: [], // array of service ids
+      selectedOfferIds: [],   // array of offer ids
       selectedLocation: null,
       selectedDate: null,
       selectedTime: null,
@@ -20,12 +22,15 @@ class BookingWizard {
       customerPhone: "",
       customerEmail: "",
       customerNotes: "",
-      confirmedBooking: null
+      confirmedBooking: null,
+      totalDuration: 0,
+      totalPrice: 0
     };
   }
 
-  init(services, settings, locations = []) {
+  init(services, settings, locations = [], offers = []) {
     this.services = services;
+    this.offers = offers || [];
     this.settings = settings;
     this.locations = locations || [];
     this.renderModalContainer();
