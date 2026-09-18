@@ -127,11 +127,10 @@ def get_db():
             try:
                 check_cursor.execute("SELECT 1 FROM organizations LIMIT 1")
                 check_cursor.fetchone()
-                # Table exists but no blossom-dreams org - this is a config error
-                raise RuntimeError(
-                    "Organization 'blossom-dreams' not found in database. "
-                    "Run seed_data.py or ensure the organization exists."
-                )
+                # Table exists but no blossom-dreams org - allow None for now;
+                # init_db will create the organization if missing.
+                # Log a warning for visibility.
+                print("[DB INIT] Warning: organizations table exists but 'blossom-dreams' org not found; will be created by init_db.", flush=True)
             except psycopg.errors.UndefinedTable:
                 # Tables don't exist yet - this is initial setup, allow None
                 pass
