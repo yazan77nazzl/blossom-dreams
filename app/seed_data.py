@@ -62,15 +62,19 @@ def seed_database():
         c.execute("SELECT id FROM salon_settings WHERE organization_id = ?", (org_id,))
         if not c.fetchone():
             c.execute("""INSERT INTO salon_settings (organization_id, salon_name, tagline, description, phone, whatsapp_number, instagram_url, tiktok_url, address, google_maps_url, opening_hours_text, currency_symbol, announcement_text)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", (org_id, "BLOSSOM DREAMS", "Your sanctuary of elegance, radiance, and luxury beauty.", "Luxury beauty treatments tailored to you.", "+961 70 882 194", "+96170882194", "https://www.instagram.com/blossomdreams.lb/", "https://www.tiktok.com/@blossomdreams.lb", "Amwaj Center, Jounieh, Lebanon", "https://maps.google.com/?q=Amwaj+Center+Jounieh+Lebanon", "Monday - Saturday: 9:00 AM - 7:00 PM | Sunday: Closed", "$", "Welcome to Blossom Dreams. Book your appointment online today!"))
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", (org_id, "BLOSSOM DREAMS", "Your sanctuary of elegance, radiance, and luxury beauty.", "Luxury beauty treatments tailored to you.", "+961 70 882 194", "+96170882194", "https://www.instagram.com/blossomdreams.lb/", "https://www.tiktok.com/@blossomdreams.lb", "Jounieh, Lebanon", "https://maps.google.com/?q=Jounieh+Lebanon", "Monday - Saturday: 9:00 AM - 7:00 PM | Sunday: Closed", "$", "Welcome to Blossom Dreams. Book your appointment online today!"))
 
         for day, name, is_open in ((0,"Monday",True),(1,"Tuesday",True),(2,"Wednesday",True),(3,"Thursday",True),(4,"Friday",True),(5,"Saturday",True),(6,"Sunday",False)):
             c.execute("""INSERT INTO availability_settings (organization_id, day_of_week, day_name, is_open, open_time, close_time, slot_interval_minutes, buffer_minutes)
                 VALUES (?, ?, ?, ?, '09:00', '19:00', 30, 0) ON CONFLICT (organization_id, day_of_week) DO NOTHING""", (org_id, day, name, is_open))
 
         c.execute("""INSERT INTO locations (organization_id, slug, name, address, google_maps_url, display_order, is_active)
-            VALUES (?, 'amwaj', 'Amwaj Center', 'Amwaj Center, Jounieh, Lebanon', 'https://maps.google.com/?q=Amwaj+Center+Jounieh+Lebanon', 1, TRUE)
-            ON CONFLICT (organization_id, slug) DO NOTHING""", (org_id,))
+            VALUES (?, 'versailles', 'Versailles Center', 'Centre Savoy, Sarba, Jounieh, Lebanon', 'https://maps.google.com/?q=Centre+Savoy+Sarba+Jounieh+Lebanon', 1, TRUE)
+            ON CONFLICT (organization_id, slug) DO UPDATE SET name = EXCLUDED.name, address = EXCLUDED.address, google_maps_url = EXCLUDED.google_maps_url, display_order = EXCLUDED.display_order, is_active = EXCLUDED.is_active""", (org_id,))
+
+        c.execute("""INSERT INTO locations (organization_id, slug, name, address, google_maps_url, display_order, is_active)
+            VALUES (?, 'amwaj', 'Amwaj Center', 'Amwaj Center, Jounieh, Lebanon', 'https://maps.google.com/?q=Amwaj+Center+Jounieh+Lebanon', 2, TRUE)
+            ON CONFLICT (organization_id, slug) DO UPDATE SET name = EXCLUDED.name, address = EXCLUDED.address, google_maps_url = EXCLUDED.google_maps_url, display_order = EXCLUDED.display_order, is_active = EXCLUDED.is_active""", (org_id,))
 
         categories = [("Nails", "nails", "Luxury manicure and nail care.", 1, "hand"), ("Lashes & Brows", "lashes-brows", "Custom lash and brow treatments.", 2, "eye"), ("Skin & Facial", "skin-facial", "Radiance and skin treatments.", 3, "sparkles")]
         category_ids = {}
@@ -98,13 +102,25 @@ def seed_database():
         # DEBUG: this guard prevents re-seeding on every deploy
         c.execute("SELECT COUNT(*) as cnt FROM services WHERE organization_id = ?", (org_id,))
         if c.fetchone()["cnt"] == 0:
-            services = []  # No default demo services
+            services = [
+                ("nails", "Signature Manicure", "signature-manicure", "Luxury manicure with cuticle care, shaping, and premium polish.", 60, 45.00, True),
+                ("nails", "Gel Polish", "gel-polish", "Long-lasting gel color with UV cure.", 45, 35.00, False),
+                ("lashes-brows", "Keratin Lash Lift", "keratin-lash-lift", "Natural lash lift with keratin treatment for strength.", 60, 55.00, True),
+                ("lashes-brows", "Brow Lamination", "brow-lamination", "Brow shaping and lamination for fuller look.", 45, 40.00, False),
+                ("skin-facial", "Hydrafacial Radiance", "hydrafacial-radiance", "Deep cleansing, extraction, and hydration facial.", 75, 85.00, True),
+                ("skin-facial", "LED Light Therapy", "led-light-therapy", "Anti-aging LED treatment for collagen boost.", 30, 45.00, False),
+            ]
             service_ids = {}
             for cat, name, slug, description, duration, price, featured in services:
                 c.execute("""INSERT INTO services (organization_id, category_id, name, slug, description, duration_minutes, price, is_featured)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (organization_id, slug) DO UPDATE SET name = EXCLUDED.name RETURNING id""", (org_id, category_ids[cat], name, slug, description, duration, price, featured))
                 service_ids[slug] = c.fetchone()["id"]
-            # No demo offer creation because services list is empty
         for title, caption, category, order in (("Signature Manicure", "A polished manicure finish.", "Nails", 1), ("Radiant Skin", "Fresh facial results.", "Skin & Facial", 2)):
             c.execute("SELECT id FROM gallery_images WHERE organization_id = ? AND title = ?", (org_id, title))
             if not c.fetchone(): c.execute("INSERT INTO gallery_images (organization_id, title, caption, image_url, category, is_featured, display_order) VALUES (?, ?, ?, '/static/images/hero_bg.jpg', ?, TRUE, ?)", (org_id, title, caption, category, order))
+
+
+if __name__ == "__main__":
+    from app.database import init_db
+    init_db()
+    seed_database()
