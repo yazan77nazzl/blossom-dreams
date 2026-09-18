@@ -10,20 +10,11 @@ class BlossomApp {
     this.offers = [];
     this.gallery = [];
     this.locations = [];
+    this.nailSubcategories = [];
     this.activeCategorySlug = "all";
     this.activeNailSubcategory = "all";
     this.searchQuery = "";
     this.countdownTimer = null;
-
-    // Nail subcategories - data-driven, can be extended
-    this.nailSubcategories = [
-      { slug: "all", name: "All Nails" },
-      { slug: "manicure", name: "Manicure" },
-      { slug: "gel", name: "Gel" },
-      { slug: "extensions", name: "Extensions" },
-      { slug: "pedicure", name: "Pedicure" },
-      { slug: "nail-art", name: "Nail Art" },
-    ];
   }
 
   async init() {
@@ -89,14 +80,15 @@ class BlossomApp {
   }
 
   async loadInitialData() {
-    const [settings, categories, services, offers, gallery, locations, availability] = await Promise.all([
+    const [settings, categories, services, offers, gallery, locations, availability, nailSubcategories] = await Promise.all([
       apiFetch("/api/settings"),
       apiFetch("/api/categories"),
       apiFetch("/api/services"),
       apiFetch("/api/offers"),
       apiFetch("/api/gallery"),
       apiFetch("/api/locations"),
-apiFetch("/api/availability/config"),
+      apiFetch("/api/availability/config"),
+      apiFetch("/api/nail-subcategories"),
     ]);
 
     this.settings = settings;
@@ -106,6 +98,9 @@ apiFetch("/api/availability/config"),
     this.gallery = gallery;
     this.locations = locations;
 this.availability = availability;
+    this.nailSubcategories = nailSubcategories || [];
+    // Add "All" option at the beginning
+    this.nailSubcategories = [{ slug: "all", name: "All Nails" }, ...this.nailSubcategories];
     this.renderOperatingSchedule();
   }
 
@@ -434,9 +429,7 @@ this.availability = availability;
         (this.categories.find(c => c.slug === this.activeCategorySlug)?.id === s.category_id);
 
       // Filter by nail subcategory when Nails category is selected
-      const matchSubcat = this.activeCategorySlug !== "nails" || 
-        this.activeNailSubcategory === "all" || 
-        s.subcategory === this.activeNailSubcategory;
+      const matchSubcat = this.activeCategorySlug !== "nails" ||\n        this.activeNailSubcategory === "all" ||\n        (s.nail_subcategory_id && this.nailSubcategories.find(ns => ns.slug === this.activeNailSubcategory)?.id === s.nail_subcategory_id);
 
       const matchSearch = !this.searchQuery || 
         s.name.toLowerCase().includes(this.searchQuery) || 
@@ -697,3 +690,7 @@ if (siteHeader) {
   window.addEventListener("scroll", updateHeaderShadow, { passive: true });
   updateHeaderShadow();
 }
+
+
+
+

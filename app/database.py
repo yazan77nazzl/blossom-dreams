@@ -35,7 +35,7 @@ def _qmark_to_psycopg(sql: str) -> str:
 _TENANT_INSERT_TABLES = {
     "profiles", "admin_users", "categories", "services", "offers", "bookings",
     "availability_settings", "closed_dates", "gallery_images", "salon_settings",
-    "locations", "location_availability_settings",
+    "locations", "location_availability_settings", "nail_subcategories",
 }
 
 def _bind_tenant_on_insert(sql: str) -> str:
@@ -162,6 +162,18 @@ CREATE TABLE IF NOT EXISTS closed_dates (id BIGSERIAL PRIMARY KEY, organization_
 CREATE TABLE IF NOT EXISTS gallery_images (id BIGSERIAL PRIMARY KEY, organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE, title TEXT, caption TEXT, image_url TEXT NOT NULL, category TEXT NOT NULL DEFAULT 'All', is_featured BOOLEAN NOT NULL DEFAULT FALSE, display_order INTEGER NOT NULL DEFAULT 0, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now());
 CREATE TABLE IF NOT EXISTS salon_settings (id BIGSERIAL PRIMARY KEY, organization_id UUID NOT NULL UNIQUE REFERENCES organizations(id) ON DELETE CASCADE, salon_name TEXT NOT NULL, tagline TEXT, description TEXT, phone TEXT, whatsapp_number TEXT, instagram_url TEXT, tiktok_url TEXT, address TEXT, google_maps_url TEXT, opening_hours_text TEXT, currency_symbol TEXT NOT NULL DEFAULT '$', announcement_text TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now());
 CREATE TABLE IF NOT EXISTS location_availability_settings (id BIGSERIAL PRIMARY KEY, organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE, location_id BIGINT NOT NULL REFERENCES locations(id) ON DELETE CASCADE, day_of_week INTEGER NOT NULL CHECK (day_of_week BETWEEN 0 AND 6), day_name TEXT NOT NULL, is_open BOOLEAN NOT NULL DEFAULT TRUE, open_time TIME NOT NULL DEFAULT '09:00', close_time TIME NOT NULL DEFAULT '19:00', slot_interval_minutes INTEGER NOT NULL DEFAULT 30, buffer_minutes INTEGER NOT NULL DEFAULT 0, UNIQUE (organization_id, location_id, day_of_week));
+
+CREATE TABLE IF NOT EXISTS nail_subcategories (
+    id BIGSERIAL PRIMARY KEY,
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    slug TEXT NOT NULL,
+    display_order INTEGER NOT NULL DEFAULT 0,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (organization_id, slug)
+);
 """
 
 def init_db():
@@ -276,8 +288,13 @@ def init_db():
             "CREATE INDEX IF NOT EXISTS idx_locations_org_active ON locations(organization_id, is_active)"
         )
 
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_nail_subcategories_org ON nail_subcategories(organization_id)"
+        )
+
         # 4. Put existing rows into the default Blossom Dreams organization.
-        for table in tenant_tables:
+        all_tenant_tables_for_backfill = list(tenant_tables) + ["nail_subcategories"]
+        for table in all_tenant_tables_for_backfill:
             cursor.execute_no_org(
                 f"""
                 UPDATE {table}
@@ -333,8 +350,29 @@ def init_db():
             """
         )
 
+        # Foreign key for nail_subcategories.organization_id
+        cursor.execute(
+            """
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1
+                    FROM pg_constraint
+                    WHERE conname = 'nail_subcategories_organization_id_fkey'
+                ) THEN
+                    ALTER TABLE nail_subcategories
+                    ADD CONSTRAINT nail_subcategories_organization_id_fkey
+                    FOREIGN KEY (organization_id)
+                    REFERENCES organizations(id)
+                    ON DELETE CASCADE;
+                END IF;
+            END $$;
+            """
+        )
+
         # 6. organization_id must be present for all tenant rows.
-        for table in tenant_tables:
+        all_tenant_tables_for_not_null = list(tenant_tables) + ["nail_subcategories"]
+        for table in all_tenant_tables_for_not_null:
             cursor.execute(
                 f"""
                 ALTER TABLE {table}
@@ -353,10 +391,43 @@ def init_db():
             """
         )
 
-        # 6.6. Add subcategory column to services table for nail sub-filtering
+        # 6.6. Add subcategory column to services table for nail sub-filtering (legacy, kept for backward compatibility)
         cursor.execute("""
             ALTER TABLE services
             ADD COLUMN IF NOT EXISTS subcategory VARCHAR(50)
+        """)
+
+        # 6.7. Add nail_subcategory_id foreign key to services table
+        cursor.execute("""
+            ALTER TABLE services
+            ADD COLUMN IF NOT EXISTS nail_subcategory_id BIGINT
+        """)
+
+        # 6.8. Add foreign key constraint for nail_subcategory_id
+        cursor.execute("""
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM pg_constraint
+                    WHERE conname = 'services_nail_subcategory_id_fkey'
+                ) THEN
+                    ALTER TABLE services
+                    ADD CONSTRAINT services_nail_subcategory_id_fkey
+                    FOREIGN KEY (nail_subcategory_id)
+                    REFERENCES nail_subcategories(id)
+                    ON DELETE SET NULL;
+                END IF;
+            END $$;
+        """)
+
+        # 6.9. Migrate existing subcategory strings to nail_subcategory_id
+        cursor.execute("""
+            UPDATE services s
+            SET nail_subcategory_id = nsc.id
+            FROM nail_subcategories nsc
+            WHERE s.nail_subcategory_id IS NULL
+              AND s.subcategory = nsc.slug
+              AND s.organization_id = nsc.organization_id
         """)
 
         cursor.execute(
@@ -405,7 +476,9 @@ def init_db():
         # 7. Enable RLS and isolate every tenant table.
 
         # 7. Enable RLS and isolate every tenant table.
-        for table in tenant_tables:
+        # Add nail_subcategories to the list for RLS
+        all_tenant_tables = list(tenant_tables) + ["nail_subcategories"]
+        for table in all_tenant_tables:
             cursor.execute(
                 f"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY"
             )

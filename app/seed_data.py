@@ -2,11 +2,35 @@
 
 This file never reads, imports, or transforms SQLite data.
 """
+import re
 from app.auth import get_password_hash
 from app.config import settings
 from app.database import get_db
 
 ORG_SLUG = "blossom-dreams"
+
+def slugify(text: str) -> str:
+    text = text.lower().strip()
+    return re.sub(r'[\s\W-]+', '-', text).strip('-')
+
+def seed_nail_subcategories(c, org_id):
+    """Seed default nail subcategories."""
+    subcategories = [
+        ("Manicure", "manicure", 1),
+        ("Gel", "gel", 2),
+        ("Extensions", "extensions", 3),
+        ("Pedicure", "pedicure", 4),
+        ("Nail Art", "nail-art", 5),
+    ]
+    subcategory_ids = {}
+    for name, slug, order in subcategories:
+        c.execute("""
+            INSERT INTO nail_subcategories (organization_id, name, slug, display_order, is_active)
+            VALUES (?, ?, ?, ?, TRUE)
+            ON CONFLICT (organization_id, slug) DO UPDATE SET name = EXCLUDED.name RETURNING id
+        """, (org_id, name, slug, order))
+        subcategory_ids[slug] = c.fetchone()["id"]
+    return subcategory_ids
 
 def seed_database():
     with get_db() as conn:
@@ -76,6 +100,9 @@ def seed_database():
             VALUES (?, 'amwaj', 'Amwaj Center', 'Amwaj Center, Jounieh, Lebanon', 'https://maps.google.com/?q=Amwaj+Center+Jounieh+Lebanon', 2, TRUE)
             ON CONFLICT (organization_id, slug) DO UPDATE SET name = EXCLUDED.name, address = EXCLUDED.address, google_maps_url = EXCLUDED.google_maps_url, display_order = EXCLUDED.display_order, is_active = EXCLUDED.is_active""", (org_id,))
 
+        # Seed nail subcategories
+        nail_subcategory_ids = seed_nail_subcategories(c, org_id)
+
         categories = [("Nails", "nails", "Luxury manicure and nail care.", 1, "hand"), ("Lashes & Brows", "lashes-brows", "Custom lash and brow treatments.", 2, "eye"), ("Skin & Facial", "skin-facial", "Radiance and skin treatments.", 3, "sparkles")]
         category_ids = {}
         for name, slug, description, order, icon in categories:
@@ -103,17 +130,17 @@ def seed_database():
         c.execute("SELECT COUNT(*) as cnt FROM services WHERE organization_id = ?", (org_id,))
         if c.fetchone()["cnt"] == 0:
             services = [
-                ("nails", "Signature Manicure", "signature-manicure", "Luxury manicure with cuticle care, shaping, and premium polish.", 60, 45.00, True, "manicure"),
-                ("nails", "Gel Polish", "gel-polish", "Long-lasting gel color with UV cure.", 45, 35.00, False, "gel"),
+                ("nails", "Signature Manicure", "signature-manicure", "Luxury manicure with cuticle care, shaping, and premium polish.", 60, 45.00, True, nail_subcategory_ids.get("manicure")),
+                ("nails", "Gel Polish", "gel-polish", "Long-lasting gel color with UV cure.", 45, 35.00, False, nail_subcategory_ids.get("gel")),
                 ("lashes-brows", "Keratin Lash Lift", "keratin-lash-lift", "Natural lash lift with keratin treatment for strength.", 60, 55.00, True, None),
                 ("lashes-brows", "Brow Lamination", "brow-lamination", "Brow shaping and lamination for fuller look.", 45, 40.00, False, None),
                 ("skin-facial", "Hydrafacial Radiance", "hydrafacial-radiance", "Deep cleansing, extraction, and hydration facial.", 75, 85.00, True, None),
                 ("skin-facial", "LED Light Therapy", "led-light-therapy", "Anti-aging LED treatment for collagen boost.", 30, 45.00, False, None),
             ]
             service_ids = {}
-            for cat, name, slug, description, duration, price, featured, subcategory in services:
-                c.execute("""INSERT INTO services (organization_id, category_id, name, slug, description, duration_minutes, price, is_featured, subcategory)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (organization_id, slug) DO UPDATE SET name = EXCLUDED.name RETURNING id""", (org_id, category_ids[cat], name, slug, description, duration, price, featured, subcategory))
+            for cat, name, slug, description, duration, price, featured, nail_subcategory_id in services:
+                c.execute("""INSERT INTO services (organization_id, category_id, name, slug, description, duration_minutes, price, is_featured, nail_subcategory_id)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (organization_id, slug) DO UPDATE SET name = EXCLUDED.name RETURNING id""", (org_id, category_ids[cat], name, slug, description, duration, price, featured, nail_subcategory_id))
                 service_ids[slug] = c.fetchone()["id"]
         for title, caption, category, order in (("Signature Manicure", "A polished manicure finish.", "Nails", 1), ("Radiant Skin", "Fresh facial results.", "Skin & Facial", 2)):
             c.execute("SELECT id FROM gallery_images WHERE organization_id = ? AND title = ?", (org_id, title))

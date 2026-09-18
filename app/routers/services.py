@@ -25,7 +25,8 @@ def format_service_row(row) -> dict:
 def get_services(
     category_id: Optional[int] = None,
     category_slug: Optional[str] = None,
-    subcategory: Optional[str] = None,
+    nail_subcategory_id: Optional[int] = None,
+    subcategory: Optional[str] = None,  # Legacy, kept for backward compatibility
     search: Optional[str] = None,
     featured_only: bool = False,
     include_inactive: bool = False
@@ -33,9 +34,10 @@ def get_services(
     with get_db() as conn:
         cursor = conn.cursor()
         query = """
-        SELECT s.*, c.name as category_name
+        SELECT s.*, c.name as category_name, nsc.name as nail_subcategory_name, nsc.slug as nail_subcategory_slug
         FROM services s
         JOIN categories c ON s.category_id = c.id
+        LEFT JOIN nail_subcategories nsc ON s.nail_subcategory_id = nsc.id
         WHERE 1=1
         """
         params = []
@@ -50,6 +52,10 @@ def get_services(
         if category_slug:
             query += " AND c.slug = ?"
             params.append(category_slug)
+
+        if nail_subcategory_id:
+            query += " AND s.nail_subcategory_id = ?"
+            params.append(nail_subcategory_id)
 
         if subcategory:
             query += " AND s.subcategory = ?"
@@ -73,9 +79,10 @@ def get_service(service_id: int):
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute("""
-        SELECT s.*, c.name as category_name
+        SELECT s.*, c.name as category_name, nsc.name as nail_subcategory_name, nsc.slug as nail_subcategory_slug
         FROM services s
         JOIN categories c ON s.category_id = c.id
+        LEFT JOIN nail_subcategories nsc ON s.nail_subcategory_id = nsc.id
         WHERE s.id = ?
         """, (service_id,))
         row = cursor.fetchone()
@@ -92,23 +99,22 @@ def create_service(srv: ServiceCreate, current_admin: dict = Depends(get_current
             cursor.execute("""
             INSERT INTO services (
                 category_id, name, slug, description, duration_minutes,
-                price, discount_price, image_url, is_active, is_featured, subcategory
+                price, discount_price, image_url, is_active, is_featured, nail_subcategory_id
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 srv.category_id, srv.name, slug, srv.description, srv.duration_minutes,
                 srv.price, srv.discount_price, srv.image_url,
-                bool(srv.is_active),
-                bool(srv.is_featured),
-                srv.subcategory
+                bool(srv.is_active), bool(srv.is_featured), srv.nail_subcategory_id
             ))
             new_id = cursor.lastrowid
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"Failed to create service: {str(e)}")
 
         cursor.execute("""
-        SELECT s.*, c.name as category_name
+        SELECT s.*, c.name as category_name, nsc.name as nail_subcategory_name, nsc.slug as nail_subcategory_slug
         FROM services s
         JOIN categories c ON s.category_id = c.id
+        LEFT JOIN nail_subcategories nsc ON s.nail_subcategory_id = nsc.id
         WHERE s.id = ?
         """, (new_id,))
         return format_service_row(cursor.fetchone())
@@ -156,6 +162,9 @@ def update_service(service_id: int, srv: ServiceUpdate, current_admin: dict = De
         if srv.is_featured is not None:
             updates.append("is_featured = ?")
             params.append(srv.is_featured)
+        if srv.nail_subcategory_id is not None:
+            updates.append("nail_subcategory_id = ?")
+            params.append(srv.nail_subcategory_id)
         if srv.subcategory is not None:
             updates.append("subcategory = ?")
             params.append(srv.subcategory)
@@ -165,9 +174,10 @@ def update_service(service_id: int, srv: ServiceUpdate, current_admin: dict = De
             cursor.execute(f"UPDATE services SET {', '.join(updates)} WHERE id = ?", params)
 
         cursor.execute("""
-        SELECT s.*, c.name as category_name
+        SELECT s.*, c.name as category_name, nsc.name as nail_subcategory_name, nsc.slug as nail_subcategory_slug
         FROM services s
         JOIN categories c ON s.category_id = c.id
+        LEFT JOIN nail_subcategories nsc ON s.nail_subcategory_id = nsc.id
         WHERE s.id = ?
         """, (service_id,))
         return format_service_row(cursor.fetchone())

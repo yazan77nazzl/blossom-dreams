@@ -71,13 +71,14 @@ class AdminApp {
   }
 
   async loadAllData() {
-    const [settings, categories, services, offers, bookings, locations] = await Promise.all([
+    const [settings, categories, services, offers, bookings, locations, nailSubcategories] = await Promise.all([
       apiFetch("/api/settings").catch(() => null),
       apiFetch("/api/categories?include_inactive=true").catch(() => []),
       apiFetch("/api/services?include_inactive=true").catch(() => []),
       apiFetch("/api/offers?include_inactive=true").catch(() => []),
       apiFetch("/api/bookings").catch(() => []),
-      apiFetch("/api/locations").catch(() => [])
+      apiFetch("/api/locations").catch(() => []),
+      apiFetch("/api/nail-subcategories?include_inactive=true").catch(() => [])
     ]);
 
     this.settings = settings;
@@ -86,6 +87,7 @@ class AdminApp {
     this.offers = offers;
     this.bookings = bookings;
     this.locations = locations;
+    this.nailSubcategories = nailSubcategories || [];
   }
 
   bindGlobalEvents() {
@@ -292,6 +294,7 @@ class AdminApp {
       offers: "Special Offers",
       availability: "Hours & Availability",
       gallery: "Gallery Portfolio",
+      "nail-subcategories": "Nail Subcategories",
       settings: "Salon Settings"
     };
     document.getElementById("admin-page-title").innerText = titles[tabName] || "Dashboard";
@@ -312,6 +315,7 @@ class AdminApp {
     else if (this.currentTab === "offers") this.renderOffersTab();
     else if (this.currentTab === "availability") this.renderAvailabilityTab();
     else if (this.currentTab === "gallery") this.renderGalleryTab();
+    else if (this.currentTab === "nail-subcategories") this.renderNailSubcategoriesTab();
     else if (this.currentTab === "settings") this.renderSettingsTab();
   }
 
@@ -746,6 +750,7 @@ class AdminApp {
           <tr>
             <th class="py-3 px-4">Service</th>
             <th class="py-3 px-4">Category</th>
+            <th class="py-3 px-4">Nail Subcategory</th>
             <th class="py-3 px-4">Duration</th>
             <th class="py-3 px-4">Price</th>
             <th class="py-3 px-4">Discount</th>
@@ -758,6 +763,7 @@ class AdminApp {
     `;
 
     this.services.forEach(s => {
+      const nailSubcatName = s.nail_subcategory_name ? escapeHtml(s.nail_subcategory_name) : '<span class="text-slate-300">—</span>';
       html += `
         <tr class="hover:bg-slate-50/80 transition">
           <td class="py-3 px-4">
@@ -772,6 +778,7 @@ class AdminApp {
             </div>
           </td>
           <td class="py-3 px-4 font-bold text-pink-800">${escapeHtml(s.category_name || '')}</td>
+          <td class="py-3 px-4 text-slate-700">${nailSubcatName}</td>
           <td class="py-3 px-4 font-mono font-medium">${formatDuration(s.duration_minutes)}</td>
           <td class="py-3 px-4 font-bold text-slate-900">${formatPrice(s.price, symbol)}</td>
           <td class="py-3 px-4">
@@ -857,7 +864,91 @@ class AdminApp {
     });
   }
 
-  // --- 4. OFFERS TAB ---
+  
+
+  // --- NAIL SUBCATEGORIES MANAGEMENT ---
+  async renderNailSubcategoriesTab() {
+    const container = document.getElementById("tab-nail-subcategories");
+    if (!container) return;
+
+    const subcategories = this.nailSubcategories || [];
+
+    let html = `
+      <div class="space-y-4">
+        <div class="flex items-center justify-between">
+          <h3 class="font-serif font-bold text-slate-900 text-base">Nail Subcategories</h3>
+          <button id="btn-add-nail-subcategory" class="px-4 py-2 text-xs font-bold rounded-xl bg-pink-600 text-white hover:bg-pink-700 transition flex items-center gap-2">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            Add Subcategory
+          </button>
+        </div>
+        <div id="nail-subcategories-grid" class="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+    `;
+
+    if (subcategories.length === 0) {
+      html += `
+        <div class="col-span-full py-12 text-center text-slate-400 text-xs font-serif italic border-2 border-dashed border-slate-200 rounded-2xl">
+          No nail subcategories created yet. Click "Add Subcategory" to create your first one.
+        </div>
+      </div>
+      `;
+    } else {
+      subcategories.forEach(nsc => {
+        html += `
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs hover:shadow-sm transition">
+            <div class="flex items-start justify-between mb-3">
+              <div>
+                <h4 class="font-bold text-slate-800 text-sm">${escapeHtml(nsc.name)}</h4>
+                <p class="text-[10px] text-slate-400 font-medium mt-0.5">ID: ${nsc.id}</p>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <button data-id="${nsc.id}" class="btn-edit-nail-subcat p-1.5 rounded-lg text-slate-400 hover:text-pink-700 hover:bg-pink-50 transition" title="Edit">
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </button>
+                <button data-id="${nsc.id}" class="btn-delete-nail-subcat p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition" title="Delete">
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                </button>
+              </div>
+            </div>
+            <div class="text-[10px] text-slate-500 font-medium uppercase tracking-wider">${escapeHtml(nsc.slug)}</div>
+            ${nsc.description ? '<div class="mt-2 text-xs text-slate-600 line-clamp-2">' + escapeHtml(nsc.description) + '</div>' : ''}
+          </div>
+        `;
+      });
+      html += `
+        </div>
+      </div>
+      `;
+    }
+
+    container.innerHTML = html;
+
+    document.getElementById("btn-add-nail-subcategory")?.addEventListener("click", () => this.openNailSubcategoryModal());
+    container.querySelectorAll(".btn-edit-nail-subcat").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const id = parseInt(btn.dataset.id);
+        const nsc = subcategories.find(item => item.id === id);
+        if (nsc) this.openNailSubcategoryModal(nsc);
+      });
+    });
+    container.querySelectorAll(".btn-delete-nail-subcat").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const id = parseInt(btn.dataset.id);
+        this.showConfirmDialog("Delete Nail Subcategory", "Are you sure you want to delete this nail subcategory? This action cannot be undone.", async () => {
+          try {
+            await apiFetch(`/api/nail-subcategories/${id}`, { method: "DELETE" });
+            showToast("Nail subcategory deleted.");
+            this.nailSubcategories = await apiFetch("/api/nail-subcategories");
+            this.renderNailSubcategoriesTab();
+          } catch (e) {
+            showToast(e.message, "error");
+          }
+        });
+      });
+    });
+  }
+
+// --- 4. OFFERS TAB ---
   async renderOffersTab() {
     this.offers = await apiFetch("/api/offers?include_inactive=true");
     const container = document.getElementById("admin-offers-table-container");
@@ -1117,7 +1208,86 @@ class AdminApp {
     });
   }
 
-  openGalleryEditModal(image) {
+  
+
+  openNailSubcategoryModal(existing = null) {
+    const isEdit = !!existing;
+    const root = document.getElementById("admin-modal-root");
+    root.innerHTML = `
+      <div class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay">
+        <div class="relative w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl modal-content-anim border border-slate-200">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+            <h4 class="font-serif font-bold text-slate-900 text-base">${isEdit ? 'Edit Nail Subcategory' : 'Add Nail Subcategory'}</h4>
+            <button id="close-nail-subcat-modal" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:text-slate-800">✕</button>
+          </div>
+
+          <form id="nail-subcategory-form" class="py-4 space-y-3.5 text-xs">
+            <div>
+              <label class="block font-bold text-slate-700 uppercase tracking-wider mb-1">Name *</label>
+              <input type="text" id="nsc-name" required value="${escapeHtml(existing?.name || '')}" placeholder="e.g. Manicure"
+                class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-pink-500 font-semibold" />
+            </div>
+
+            <div>
+              <label class="block font-bold text-slate-700 uppercase tracking-wider mb-1">Slug *</label>
+              <input type="text" id="nsc-slug" required value="${escapeHtml(existing?.slug || '')}" placeholder="e.g. manicure"
+                class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-pink-500 font-semibold" />
+              <p class="text-[10px] text-slate-400 mt-1">URL-friendly identifier (lowercase, hyphens only)</p>
+            </div>
+
+            <div>
+              <label class="block font-bold text-slate-700 uppercase tracking-wider mb-1">Description</label>
+              <textarea id="nsc-description" rows="2" class="w-full px-3.5 py-2 rounded-xl border border-slate-200">${escapeHtml(existing?.description || '')}</textarea>
+            </div>
+
+            <div class="flex items-center gap-3 pt-2">
+              <label class="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
+                <input type="checkbox" id="nsc-active" ${existing?.is_active ? 'checked' : 'checked'}>
+                <span class="text-sm">Active</span>
+              </label>
+            </div>
+
+            <div class="flex gap-2 pt-4 border-t border-slate-100">
+              <button type="button" id="cancel-nail-subcat-btn" class="flex-1 py-2.5 text-center text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition">Cancel</button>
+              <button type="submit" class="flex-1 py-2.5 text-center text-xs font-bold bg-pink-600 hover:bg-pink-700 text-white rounded-xl transition">${isEdit ? 'Save Changes' : 'Create Subcategory'}</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+
+    const close = () => { root.innerHTML = ""; };
+    root.querySelector("#close-nail-subcat-modal").addEventListener("click", close);
+    root.querySelector("#cancel-nail-subcat-btn").addEventListener("click", close);
+
+    root.querySelector("#nail-subcategory-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const payload = {
+        name: root.querySelector("#nsc-name").value.trim(),
+        slug: root.querySelector("#nsc-slug").value.trim().toLowerCase(),
+        description: root.querySelector("#nsc-description").value.trim(),
+        is_active: root.querySelector("#nsc-active").checked
+      };
+
+      try {
+        if (isEdit) {
+          await apiFetch(`/api/nail-subcategories/${existing.id}`, { method: "PUT", body: payload });
+          showToast("Nail subcategory updated!");
+        } else {
+          await apiFetch("/api/nail-subcategories", { method: "POST", body: payload });
+          showToast("Nail subcategory created!");
+        }
+        close();
+        this.nailSubcategories = await apiFetch("/api/nail-subcategories");
+        this.renderNailSubcategoriesTab();
+        if (this.currentTab === "services") this.renderServicesTab();
+      } catch (err) {
+        showToast(err.message, "error");
+      }
+    });
+  }
+
+openGalleryEditModal(image) {
     const root = document.getElementById("admin-modal-root");
     root.innerHTML = `
       <div class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay">
@@ -1284,8 +1454,18 @@ class AdminApp {
     const isEdit = !!existing;
 
     let catOptions = this.categories.map(c => `
+      <option value="${c.id}" ${existing && existing.category_id === c.id ? "selected" : ""}>
       <option value="${c.id}" ${existing && existing.category_id === c.id ? 'selected' : ''}>${escapeHtml(c.name)}</option>
     `).join('');
+
+    // Build nail subcategory options
+    let nailSubcatOptions = '<option value="">-- Select Nail Subcategory --</option>' + (this.nailSubcategories || []).map(nsc => `
+      <option value="${nsc.id}" ${existing && existing.nail_subcategory_id === nsc.id ? 'selected' : ''}>${escapeHtml(nsc.name)}</option>
+    `).join('');
+
+    // Find the Nails category ID to show/hide nail subcategory dropdown
+    const nailsCategory = this.categories.find(c => c.slug === 'nails' || c.name.toLowerCase() === 'nails');
+    const nailsCategoryId = nailsCategory ? nailsCategory.id : null;
 
     root.innerHTML = `
       <div class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay">
@@ -1313,6 +1493,17 @@ class AdminApp {
                 <label class="block font-bold text-slate-700 uppercase tracking-wider mb-1">Duration (minutes) *</label>
                 <input type="number" id="srv-duration" required min="10" step="5" value="${existing?.duration_minutes || 60}"
                   class="w-full px-3 py-2 rounded-xl border border-slate-200 font-semibold" />
+              </div>
+            </div>
+
+            <!-- Nail Subcategory (only for Nails category) -->
+            <div id="nail-subcategory-field" class="grid grid-cols-2 gap-3" style="display: ${nailsCategoryId && existing?.category_id === nailsCategoryId ? 'grid' : 'none'};">
+              <div class="col-span-2">
+                <label class="block font-bold text-slate-700 uppercase tracking-wider mb-1">Nail Subcategory</label>
+                <select id="srv-nail-subcategory" class="w-full px-3 py-2 rounded-xl border border-slate-200 font-semibold">
+                  ${nailSubcatOptions}
+                </select>
+                <p class="text-xs text-slate-500 mt-1">Optional: Choose a specific nail service type (e.g., Manicure, Pedicure, Extensions)</p>
               </div>
             </div>
 
@@ -1372,6 +1563,21 @@ class AdminApp {
     root.querySelector("#close-srv-modal").addEventListener("click", close);
     root.querySelector("#cancel-srv-btn").addEventListener("click", close);
 
+    // Show/hide nail subcategory field based on category selection
+    const categorySelect = root.querySelector("#srv-category");
+    const nailSubcatField = root.querySelector("#nail-subcategory-field");
+    if (categorySelect && nailSubcatField && nailsCategoryId) {
+      categorySelect.addEventListener("change", () => {
+        const selectedCatId = parseInt(categorySelect.value);
+        nailSubcatField.style.display = selectedCatId === nailsCategoryId ? "grid" : "none";
+        // Clear nail subcategory when not Nails category
+        if (selectedCatId !== nailsCategoryId) {
+          const nailSubcatSelect = root.querySelector("#srv-nail-subcategory");
+          if (nailSubcatSelect) nailSubcatSelect.value = "";
+        }
+      });
+    }
+
     const fileInput = root.querySelector("#srv-file-input");
     fileInput.addEventListener("change", async (e) => {
       const file = e.target.files[0];
@@ -1400,7 +1606,8 @@ class AdminApp {
         description: root.querySelector("#srv-desc").value.trim(),
         image_url: root.querySelector("#srv-image").value.trim(),
         is_active: root.querySelector("#srv-active").checked,
-        is_featured: root.querySelector("#srv-featured").checked
+        is_featured: root.querySelector("#srv-featured").checked,
+        nail_subcategory_id: root.querySelector("#srv-nail-subcategory")?.value ? parseInt(root.querySelector("#srv-nail-subcategory").value) : null
       };
 
       console.log("SENDING POST /api/services", payload);
@@ -1912,3 +2119,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const adminApp = new AdminApp();
   adminApp.init();
 });
+
+
+
+

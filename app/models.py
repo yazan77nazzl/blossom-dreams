@@ -46,6 +46,28 @@ class CategoryUpdate(BaseModel):
 class CategoryResponse(CategoryBase):
     id: int
 
+# --- Nail Subcategory Schemas ---
+class NailSubcategoryBase(BaseModel):
+    name: str
+    slug: Optional[str] = None
+    display_order: Optional[int] = 0
+    is_active: Optional[bool] = True
+
+class NailSubcategoryCreate(NailSubcategoryBase):
+    pass
+
+class NailSubcategoryUpdate(BaseModel):
+    name: Optional[str] = None
+    slug: Optional[str] = None
+    display_order: Optional[int] = None
+    is_active: Optional[bool] = None
+
+class NailSubcategoryResponse(NailSubcategoryBase):
+    id: int
+    services_count: Optional[int] = 0
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
+
 # --- Service Schemas ---
 class ServiceBase(BaseModel):
     category_id: int
@@ -58,7 +80,7 @@ class ServiceBase(BaseModel):
     image_url: Optional[str] = None
     is_active: Optional[bool] = True
     is_featured: Optional[bool] = False
-    subcategory: Optional[str] = None
+    nail_subcategory_id: Optional[int] = None
 
 class ServiceCreate(ServiceBase):
     pass
@@ -74,11 +96,13 @@ class ServiceUpdate(BaseModel):
     image_url: Optional[str] = None
     is_active: Optional[bool] = None
     is_featured: Optional[bool] = None
-    subcategory: Optional[str] = None
+    nail_subcategory_id: Optional[int] = None
 
 class ServiceResponse(ServiceBase):
     id: int
     category_name: Optional[str] = None
+    nail_subcategory_name: Optional[str] = None
+    nail_subcategory_slug: Optional[str] = None
     discount_percent: Optional[int] = None
 
 # --- Offer Schemas ---
