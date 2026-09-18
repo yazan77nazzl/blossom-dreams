@@ -25,6 +25,9 @@ async def lifespan(app: FastAPI):
     init_db()
     print("[Server] Checking seed data...")
     seed_database()
+    # Diagnostic: confirm admin password is configured (do not log the password itself)
+    logger = logging.getLogger(__name__)
+    logger.info("Admin password configured: %s (length=%d)", True, len(settings.ADMIN_PASSWORD))
     print(f"[Server] Blossom Dreams is ready in {settings.ENVIRONMENT.upper()} mode!")
     yield
 

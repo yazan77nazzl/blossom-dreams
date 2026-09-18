@@ -19,7 +19,15 @@ def login(form_data: AdminLoginRequest):
         )
         user = cursor.fetchone()
 
-    if not user or not verify_password(form_data.password, user["hashed_password"]):
+    if user:
+        logger.info("User found: username=%s email=%s", user["username"], user["email"])
+        password_verified = verify_password(form_data.password, user["hashed_password"])
+        logger.info("Password verified: %s", password_verified)
+    else:
+        logger.info("User not found")
+        password_verified = False
+
+    if not user or not password_verified:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
