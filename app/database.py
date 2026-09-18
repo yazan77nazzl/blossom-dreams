@@ -372,12 +372,27 @@ def init_db():
             """
         )
 
-        # Ensure salon_settings.id has a default (for databases created before the serial default existed)
+        # Ensure salon_settings.id has a sequence and default (for databases created before the serial default existed)
         cursor.execute(
             """
-            ALTER TABLE salon_settings
-            ALTER COLUMN id SET DEFAULT nextval(pg_get_serial_sequence('salon_settings','id'))
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM pg_class WHERE relkind = 'S' AND relname = 'salon_settings_id_seq'
+                ) THEN
+                    CREATE SEQUENCE salon_settings_id_seq;
+                END IF;
+            END $$;
             """
+        )
+        cursor.execute(
+            "ALTER TABLE salon_settings ALTER COLUMN id SET DEFAULT nextval('salon_settings_id_seq')"
+        )
+        cursor.execute(
+            "ALTER SEQUENCE salon_settings_id_seq OWNED BY salon_settings.id"
+        )
+        cursor.execute(
+            "SELECT setval('salon_settings_id_seq', COALESCE((SELECT max(id) FROM salon_settings), 1), false)"
         )
 
         # 7. Enable RLS and isolate every tenant table.
