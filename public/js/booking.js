@@ -97,11 +97,16 @@ class BookingWizard {
   open(preSelectedServiceId = null) {
     if (!this.modal) this.renderModalContainer();
 
+    // Reset state for a fresh booking
     this.state.step = 1;
     this.state.selectedLocation = null;
     this.state.selectedTime = null;
     this.state.availableSlots = [];
     this.state.confirmedBooking = null;
+    this.state.selectedServiceIds = [];
+    this.state.selectedOfferIds = [];
+    this.state.totalDuration = 0;
+    this.state.totalPrice = 0;
 
     // Set today as initial date
     const today = new Date();
@@ -110,19 +115,43 @@ class BookingWizard {
     const dd = String(today.getDate()).padStart(2, '0');
     this.state.selectedDate = `${yyyy}-${mm}-${dd}`;
 
+    // Pre-select the service the user clicked "Book" on (if any)
     if (preSelectedServiceId) {
       const match = this.services.find(s => s.id === parseInt(preSelectedServiceId));
       if (match) {
-        this.state.selectedService = match;
-        this.state.step = 2; // Jump directly to location
+        this.state.selectedServiceIds.push(match.id);
+        // recompute aggregates
+        this._recalcTotals();
       }
-    } else {
-      this.state.selectedService = null;
     }
 
     this.modal.classList.remove("hidden");
     document.body.style.overflow = "hidden";
     this.renderCurrentStep();
+  }
+
+  _recalcTotals() {
+    let dur = 0, price = 0;
+    const symbol = this.settings?.currency_symbol || "$";
+    this.state.selectedServiceIds.forEach(id => {
+      const s = this.services.find(sv => sv.id === id);
+      if (s) {
+        dur += s.duration_minutes || 0;
+        const p = s.discount_price && s.discount_price > 0 ? s.discount_price : s.price;
+        price += p;
+      }
+    });
+    // Offers may have their own price/duration; include if present
+    this.state.selectedOfferIds.forEach(id => {
+      const o = this.offers.find(of => of.id === id);
+      if (o) {
+        // Assume offer has discounted_price and possibly duration_minutes
+        if (o.duration_minutes) dur += o.duration_minutes;
+        price += o.discounted_price || 0;
+      }
+    });
+    this.state.totalDuration = dur;
+    this.state.totalPrice = price;
   }
 
   close() {
