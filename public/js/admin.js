@@ -291,6 +291,7 @@ class AdminApp {
       overview: "Dashboard Overview & Analytics",
       bookings: "Bookings & Calendar",
       services: "Services & Treatments",
+      categories: "Manage Service Categories",
       offers: "Special Offers",
       availability: "Hours & Availability",
       gallery: "Gallery Portfolio",
@@ -312,6 +313,7 @@ class AdminApp {
     if (this.currentTab === "overview") this.renderOverview();
     else if (this.currentTab === "bookings") this.renderBookingsTab();
     else if (this.currentTab === "services") this.renderServicesTab();
+    else if (this.currentTab === "categories") this.renderCategoriesTab();
     else if (this.currentTab === "offers") this.renderOffersTab();
     else if (this.currentTab === "availability") this.renderAvailabilityTab();
     else if (this.currentTab === "gallery") this.renderGalleryTab();
@@ -945,6 +947,234 @@ class AdminApp {
           }
         });
       });
+    });
+  }
+
+  // --- CATEGORIES MANAGEMENT ---
+  async renderCategoriesTab() {
+    this.categories = await apiFetch("/api/categories?include_inactive=true");
+    const container = document.getElementById("categories-container");
+    if (!container) return;
+
+    let html = `
+      <div class="space-y-4">
+        <div class="flex items-center justify-between">
+          <h3 class="font-serif font-bold text-slate-900 text-base">Service Categories</h3>
+          <button id="btn-add-category" class="px-4 py-2 text-xs font-bold rounded-xl bg-pink-600 text-white hover:bg-pink-700 transition flex items-center gap-2">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            Add Category
+          </button>
+        </div>
+        <div id="categories-grid" class="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+    `;
+
+    if (this.categories.length === 0) {
+      html += `
+        <div class="col-span-full py-12 text-center text-slate-400 text-xs font-serif italic border-2 border-dashed border-slate-200 rounded-2xl">
+          No categories created yet. Click "Add Category" to create your first one.
+        </div>
+      </div>
+      `;
+    } else {
+      this.categories.forEach(cat => {
+        const iconMap = {
+          'sparkles': '✨', 'hand': '💅', 'eye': '👁️', 'heart': '❤️',
+          'star': '⭐', 'flower': '🌸', 'leaf': '🍃', 'gem': '💎',
+          'crown': '👑', 'magic': '🪄', 'scissors': '✂️', 'brush': '🖌️'
+        };
+        const icon = iconMap[cat.icon] || '✨';
+        html += `
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs hover:shadow-sm transition">
+            <div class="flex items-start justify-between mb-3">
+              <div class="flex items-center gap-3">
+                <span class="text-2xl">${icon}</span>
+                <div>
+                  <h4 class="font-bold text-slate-800 text-sm">${escapeHtml(cat.name)}</h4>
+                  <p class="text-[10px] text-slate-400 font-medium mt-0.5">ID: ${cat.id}</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <button data-id="${cat.id}" class="btn-edit-category p-1.5 rounded-lg text-slate-400 hover:text-pink-700 hover:bg-pink-50 transition" title="Edit">
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </button>
+                <button data-id="${cat.id}" class="btn-delete-category p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition" title="Delete">
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                </button>
+              </div>
+            </div>
+            <div class="text-[10px] text-slate-500 font-medium uppercase tracking-wider">${escapeHtml(cat.slug)}</div>
+            <div class="flex items-center gap-2 mt-2">
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${cat.is_active ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600'}">
+                ${cat.is_active ? 'Active' : 'Inactive'}
+              </span>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-pink-100 text-pink-700">Order: ${cat.display_order || 0}</span>
+            </div>
+            ${cat.description ? '<div class="mt-2 text-xs text-slate-600 line-clamp-2">' + escapeHtml(cat.description) + '</div>' : ''}
+          </div>
+        `;
+      });
+      html += `
+        </div>
+      </div>
+      `;
+    }
+
+    container.innerHTML = html;
+
+    document.getElementById("btn-add-category")?.addEventListener("click", () => this.openCategoryModal());
+    container.querySelectorAll(".btn-edit-category").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const id = parseInt(btn.dataset.id);
+        const cat = this.categories.find(item => item.id === id);
+        if (cat) this.openCategoryModal(cat);
+      });
+    });
+    container.querySelectorAll(".btn-delete-category").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const id = parseInt(btn.dataset.id);
+        this.showConfirmDialog("Delete Category", "Are you sure you want to delete this category? Services in this category will become uncategorized. This action cannot be undone.", async () => {
+          try {
+            await apiFetch(`/api/categories/${id}`, { method: "DELETE" });
+            showToast("Category deleted.");
+            this.categories = await apiFetch("/api/categories?include_inactive=true");
+            this.renderCategoriesTab();
+            if (this.currentTab === "services") this.renderServicesTab();
+          } catch (e) {
+            showToast(e.message, "error");
+          }
+        });
+      });
+    });
+  }
+
+  openCategoryModal(existing = null) {
+    const root = document.getElementById("admin-modal-root");
+    const isEdit = !!existing;
+
+    const iconOptions = [
+      { value: "sparkles", label: "✨ Sparkles" },
+      { value: "hand", label: "💅 Hand" },
+      { value: "eye", label: "👁️ Eye" },
+      { value: "heart", label: "❤️ Heart" },
+      { value: "star", label: "⭐ Star" },
+      { value: "flower", label: "🌸 Flower" },
+      { value: "leaf", label: "🍃 Leaf" },
+      { value: "gem", label: "💎 Gem" },
+      { value: "crown", label: "👑 Crown" },
+      { value: "magic", label: "🪄 Magic" },
+      { value: "scissors", label: "✂️ Scissors" },
+      { value: "brush", label: "🖌️ Brush" }
+    ];
+
+    let iconOptionsHtml = iconOptions.map(opt => `
+      <option value="${opt.value}" ${existing && existing.icon === opt.value ? "selected" : ""}>${opt.label}</option>
+    `).join("");
+
+    root.innerHTML = `
+      <div class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay">
+        <div class="relative w-full max-w-lg bg-white rounded-3xl p-6 shadow-2xl modal-content-anim border border-slate-200">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+            <h4 class="font-serif font-bold text-slate-900 text-lg">${isEdit ? "Edit Category" : "Add New Category"}</h4>
+            <button id="close-cat-modal" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+          </div>
+
+          <form id="category-form" class="space-y-4 pt-4">
+            <div>
+              <label class="block font-bold text-slate-700 uppercase tracking-wider mb-1">Category Name</label>
+              <input type="text" id="cat-name" value="${escapeHtml(existing?.name || "")}" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs" placeholder="e.g., Nails, Lashes, Facials" />
+            </div>
+
+            <div>
+              <label class="block font-bold text-slate-700 uppercase tracking-wider mb-1">Slug (URL-friendly)</label>
+              <input type="text" id="cat-slug" value="${escapeHtml(existing?.slug || "")}" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-mono" placeholder="auto-generated from name" />
+              <p class="text-[10px] text-slate-400 mt-1">Leave empty to auto-generate from name</p>
+            </div>
+
+            <div>
+              <label class="block font-bold text-slate-700 uppercase tracking-wider mb-1">Description</label>
+              <textarea id="cat-desc" rows="2" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs">${escapeHtml(existing?.description || "")}</textarea>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block font-bold text-slate-700 uppercase tracking-wider mb-1">Display Order</label>
+                <input type="number" id="cat-order" value="${existing?.display_order || 0}" min="0" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-mono" />
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 uppercase tracking-wider mb-1">Icon</label>
+                <select id="cat-icon" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs">
+                  ${iconOptionsHtml}
+                </select>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-6 pt-2">
+              <label class="flex items-center gap-2 font-bold text-slate-700">
+                <input type="checkbox" id="cat-active" ${existing ? (existing.is_active ? "checked" : "") : "checked"} class="w-4 h-4 text-pink-600 rounded" />
+                <span>Active (show on public menu)</span>
+              </label>
+            </div>
+
+            <div class="pt-4 border-t border-slate-100 flex justify-end gap-2">
+              <button type="button" id="cancel-cat-btn" class="btn-secondary px-4 py-2 rounded-xl">Cancel</button>
+              <button type="submit" class="btn-primary px-5 py-2 rounded-xl font-bold">
+                ${isEdit ? "Save Changes" : "Create Category"}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+
+    const close = () => { root.innerHTML = ""; };
+    root.querySelector("#close-cat-modal").addEventListener("click", close);
+    root.querySelector("#cancel-cat-btn").addEventListener("click", close);
+
+    // Auto-generate slug from name
+    const nameInput = root.querySelector("#cat-name");
+    const slugInput = root.querySelector("#cat-slug");
+    nameInput.addEventListener("input", () => {
+      if (!slugInput.dataset.manuallyEdited) {
+        slugInput.value = nameInput.value.toLowerCase().trim().replace(/[\\s\\W-]+/g, "-").replace(/^-+|-+$/g, "");
+      }
+    });
+    slugInput.addEventListener("input", () => {
+      slugInput.dataset.manuallyEdited = "true";
+    });
+
+    root.querySelector("#category-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const payload = {
+        name: root.querySelector("#cat-name").value.trim(),
+        slug: root.querySelector("#cat-slug").value.trim() || undefined,
+        description: root.querySelector("#cat-desc").value.trim() || undefined,
+        display_order: parseInt(root.querySelector("#cat-order").value) || 0,
+        icon: root.querySelector("#cat-icon").value,
+        is_active: root.querySelector("#cat-active").checked
+      };
+
+      if (!payload.name) {
+        showToast("Category name is required.", "error");
+        return;
+      }
+
+      try {
+        if (isEdit) {
+          await apiFetch(`/api/categories/${existing.id}`, { method: "PUT", body: payload });
+          showToast("Category updated!");
+        } else {
+          await apiFetch("/api/categories", { method: "POST", body: payload });
+          showToast("Category created!");
+        }
+        close();
+        this.categories = await apiFetch("/api/categories?include_inactive=true");
+        this.renderCategoriesTab();
+        if (this.currentTab === "services") this.renderServicesTab();
+      } catch (err) {
+        showToast(err.message || "Failed to save category", "error");
+      }
     });
   }
 
