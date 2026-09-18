@@ -247,6 +247,14 @@ def init_db():
                 ADD COLUMN IF NOT EXISTS organization_id UUID
                 """
             )
+
+        # Ensure admin_users has profile_id column (added in later schema version)
+        cursor.execute(
+            """
+            ALTER TABLE admin_users
+            ADD COLUMN IF NOT EXISTS profile_id UUID
+            """
+        )
                     # 6.5. Create indexes only after organization_id exists.
         cursor.execute(
             "CREATE INDEX IF NOT EXISTS idx_categories_org ON categories(organization_id)"
@@ -302,6 +310,27 @@ def init_db():
                 $$;
                 """
             )
+
+        # Ensure profile_id foreign key on admin_users (if column exists)
+        cursor.execute(
+            """
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1
+                    FROM pg_constraint
+                    WHERE conname = 'admin_users_profile_id_fkey'
+                ) THEN
+                    ALTER TABLE admin_users
+                    ADD CONSTRAINT admin_users_profile_id_fkey
+                    FOREIGN KEY (profile_id)
+                    REFERENCES profiles(id)
+                    ON DELETE SET NULL;
+                END IF;
+            END
+            $$;
+            """
+        )
 
         # 6. organization_id must be present for all tenant rows.
         for table in tenant_tables:
