@@ -127,10 +127,11 @@ def get_db():
             try:
                 check_cursor.execute("SELECT 1 FROM organizations LIMIT 1")
                 check_cursor.fetchone()
-                # Table exists but no blossom-dreams org - allow None for now;
-                # init_db will create the organization if missing.
-                # Log a warning for visibility.
-                print("[DB INIT] Warning: organizations table exists but 'blossom-dreams' org not found; will be created by init_db.", flush=True)
+                # Table exists but no blossom-dreams org - this is a config error
+                raise RuntimeError(
+                    "Organization 'blossom-dreams' not found in database. "
+                    "Run seed_data.py or ensure the organization exists."
+                )
             except psycopg.errors.UndefinedTable:
                 # Tables don't exist yet - this is initial setup, allow None
                 pass
@@ -163,10 +164,23 @@ CREATE TABLE IF NOT EXISTS location_availability_settings (id BIGSERIAL PRIMARY 
 """
 
 def init_db():
+    # 0. Ensure the default organization exists *before* any get_db() call,
+    # because get_db() validates that the organization row is present.
+    raw = psycopg.connect(settings.DATABASE_URL)
+    try:
+        with raw.cursor() as cur:
+            cur.execute(
+                "INSERT INTO organizations (slug, name) VALUES (%s, %s) ON CONFLICT (slug) DO NOTHING",
+                ("blossom-dreams", "Blossom Dreams")
+            )
+        raw.commit()
+    finally:
+        raw.close()
+
+    # 1. Create/update the schema (DDL does not need an organization context)
     with get_db() as conn:
         cursor = conn.cursor()
 
-        # 1. Create/update the schema
         for statement in SCHEMA.split(";\n"):
             statement = statement.strip()
             if not statement:
@@ -180,34 +194,6 @@ def init_db():
                 print(f"[DB INIT] FAILED: {e}", flush=True)
                 print(f"[DB INIT] SQL: {statement}", flush=True)
                 raise
-
-        # 2. Make sure the default organization exists
-        cursor.execute_no_org(
-            """
-            INSERT INTO organizations (slug, name)
-            VALUES (?, ?)
-            ON CONFLICT (slug) DO NOTHING
-            """,
-            ("blossom-dreams", "Blossom Dreams"),
-        )
-
-        cursor.execute_no_org(
-            """
-            SELECT id
-            FROM organizations
-            WHERE slug = ?
-            """,
-            ("blossom-dreams",),
-        )
-
-        organization = cursor.fetchone()
-
-        if not organization:
-            raise RuntimeError(
-                "Could not find or create Blossom Dreams organization"
-            )
-
-        organization_id = organization["id"]
         cursor.execute_no_org(
     "SELECT set_config('app.organization_id', %s, false)",
     (str(organization_id),),
