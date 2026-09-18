@@ -78,13 +78,14 @@ class BlossomApp {
   }
 
   async loadInitialData() {
-    const [settings, categories, services, offers, gallery, locations] = await Promise.all([
+    const [settings, categories, services, offers, gallery, locations, availability] = await Promise.all([
       apiFetch("/api/settings"),
       apiFetch("/api/categories"),
       apiFetch("/api/services"),
       apiFetch("/api/offers"),
       apiFetch("/api/gallery"),
       apiFetch("/api/locations"),
+apiFetch("/api/availability/config"),
     ]);
 
     this.settings = settings;
@@ -93,6 +94,8 @@ class BlossomApp {
     this.offers = offers;
     this.gallery = gallery;
     this.locations = locations;
+this.availability = availability;
+    this.renderOperatingSchedule();
   }
 
   bindEvents() {
@@ -306,6 +309,29 @@ class BlossomApp {
     });
   }
 
+// --- Operating Schedule Footer ---
+  renderOperatingSchedule() {
+    const el = document.getElementById("operating-schedule-text");
+    if (!el) return;
+    const schedule = this.availability?.schedule || [];
+    if (!schedule.length) {
+      el.textContent = "Hours not configured";
+      return;
+    }
+    const dayNames = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+    const parts = [];
+    schedule.forEach(day => {
+      const name = dayNames[day.day_of_week] || day.day_name;
+      if (day.is_open) {
+        const open = formatTimeDisplay(day.open_time);
+        const close = formatTimeDisplay(day.close_time);
+        parts.push(`${name}: ${open} - ${close}`);
+      } else {
+        parts.push(`${name}: Closed`);
+      }
+    });
+    el.textContent = parts.join(" | ");
+  }
   // --- Category Tabs Filter ---
   renderCategoryPills() {
     const container = document.getElementById("categories-pills-container");
