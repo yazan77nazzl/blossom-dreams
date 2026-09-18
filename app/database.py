@@ -372,6 +372,14 @@ def init_db():
             """
         )
 
+        # Ensure salon_settings.id has a default (for databases created before the serial default existed)
+        cursor.execute(
+            """
+            ALTER TABLE salon_settings
+            ALTER COLUMN id SET DEFAULT nextval(pg_get_serial_sequence('salon_settings','id'))
+            """
+        )
+
         # 7. Enable RLS and isolate every tenant table.
 
         # 7. Enable RLS and isolate every tenant table.
