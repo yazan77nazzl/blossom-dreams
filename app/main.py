@@ -11,6 +11,7 @@ from app.config import settings
 from app.database import init_db
 from app.seed_data import seed_database
 from app.routers import auth, services, categories, offers, bookings, availability, gallery, settings as salon_settings_router, upload, locations, subcategories
+from app.startup_migration import run_startup_migration
 
 logging.basicConfig(level=logging.INFO)
 
@@ -23,6 +24,8 @@ UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 async def lifespan(app: FastAPI):
     print("[Server] Initializing database...")
     init_db()
+    print("[Server] Running startup migration for subcategories...")
+    run_startup_migration(settings.DATABASE_URL)
     print("[Server] Checking seed data...")
     seed_database()
     # Diagnostic: confirm admin password is configured (do not log the password itself)
