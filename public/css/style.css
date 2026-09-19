@@ -971,6 +971,27 @@ aside[aria-label="WhatsApp Contact"] { bottom: max(6rem, calc(env(safe-area-inse
 }
 #admin-calendar-grid { min-width: 640px; }
 
+/* Global focus visible for accessibility */
+:focus-visible {
+  outline: 2px solid var(--color-rose-600);
+  outline-offset: 2px;
+}
+
+/* Consistent button disabled state */
+button:disabled,
+.btn-primary:disabled,
+.btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Ensure modal content respects safe area */
+#admin-modal-root .modal-content-anim {
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+}
+
 @media (max-width: 640px) {
   .site-footer-grid {
     gap: 1.5rem;
