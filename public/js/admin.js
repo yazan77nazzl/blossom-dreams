@@ -295,7 +295,6 @@ class AdminApp {
       offers: "Special Offers",
       availability: "Hours & Availability",
       gallery: "Gallery Portfolio",
-      "nail-subcategories": "Nail Subcategories",
       settings: "Salon Settings"
     };
     document.getElementById("admin-page-title").innerText = titles[tabName] || "Dashboard";
@@ -867,88 +866,6 @@ class AdminApp {
   }
 
   
-
-  // --- NAIL SUBCATEGORIES MANAGEMENT ---
-  async renderNailSubcategoriesTab() {
-    const container = document.getElementById("tab-nail-subcategories");
-    if (!container) return;
-
-    const subcategories = this.nailSubcategories || [];
-
-    let html = `
-      <div class="space-y-4">
-        <div class="flex items-center justify-between">
-          <h3 class="font-serif font-bold text-slate-900 text-base">Nail Subcategories</h3>
-          <button id="btn-add-nail-subcategory" class="px-4 py-2 text-xs font-bold rounded-xl bg-pink-600 text-white hover:bg-pink-700 transition flex items-center gap-2">
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-            Add Subcategory
-          </button>
-        </div>
-        <div id="nail-subcategories-grid" class="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-    `;
-
-    if (subcategories.length === 0) {
-      html += `
-        <div class="col-span-full py-12 text-center text-slate-400 text-xs font-serif italic border-2 border-dashed border-slate-200 rounded-2xl">
-          No nail subcategories created yet. Click "Add Subcategory" to create your first one.
-        </div>
-      </div>
-      `;
-    } else {
-      subcategories.forEach(nsc => {
-        html += `
-          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs hover:shadow-sm transition">
-            <div class="flex items-start justify-between mb-3">
-              <div>
-                <h4 class="font-bold text-slate-800 text-sm">${escapeHtml(nsc.name)}</h4>
-                <p class="text-[10px] text-slate-400 font-medium mt-0.5">ID: ${nsc.id}</p>
-              </div>
-              <div class="flex items-center gap-1.5">
-                <button data-id="${nsc.id}" class="btn-edit-nail-subcat p-1.5 rounded-lg text-slate-400 hover:text-pink-700 hover:bg-pink-50 transition" title="Edit">
-                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                </button>
-                <button data-id="${nsc.id}" class="btn-delete-nail-subcat p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition" title="Delete">
-                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                </button>
-              </div>
-            </div>
-            <div class="text-[10px] text-slate-500 font-medium uppercase tracking-wider">${escapeHtml(nsc.slug)}</div>
-            ${nsc.description ? '<div class="mt-2 text-xs text-slate-600 line-clamp-2">' + escapeHtml(nsc.description) + '</div>' : ''}
-          </div>
-        `;
-      });
-      html += `
-        </div>
-      </div>
-      `;
-    }
-
-    container.innerHTML = html;
-
-    document.getElementById("btn-add-nail-subcategory")?.addEventListener("click", () => this.openNailSubcategoryModal());
-    container.querySelectorAll(".btn-edit-nail-subcat").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const id = parseInt(btn.dataset.id);
-        const nsc = subcategories.find(item => item.id === id);
-        if (nsc) this.openNailSubcategoryModal(nsc);
-      });
-    });
-    container.querySelectorAll(".btn-delete-nail-subcat").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const id = parseInt(btn.dataset.id);
-        this.showConfirmDialog("Delete Nail Subcategory", "Are you sure you want to delete this nail subcategory? This action cannot be undone.", async () => {
-          try {
-            await apiFetch(`/api/nail-subcategories/${id}`, { method: "DELETE" });
-            showToast("Nail subcategory deleted.");
-            this.nailSubcategories = await apiFetch("/api/nail-subcategories");
-            this.renderNailSubcategoriesTab();
-          } catch (e) {
-            showToast(e.message, "error");
-          }
-        });
-      });
-    });
-  }
 
   // --- SUBCATEGORIES MANAGEMENT (GENERIC) ---
   async renderSubcategoriesTab() {
@@ -1524,83 +1441,6 @@ class AdminApp {
   }
 
   
-
-  openNailSubcategoryModal(existing = null) {
-    const isEdit = !!existing;
-    const root = document.getElementById("admin-modal-root");
-    root.innerHTML = `
-      <div class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay">
-        <div class="relative w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl modal-content-anim border border-slate-200">
-          <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-            <h4 class="font-serif font-bold text-slate-900 text-base">${isEdit ? 'Edit Nail Subcategory' : 'Add Nail Subcategory'}</h4>
-            <button id="close-nail-subcat-modal" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:text-slate-800">✕</button>
-          </div>
-
-          <form id="nail-subcategory-form" class="py-4 space-y-3.5 text-xs">
-            <div>
-              <label class="block font-bold text-slate-700 uppercase tracking-wider mb-1">Name *</label>
-              <input type="text" id="nsc-name" required value="${escapeHtml(existing?.name || '')}" placeholder="e.g. Manicure"
-                class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-pink-500 font-semibold" />
-            </div>
-
-            <div>
-              <label class="block font-bold text-slate-700 uppercase tracking-wider mb-1">Slug *</label>
-              <input type="text" id="nsc-slug" required value="${escapeHtml(existing?.slug || '')}" placeholder="e.g. manicure"
-                class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-pink-500 font-semibold" />
-              <p class="text-[10px] text-slate-400 mt-1">URL-friendly identifier (lowercase, hyphens only)</p>
-            </div>
-
-            <div>
-              <label class="block font-bold text-slate-700 uppercase tracking-wider mb-1">Description</label>
-              <textarea id="nsc-description" rows="2" class="w-full px-3.5 py-2 rounded-xl border border-slate-200">${escapeHtml(existing?.description || '')}</textarea>
-            </div>
-
-            <div class="flex items-center gap-3 pt-2">
-              <label class="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
-                <input type="checkbox" id="nsc-active" ${existing?.is_active ? 'checked' : 'checked'}>
-                <span class="text-sm">Active</span>
-              </label>
-            </div>
-
-            <div class="flex gap-2 pt-4 border-t border-slate-100">
-              <button type="button" id="cancel-nail-subcat-btn" class="flex-1 py-2.5 text-center text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition">Cancel</button>
-              <button type="submit" class="flex-1 py-2.5 text-center text-xs font-bold bg-pink-600 hover:bg-pink-700 text-white rounded-xl transition">${isEdit ? 'Save Changes' : 'Create Subcategory'}</button>
-            </div>
-          </form>
-        </div>
-      </div>
-    `;
-
-    const close = () => { root.innerHTML = ""; };
-    root.querySelector("#close-nail-subcat-modal").addEventListener("click", close);
-    root.querySelector("#cancel-nail-subcat-btn").addEventListener("click", close);
-
-    root.querySelector("#nail-subcategory-form").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const payload = {
-        name: root.querySelector("#nsc-name").value.trim(),
-        slug: root.querySelector("#nsc-slug").value.trim().toLowerCase(),
-        description: root.querySelector("#nsc-description").value.trim(),
-        is_active: root.querySelector("#nsc-active").checked
-      };
-
-      try {
-        if (isEdit) {
-          await apiFetch(`/api/nail-subcategories/${existing.id}`, { method: "PUT", body: payload });
-          showToast("Nail subcategory updated!");
-        } else {
-          await apiFetch("/api/nail-subcategories", { method: "POST", body: payload });
-          showToast("Nail subcategory created!");
-        }
-        close();
-        this.nailSubcategories = await apiFetch("/api/nail-subcategories");
-        this.renderNailSubcategoriesTab();
-        if (this.currentTab === "services") this.renderServicesTab();
-      } catch (err) {
-        showToast(err.message, "error");
-      }
-    });
-  }
 
   // --- GENERIC SUBCATEGORY MODAL ---
   openSubcategoryModal(existing = null) {

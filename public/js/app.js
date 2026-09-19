@@ -374,13 +374,22 @@ class BlossomApp {
     this.renderSubcategoryPills();
   }
 
-  // --- Nail Subcategory Filter ---
-  renderNailSubcategoryPills() {
-    const container = document.getElementById("nail-subcategories-container");
+  // --- Generic Subcategory Filter ---
+  renderSubcategoryPills() {
+    const container = document.getElementById("subcategories-container");
     if (!container) return;
 
-    // Only show for Nails category
-    if (this.activeCategorySlug !== "nails") {
+    // Determine active category ID
+    let activeCatId = null;
+    if (this.activeCategorySlug !== "all") {
+      const cat = this.categories.find(c => c.slug === this.activeCategorySlug);
+      if (cat) activeCatId = cat.id;
+    }
+
+    // Filter subcategories for this category (including the "All" placeholder)
+    const relevant = this.subcategories.filter(sc => sc.category_id === activeCatId);
+    // If only the generic "All" option exists, hide the bar
+    if (relevant.length <= 1) {
       container.innerHTML = "";
       container.classList.add("hidden");
       return;
@@ -389,14 +398,14 @@ class BlossomApp {
     container.classList.remove("hidden");
 
     let html = `
-      <div class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory" role="tablist" aria-label="Nail treatment types">
+      <div class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory" role="tablist" aria-label="Treatment subcategories">
     `;
 
-    this.nailSubcategories.forEach(subcat => {
-      const isActive = this.activeNailSubcategory === subcat.slug;
+    relevant.forEach(subcat => {
+      const isActive = this.activeSubcategorySlug === subcat.slug;
       html += `
-        <button data-subcategory="${subcat.slug}" 
-          class="nail-subcat-btn px-4 py-2 rounded-full text-[11px] font-semibold transition whitespace-nowrap snap-start ${isActive ? 'bg-[#EE6A95] text-white shadow-sm shadow-pink-600/20' : 'bg-white text-slate-600 hover:bg-pink-50 border border-pink-100/90'}"
+        <button data-subcategory="${subcat.slug}"
+          class="subcat-btn px-4 py-2 rounded-full text-[11px] font-semibold transition whitespace-nowrap snap-start ${isActive ? 'bg-[#EE6A95] text-white shadow-sm shadow-pink-600/20' : 'bg-white text-slate-600 hover:bg-pink-50 border border-pink-100/90'}"
           role="tab" aria-selected="${isActive}">
           ${escapeHtml(subcat.name)}
         </button>
@@ -406,10 +415,10 @@ class BlossomApp {
     html += `</div>`;
     container.innerHTML = html;
 
-    container.querySelectorAll(".nail-subcat-btn").forEach(btn => {
+    container.querySelectorAll(".subcat-btn").forEach(btn => {
       btn.addEventListener("click", () => {
-        this.activeNailSubcategory = btn.dataset.subcategory;
-        this.renderNailSubcategoryPills();
+        this.activeSubcategorySlug = btn.dataset.subcategory;
+        this.renderSubcategoryPills();
         this.renderServicesList();
       });
     });
