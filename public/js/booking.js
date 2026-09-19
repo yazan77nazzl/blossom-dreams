@@ -905,6 +905,14 @@ class BookingWizard {
           <textarea id="cust-notes" rows="2" placeholder="e.g. Sensitive cuticles, bridal occasion..."
             class="w-full px-4 py-2 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-500 bg-white">${escapeHtml(this.state.customerNotes)}</textarea>
         </div>
+
+        <div class="flex items-start gap-2">
+          <input type="checkbox" id="cust-consent" required
+            class="mt-1 w-4 h-4 text-pink-600 border-pink-300 rounded focus:ring-pink-500" />
+          <label for="cust-consent" class="text-xs text-slate-600">
+            I agree to the <a href="/terms.html" class="underline text-pink-600 hover:text-pink-800">Terms & Conditions</a> and <a href="/privacy.html" class="underline text-pink-600 hover:text-pink-800">Privacy Policy</a>.
+          </label>
+        </div>
       </form>
     `;
 
