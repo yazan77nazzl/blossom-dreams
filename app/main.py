@@ -64,8 +64,8 @@ async def add_security_headers(request: Request, call_next):
     # Content Security Policy – adjust as needed for your assets
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self' https://cdn.tailwindcss.com; "
-        "style-src 'self' https://cdn.tailwindcss.com https://fonts.googleapis.com; "
+        "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; "
+        "style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://fonts.googleapis.com; "
         "img-src 'self' data: https:; "
         "font-src 'self' data: https://fonts.gstatic.com; "
         "connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; "
@@ -101,6 +101,8 @@ app.include_router(subcategories.router)
 
 # Mount Static Files (/static points to public directory)
 app.mount("/static", StaticFiles(directory=str(PUBLIC_DIR)), name="static")
+# Mount uploads directory for direct access to uploaded images
+app.mount("/uploads", StaticFiles(directory=str(UPLOADS_DIR)), name="uploads")
 
 @app.get("/api/health")
 def health_check():
