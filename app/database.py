@@ -1,12 +1,13 @@
-"""PostgreSQL-only database access and idempotent application schema."""
+"""Database access supporting PostgreSQL (production) and SQLite (tests)."""
 from contextlib import contextmanager
 from datetime import date as _date, datetime as _datetime, time as _time
 import re
+import sqlite3
 import psycopg
 from psycopg.rows import dict_row
 from app.config import settings
 
-IS_POSTGRES = True
+IS_POSTGRES = not settings.DATABASE_URL.startswith("sqlite")
 
 def _normalise(value):
     if isinstance(value, _time):

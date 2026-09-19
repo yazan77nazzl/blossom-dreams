@@ -1,4 +1,4 @@
-﻿import logging
+import logging
 import os
 import re
 from pathlib import Path
@@ -18,16 +18,18 @@ class Settings:
     def __init__(self):
         self.ENVIRONMENT: str = os.environ.get("ENVIRONMENT", "development").lower()
         self.IS_PRODUCTION: bool = self.ENVIRONMENT == "production"
+        self.IS_TESTING: bool = self.ENVIRONMENT == "test"
 
         # PostgreSQL/Supabase is the application's only database.  Deliberately
         # fail fast instead of ever creating or falling back to a local SQLite DB.
         self.DATABASE_URL: str = os.environ.get("DATABASE_URL", "").strip()
         if not self.DATABASE_URL:
-            raise RuntimeError("DATABASE_URL is required and must point to PostgreSQL.")
+            raise RuntimeError("DATABASE_URL is required.")
         # Fix Render/Heroku postgres:// schema prefix to postgresql://
         if self.DATABASE_URL.startswith("postgres://"):
             self.DATABASE_URL = self.DATABASE_URL.replace("postgres://", "postgresql://", 1)
-        if not self.DATABASE_URL.startswith(("postgresql://", "postgresql+psycopg://")):
+        # Allow SQLite only in test environment
+        if not self.IS_TESTING and not self.DATABASE_URL.startswith(("postgresql://", "postgresql+psycopg://")):
             raise RuntimeError("DATABASE_URL must be a PostgreSQL connection URL.")
         # `pgbouncer=true` is a Supabase connection hint, not a psycopg/libpq
         # parameter. Keep the pooler host/port and remove only that hint.
