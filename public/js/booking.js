@@ -480,24 +480,38 @@ class BookingWizard {
 
   // --- STEP 3: SELECT DATE ---
   renderStep3(content, footer) {
-    const s = this.state.selectedService;
     const loc = this.state.selectedLocation;
     const symbol = this.settings?.currency_symbol || "$";
-    const price = s.discount_price || s.price;
+    const totalDuration = this.state.totalDuration;
+    const totalPrice = this.state.totalPrice;
+
+    // Build recap list
+    let recapHtml = '';
+    this.state.selectedServiceIds.forEach(id => {
+      const s = this.services.find(x => x.id === id);
+      if (s) {
+        const p = s.discount_price || s.price;
+        recapHtml += `<div class="flex justify-between text-xs"><span>${escapeHtml(s.name)}</span><span class="font-semibold">${formatDuration(s.duration_minutes)} • ${formatPrice(p, symbol)}</span></div>`;
+      }
+    });
+    this.state.selectedOfferIds.forEach(id => {
+      const o = this.offers.find(x => x.id === id);
+      if (o) {
+        const p = o.discount_price || o.price;
+        recapHtml += `<div class="flex justify-between text-xs"><span>${escapeHtml(o.name)}</span><span class="font-semibold">${formatDuration(o.duration_minutes)} • ${formatPrice(p, symbol)}</span></div>`;
+      }
+    });
 
     let html = `
-      <!-- Service Recap Pill -->
-      <div class="mb-5 p-3 rounded-2xl bg-pink-50/70 border border-pink-200 flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <span class="text-xl">✨</span>
-          <div>
-            <h5 class="text-xs font-bold text-gray-900">${escapeHtml(s.name)}</h5>
-            <p class="text-[11px] text-pink-700 font-semibold">${formatDuration(s.duration_minutes)} • ${formatPrice(price, symbol)}${loc ? ` • 📍 ${escapeHtml(loc.name)}` : ''}</p>
-          </div>
+      <!-- Selection Recap -->
+      <div class="mb-5 p-3 rounded-2xl bg-pink-50/70 border border-pink-200">
+        <div class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Your Selection</div>
+        ${recapHtml}
+        <div class="border-t border-pink-200 mt-2 pt-2 flex justify-between text-sm font-bold">
+          <span>Total</span>
+          <span>${formatDuration(totalDuration)} • ${formatPrice(totalPrice, symbol)}${loc ? ` • 📍 ${escapeHtml(loc.name)}` : ''}</span>
         </div>
-        <button id="wizard-change-service-btn" class="text-[11px] text-pink-700 hover:text-pink-900 font-bold underline">
-          Change
-        </button>
+        <button id="wizard-change-service-btn" class="text-[11px] text-pink-700 hover:text-pink-900 font-bold underline mt-2 block text-center">Change Services / Offers</button>
       </div>
 
       <div class="mb-4">
