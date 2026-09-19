@@ -70,13 +70,15 @@ def create_offer(off: OfferCreate, current_admin: dict = Depends(get_current_adm
         cursor.execute("""
         INSERT INTO offers (
             service_id, title, description, original_price, discounted_price,
-            discount_percent, start_date, end_date, image_url, is_active, is_featured
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            discount_percent, start_date, end_date, image_url, is_active, is_featured,
+            duration_minutes
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             off.service_id, off.title, off.description, off.original_price, off.discounted_price,
             percent, off.start_date, off.end_date, off.image_url,
             bool(off.is_active),
-            bool(off.is_featured)
+            bool(off.is_featured),
+            off.duration_minutes
         ))
         new_id = cursor.lastrowid
 
@@ -132,6 +134,9 @@ def update_offer(offer_id: int, off: OfferUpdate, current_admin: dict = Depends(
         if off.is_featured is not None:
             updates.append("is_featured = ?")
             params.append(off.is_featured)
+        if off.duration_minutes is not None:
+            updates.append("duration_minutes = ?")
+            params.append(off.duration_minutes)
 
         if updates:
             params.append(offer_id)

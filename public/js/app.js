@@ -294,7 +294,7 @@ class BlossomApp {
                 <span class="text-[10px] text-slate-400 line-through block leading-tight">${formatPrice(off.original_price, symbol)}</span>
                 <span class="text-xl font-bold text-pink-700 font-serif leading-none">${formatPrice(off.discounted_price, symbol)}</span>
               </div>
-              <button data-service-id="${off.service_id || ''}" class="btn-primary px-4 py-2.5 rounded-xl text-xs font-bold btn-book-offer flex items-center gap-1.5 shadow-md">
+              <button data-service-id="${off.service_id || ''}" data-offer-id="${off.id}" class="btn-primary px-4 py-2.5 rounded-xl text-xs font-bold btn-book-offer flex items-center gap-1.5 shadow-md">
                 <span>Claim Offer</span>
                 <span>✦</span>
               </button>
@@ -310,7 +310,8 @@ class BlossomApp {
     container.querySelectorAll(".btn-book-offer").forEach(btn => {
       btn.addEventListener("click", () => {
         const srvId = btn.dataset.serviceId;
-        bookingWizard.open(srvId ? parseInt(srvId) : null);
+        const offerId = btn.dataset.offerId;
+        bookingWizard.open(srvId ? parseInt(srvId) : null, offerId ? parseInt(offerId) : null);
       });
     });
   }

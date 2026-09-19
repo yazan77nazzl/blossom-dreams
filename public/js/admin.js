@@ -1923,6 +1923,12 @@ openGalleryEditModal(image) {
               </select>
             </div>
 
+            <div>
+              <label class="block font-bold text-slate-700 uppercase tracking-wider mb-1">Duration (minutes) *</label>
+              <input type="number" id="off-duration" required min="5" step="5" value="${existing?.duration_minutes || 60}"
+                class="w-full px-3 py-2 rounded-xl border border-slate-200 font-semibold" />
+            </div>
+
             <div class="grid grid-cols-2 gap-3">
               <div>
                 <label class="block font-bold text-slate-700 uppercase tracking-wider mb-1">Original Price ($) *</label>
@@ -2020,7 +2026,8 @@ openGalleryEditModal(image) {
         description: root.querySelector("#off-desc").value.trim(),
         image_url: root.querySelector("#off-image").value.trim() || null,
         is_active: root.querySelector("#off-active").checked,
-        is_featured: root.querySelector("#off-featured").checked
+        is_featured: root.querySelector("#off-featured").checked,
+        duration_minutes: parseInt(root.querySelector("#off-duration").value)
       };
 
       try {

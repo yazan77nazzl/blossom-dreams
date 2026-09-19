@@ -94,7 +94,7 @@ class BookingWizard {
     document.getElementById("booking-modal-overlay").addEventListener("click", () => this.close());
   }
 
-  open(preSelectedServiceId = null) {
+  open(preSelectedServiceId = null, preSelectedOfferId = null) {
     if (!this.modal) this.renderModalContainer();
 
     // Reset state for a fresh booking
@@ -121,6 +121,14 @@ class BookingWizard {
       if (match) {
         this.state.selectedServiceIds.push(match.id);
         // recompute aggregates
+        this._recalcTotals();
+      }
+    }
+    // Pre-select the offer the user clicked "Claim Offer" on (if any)
+    if (preSelectedOfferId) {
+      const match = this.offers.find(o => o.id === parseInt(preSelectedOfferId));
+      if (match) {
+        this.state.selectedOfferIds.push(match.id);
         this._recalcTotals();
       }
     }

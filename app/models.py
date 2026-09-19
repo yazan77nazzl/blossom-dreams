@@ -122,6 +122,7 @@ class OfferBase(BaseModel):
     image_url: Optional[str] = None
     is_active: Optional[bool] = True
     is_featured: Optional[bool] = False
+    duration_minutes: int = Field(..., gt=0, description="Required service duration in minutes")
 
 class OfferCreate(OfferBase):
     pass
@@ -138,6 +139,7 @@ class OfferUpdate(BaseModel):
     image_url: Optional[str] = None
     is_active: Optional[bool] = None
     is_featured: Optional[bool] = None
+    duration_minutes: Optional[int] = Field(None, gt=0)
 
 class OfferResponse(OfferBase):
     id: int
