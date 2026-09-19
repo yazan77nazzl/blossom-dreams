@@ -259,6 +259,9 @@ class AdminApp {
     document.getElementById("btn-add-gallery-modal").addEventListener("click", () => {
       this.openAddGalleryModal();
     });
+    document.getElementById("btn-add-manual-booking").addEventListener("click", () => {
+      this.openManualBookingModal();
+    });
 
     // Forms
     const setForm = document.getElementById("admin-settings-form");
@@ -738,6 +741,53 @@ class AdminApp {
         document.getElementById("btn-view-table").click();
       });
     });
+  }
+
+  // --- Manual Calendar Tab ---
+  renderCalendarTab() {
+    const dateInput = document.getElementById("calendar-date");
+    const listContainer = document.getElementById("calendar-bookings-list");
+    if (!dateInput || !listContainer) return;
+
+    // Set default to today if empty
+    if (!dateInput.value) {
+      dateInput.value = new Date().toISOString().split("T")[0];
+    }
+
+    const renderForDate = (dateStr) => {
+      const dayBookings = this.bookings.filter(b => b.appointment_date === dateStr && b.status !== "cancelled");
+      
+      if (dayBookings.length === 0) {
+        listContainer.innerHTML = `
+          <div class="text-center py-8 text-slate-400 text-sm">
+            No bookings for this date.
+          </div>`;
+        return;
+      }
+
+      listContainer.innerHTML = dayBookings.map(b => `
+        <div class="bg-slate-50 rounded-xl border border-slate-100 p-4 flex items-center justify-between gap-3">
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 text-xs">
+              <span class="font-bold text-slate-800">${formatTimeDisplay(b.appointment_time)}</span>
+              <span class="text-slate-400">|</span>
+              <span class="font-semibold text-slate-700 truncate">${escapeHtml(b.customer_name)}</span>
+              <span class="text-slate-400">|</span>
+              <span class="text-slate-500">${escapeHtml(b.service_name || "Service")}</span>
+            </div>
+            ${b.customer_phone ? `<div class="text-[10px] text-slate-400 mt-0.5">${escapeHtml(b.customer_phone)}</div>` : ""}
+            ${b.notes ? `<div class="text-[10px] text-slate-500 mt-0.5 italic">${escapeHtml(b.notes)}</div>` : ""}
+          </div>
+          <span class="${this.getStatusBadgeClass(b.status)}">${b.status.replace("_", " ")}</span>
+        </div>
+      `).join("");
+    };
+
+    // Initial render
+    renderForDate(dateInput.value);
+
+    // Date change listener
+    dateInput.onchange = () => renderForDate(dateInput.value);
   }
 
   // --- 3. SERVICES TAB ---
@@ -2213,29 +2263,267 @@ document.getElementById("set-homepage-welcome").value = s.homepage_welcome_text 
     });
   }
 
-  // --- MANUAL BOOKING MODAL ---
+  // --- MANUAL BOOKING MODAL (Enhanced with Availability Engine) ---
   openManualBookingModal() {
     const root = document.getElementById("admin-modal-root");
-    const srvOptions = this.services.map(s => `<option value="${s.id}">${escapeHtml(s.name)} ($${s.price})</option>`).join('');
-    const locOptions = (this.locations || []).map(l => `<option value="${l.id}">${escapeHtml(l.name)}</option>`).join('');
     const todayStr = new Date().toISOString().split('T')[0];
+    
+    // Prepare service and offer options
+    const services = this.services.filter(s => s.is_active !== false);
+    const offers = this.offers.filter(o => o.is_active !== false);
+    const locations = this.locations || [];
 
-    root.innerHTML = `
+    // State for the modal
+    let selectedServiceIds = [];
+    let selectedOfferIds = [];
+    let selectedLocationId = null;
+    let selectedDate = todayStr;
+    let selectedTime = null;
+    let availableSlots = [];
+
+    const renderModal = () => {
+      // Calculate total duration from selected services
+      const totalDuration = selectedServiceIds.reduce((sum, id) => {
+        const svc = services.find(s => s.id === id);
+        return sum + (svc?.duration_minutes || 60);
+      }, 0) + selectedOfferIds.reduce((sum, id) => {
+        const off = offers.find(o => o.id === id);
+        return sum + (off?.duration_minutes || 60);
+      }, 0);
+
+      // Service checkboxes
+      const serviceHtml = services.map(s => `
+        <label class="flex items-center gap-2 p-3 rounded-xl border cursor-pointer transition hover:bg-slate-50 ${selectedServiceIds.includes(s.id) ? 'border-pink-400 bg-pink-50' : 'border-slate-200'}">
+          <input type="checkbox" value="${s.id}" ${selectedServiceIds.includes(s.id) ? 'checked' : ''} class="w-4 h-4 text-pink-600 rounded border-slate-300 focus:ring-pink-500 service-checkbox">
+          <div class="flex-1 text-left">
+            <span class="font-semibold text-slate-800">${escapeHtml(s.name)}</span>
+            <span class="text-[10px] text-slate-400 ml-2">${s.duration_minutes}min · ${this.settings?.currency_symbol || '$'}${Number(s.price).toFixed(2)}</span>
+          </div>
+        </label>
+      `).join('');
+
+      // Offer checkboxes
+      const offerHtml = offers.map(o => `
+        <label class="flex items-center gap-2 p-3 rounded-xl border cursor-pointer transition hover:bg-slate-50 ${selectedOfferIds.includes(o.id) ? 'border-amber-400 bg-amber-50' : 'border-slate-200'}">
+          <input type="checkbox" value="${o.id}" ${selectedOfferIds.includes(o.id) ? 'checked' : ''} class="w-4 h-4 text-amber-600 rounded border-slate-300 focus:ring-amber-500 offer-checkbox">
+          <div class="flex-1 text-left">
+            <span class="font-semibold text-slate-800">${escapeHtml(o.title)}</span>
+            <span class="text-[10px] text-slate-400 ml-2">${o.duration_minutes}min · ${this.settings?.currency_symbol || '$'}${Number(o.price).toFixed(2)}</span>
+          </div>
+        </label>
+      `).join('');
+
+      // Location options
+      const locOptions = locations.map(l => `<option value="${l.id}">${escapeHtml(l.name)}</option>`).join('');
+
+      // Available slots display
+      let slotsHtml = '';
+      if (availableSlots.length > 0) {
+        slotsHtml = `
+          <div>
+            <label class="block font-bold text-slate-700 uppercase tracking-wider mb-2">Available Time Slots *</label>
+            <div class="flex flex-wrap gap-2" id="manual-slots-container">
+              ${availableSlots.map(slot => `
+                <button type="button" data-time="${slot}" class="slot-btn px-3 py-2 text-xs font-semibold rounded-xl border transition ${selectedTime === slot ? 'bg-pink-600 text-white border-pink-600' : 'bg-white text-slate-700 border-slate-200 hover:border-pink-400'}">${slot}</button>
+              `).join('')}
+            </div>
+            ${selectedTime ? `<p class="text-[10px] text-slate-500 mt-1">Selected: <strong>${selectedTime}</strong> (${totalDuration} min total)</p>` : '<p class="text-[10px] text-slate-400 mt-1">Select a time slot above</p>'}
+          </div>
+        `;
+      } else if (selectedServiceIds.length > 0 || selectedOfferIds.length > 0) {
+        slotsHtml = `
+          <div>
+            <label class="block font-bold text-slate-700 uppercase tracking-wider mb-2">Available Time Slots *</label>
+            <div class="text-center py-6 text-slate-400 text-sm border-2 border-dashed border-slate-200 rounded-xl">
+              No available slots for this date / duration. Try another date.
+            </div>
+          </div>
+        `;
+      }
+
+      root.innerHTML = this.getManualBookingModalHtml({
+        serviceHtml, offerHtml, locOptions, slotsHtml, todayStr, totalDuration, selectedTime,
+        selectedServiceIds, selectedOfferIds, selectedLocationId, selectedDate,
+        services, offers, locations
+      });
+
+      // Re-attach event listeners after render
+      attachListeners();
+    };
+
+    const fetchSlots = async () => {
+      if (selectedServiceIds.length === 0 && selectedOfferIds.length === 0) {
+        availableSlots = [];
+        renderModal();
+        return;
+      }
+
+      // Calculate total duration
+      const totalDuration = selectedServiceIds.reduce((sum, id) => {
+        const svc = services.find(s => s.id === id);
+        return sum + (svc?.duration_minutes || 60);
+      }, 0) + selectedOfferIds.reduce((sum, id) => {
+        const off = offers.find(o => o.id === id);
+        return sum + (off?.duration_minutes || 60);
+      }, 0);
+
+      // Use first service ID for availability check (or a dummy if only offers)
+      const primaryServiceId = selectedServiceIds[0] || (selectedOfferIds[0] ? 'offer' : null);
+
+      try {
+        const params = new URLSearchParams({
+          date: selectedDate,
+          duration: totalDuration
+        });
+        if (selectedLocationId) params.append('location_id', selectedLocationId);
+        if (primaryServiceId && primaryServiceId !== 'offer') params.append('service_id', primaryServiceId);
+
+        const res = await apiFetch(`/api/availability/slots?${params.toString()}`);
+        availableSlots = res.slots || [];
+      } catch (err) {
+        console.error('Failed to fetch slots:', err);
+        availableSlots = [];
+      }
+      renderModal();
+    };
+
+    const attachListeners = () => {
+      const close = () => { root.innerHTML = ""; };
+      root.querySelector("#close-manual-modal").addEventListener("click", close);
+      root.querySelector("#cancel-manual-btn").addEventListener("click", close);
+
+      // Service checkboxes
+      root.querySelectorAll(".service-checkbox").forEach(cb => {
+        cb.addEventListener("change", () => {
+          const id = parseInt(cb.value);
+          if (cb.checked) selectedServiceIds.push(id);
+          else selectedServiceIds = selectedServiceIds.filter(x => x !== id);
+          selectedTime = null;
+          fetchSlots();
+        });
+      });
+
+      // Offer checkboxes
+      root.querySelectorAll(".offer-checkbox").forEach(cb => {
+        cb.addEventListener("change", () => {
+          const id = parseInt(cb.value);
+          if (cb.checked) selectedOfferIds.push(id);
+          else selectedOfferIds = selectedOfferIds.filter(x => x !== id);
+          selectedTime = null;
+          fetchSlots();
+        });
+      });
+
+      // Location change
+      root.querySelector("#man-location").addEventListener("change", (e) => {
+        selectedLocationId = e.target.value ? parseInt(e.target.value) : null;
+        selectedTime = null;
+        fetchSlots();
+      });
+
+      // Date change
+      root.querySelector("#man-date").addEventListener("change", (e) => {
+        selectedDate = e.target.value;
+        selectedTime = null;
+        fetchSlots();
+      });
+
+      // Slot selection
+      root.querySelectorAll(".slot-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          selectedTime = btn.dataset.time;
+          renderModal();
+        });
+      });
+
+      // Form submit
+      root.querySelector("#manual-booking-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        
+        if (!selectedTime) {
+          showToast("Please select a time slot", "error");
+          return;
+        }
+        if (selectedServiceIds.length === 0 && selectedOfferIds.length === 0) {
+          showToast("Please select at least one service or offer", "error");
+          return;
+        }
+
+        const name = root.querySelector("#man-name").value.trim();
+        const phone = root.querySelector("#man-phone").value.trim();
+        const notes = root.querySelector("#man-notes").value.trim() || "Manual phone reservation";
+
+        if (!name || !phone) {
+          showToast("Please fill in client name and phone", "error");
+          return;
+        }
+
+        const payload = {
+          service_ids: selectedServiceIds,
+          offer_ids: selectedOfferIds,
+          appointment_date: selectedDate,
+          appointment_time: selectedTime,
+          location_id: selectedLocationId,
+          customer_name: name,
+          customer_phone: phone,
+          notes: notes
+        };
+
+        try {
+          const submitBtn = root.querySelector("#submit-manual-btn");
+          submitBtn.disabled = true;
+          submitBtn.innerText = "Reserving...";
+
+          const b = await apiFetch("/api/bookings", {
+            method: "POST",
+            body: payload
+          });
+          showToast(`Manual booking reserved! Code: ${b.booking_code}`);
+          close();
+          await this.loadAllData();
+          this.renderCurrentTab();
+        } catch (err) {
+          showToast(err.message, "error");
+        }
+      });
+    };
+
+    // Initial render
+    renderModal();
+  }
+
+  // Helper method to generate manual booking modal HTML
+  getManualBookingModalHtml({ serviceHtml, offerHtml, locOptions, slotsHtml, todayStr, totalDuration, selectedTime, selectedServiceIds, selectedOfferIds, selectedLocationId, selectedDate, services, offers, locations }) {
+    return `
       <div class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay">
-        <div class="relative w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl modal-content-anim border border-slate-200">
-          <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div class="relative w-full max-w-md max-h-[90vh] overflow-y-auto bg-white rounded-3xl p-6 shadow-2xl modal-content-anim border border-slate-200">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-100 sticky top-0 bg-white z-10 py-2">
             <h4 class="font-serif font-bold text-slate-900 text-base">New Phone / Walk-in Booking</h4>
             <button id="close-manual-modal" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:text-slate-800">✕</button>
           </div>
 
-          <form id="manual-booking-form" class="py-4 space-y-3 text-xs">
+          <form id="manual-booking-form" class="py-4 space-y-4 text-xs">
+            <!-- Services Selection -->
             <div>
-              <label class="block font-bold text-slate-700 uppercase tracking-wider mb-1">Service *</label>
-              <select id="man-service" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 font-semibold">
-                ${srvOptions}
-              </select>
+              <label class="block font-bold text-slate-700 uppercase tracking-wider mb-2">Services *</label>
+              <div class="space-y-2 max-h-48 overflow-y-auto" id="services-list">
+                ${serviceHtml}
+              </div>
+              <p class="text-[10px] text-slate-400 mt-1">Select one or more services</p>
             </div>
 
+            <!-- Offers Selection -->
+            ${offers.length > 0 ? `
+            <div>
+              <label class="block font-bold text-slate-700 uppercase tracking-wider mb-2">Special Offers</label>
+              <div class="space-y-2 max-h-48 overflow-y-auto" id="offers-list">
+                ${offerHtml}
+              </div>
+              <p class="text-[10px] text-slate-400 mt-1">Optional: select one or more offers</p>
+            </div>
+            ` : ''}
+
+            <!-- Location -->
             <div>
               <label class="block font-bold text-slate-700 uppercase tracking-wider mb-1">Location</label>
               <select id="man-location" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 font-semibold">
@@ -2244,17 +2532,18 @@ document.getElementById("set-homepage-welcome").value = s.homepage_welcome_text 
               </select>
             </div>
 
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="block font-bold text-slate-700 uppercase tracking-wider mb-1">Date *</label>
-                <input type="date" id="man-date" required value="${todayStr}" class="w-full px-3 py-2 rounded-xl border border-slate-200 font-mono font-semibold" />
-              </div>
-              <div>
-                <label class="block font-bold text-slate-700 uppercase tracking-wider mb-1">Time (HH:MM) *</label>
-                <input type="time" id="man-time" required value="10:00" class="w-full px-3 py-2 rounded-xl border border-slate-200 font-mono font-semibold" />
-              </div>
+            <!-- Date -->
+            <div>
+              <label class="block font-bold text-slate-700 uppercase tracking-wider mb-1">Date *</label>
+              <input type="date" id="man-date" required value="${todayStr}" min="${todayStr}" class="w-full px-3 py-2 rounded-xl border border-slate-200 font-mono font-semibold" />
             </div>
 
+            <!-- Available Slots (dynamic) -->
+            <div id="slots-section">
+              ${slotsHtml}
+            </div>
+
+            <!-- Client Info -->
             <div>
               <label class="block font-bold text-slate-700 uppercase tracking-wider mb-1">Client Full Name *</label>
               <input type="text" id="man-name" required placeholder="e.g. Layla Khoury" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 font-semibold" />
@@ -2272,42 +2561,12 @@ document.getElementById("set-homepage-welcome").value = s.homepage_welcome_text 
 
             <div class="pt-4 border-t border-slate-100 flex justify-end gap-2">
               <button type="button" id="cancel-manual-btn" class="btn-secondary px-4 py-2 rounded-xl">Cancel</button>
-              <button type="submit" class="btn-primary px-5 py-2 rounded-xl font-bold">Reserve Slot</button>
+              <button type="submit" id="submit-manual-btn" class="btn-primary px-5 py-2 rounded-xl font-bold" ${!selectedTime ? 'disabled' : ''}>Reserve Slot</button>
             </div>
           </form>
         </div>
       </div>
     `;
-
-    const close = () => { root.innerHTML = ""; };
-    root.querySelector("#close-manual-modal").addEventListener("click", close);
-    root.querySelector("#cancel-manual-btn").addEventListener("click", close);
-
-    root.querySelector("#manual-booking-form").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const payload = {
-        service_id: parseInt(root.querySelector("#man-service").value),
-        appointment_date: root.querySelector("#man-date").value,
-        appointment_time: root.querySelector("#man-time").value,
-        location_id: parseInt(root.querySelector("#man-location").value) || null,
-        customer_name: root.querySelector("#man-name").value.trim(),
-        customer_phone: root.querySelector("#man-phone").value.trim(),
-        notes: root.querySelector("#man-notes").value.trim() || "Manual phone reservation"
-      };
-
-      try {
-        const b = await apiFetch("/api/bookings", {
-          method: "POST",
-          body: payload
-        });
-        showToast(`Manual booking reserved! Code: ${b.booking_code}`);
-        close();
-        await this.loadAllData();
-        this.renderCurrentTab();
-      } catch (err) {
-        showToast(err.message, "error");
-      }
-    });
   }
 
   // --- CLOSED DATE MODALS ---

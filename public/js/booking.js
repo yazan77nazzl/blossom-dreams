@@ -258,7 +258,8 @@ class BookingWizard {
       html += `<div class="mb-3 mt-4"><h5 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Offers & Packages</h5></div>`;
       this.offers.forEach(o => {
         const isSelected = this.state.selectedOfferIds.includes(o.id);
-        const displayPrice = o.discount_price || o.price;
+        const displayPrice = o.discounted_price || o.original_price;
+        const hasDiscount = o.discounted_price && o.original_price && o.discounted_price < o.original_price;
         html += `
           <div data-type="offer" data-id="${o.id}" class="wizard-item p-3.5 rounded-2xl border cursor-pointer transition flex items-center justify-between ${isSelected ? 'border-pink-600 bg-pink-50/70 ring-2 ring-pink-500/20' : 'border-pink-100 hover:border-pink-300 hover:bg-pink-50/30'}">
             <div class="flex items-center gap-3">
@@ -277,7 +278,7 @@ class BookingWizard {
             </div>
             <div class="text-right">
               <div class="text-sm font-bold text-emerald-700">${formatPrice(displayPrice, symbol)}</div>
-              ${o.discount_price ? `<div class="text-[10px] text-slate-400 line-through">${formatPrice(o.price, symbol)}</div>` : ''}
+              ${hasDiscount ? `<div class="text-[10px] text-slate-400 line-through">${formatPrice(o.original_price, symbol)}</div>` : ''}
             </div>
           </div>
         `;
@@ -366,7 +367,7 @@ class BookingWizard {
     this.state.selectedOfferIds.forEach(id => {
       const o = this.offers.find(x => x.id === id);
       if (o) {
-        totalPrice += o.discount_price || o.price;
+        totalPrice += o.discounted_price || o.original_price;
         totalDuration += o.duration_minutes;
       }
     });
@@ -398,7 +399,7 @@ class BookingWizard {
     this.state.selectedOfferIds.forEach(id => {
       const o = this.offers.find(x => x.id === id);
       if (o) {
-        const p = o.discount_price || o.price;
+        const p = o.discounted_price || o.original_price;
         recapHtml += `<div class="flex justify-between text-xs"><span>${escapeHtml(o.name)}</span><span class="font-semibold">${formatDuration(o.duration_minutes)} • ${formatPrice(p, symbol)}</span></div>`;
       }
     });
@@ -505,7 +506,7 @@ class BookingWizard {
     this.state.selectedOfferIds.forEach(id => {
       const o = this.offers.find(x => x.id === id);
       if (o) {
-        const p = o.discount_price || o.price;
+        const p = o.discounted_price || o.original_price;
         recapHtml += `<div class="flex justify-between text-xs"><span>${escapeHtml(o.name)}</span><span class="font-semibold">${formatDuration(o.duration_minutes)} • ${formatPrice(p, symbol)}</span></div>`;
       }
     });
@@ -642,7 +643,7 @@ class BookingWizard {
     this.state.selectedOfferIds.forEach(id => {
       const o = this.offers.find(x => x.id === id);
       if (o) {
-        const p = o.discount_price || o.price;
+        const p = o.discounted_price || o.original_price;
         recapHtml += `<div class="flex justify-between text-xs"><span>${escapeHtml(o.name)}</span><span class="font-semibold">${formatDuration(o.duration_minutes)} • ${formatPrice(p, symbol)}</span></div>`;
       }
     });
@@ -841,7 +842,7 @@ class BookingWizard {
     this.state.selectedOfferIds.forEach(id => {
       const o = this.offers.find(x => x.id === id);
       if (o) {
-        const p = o.discount_price || o.price;
+        const p = o.discounted_price || o.original_price;
         recapHtml += `<div class="flex justify-between text-xs"><span>${escapeHtml(o.name)}</span><span class="font-semibold">${formatDuration(o.duration_minutes)} • ${formatPrice(p, symbol)}</span></div>`;
       }
     });
