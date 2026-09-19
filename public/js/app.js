@@ -351,6 +351,8 @@ class BlossomApp {
     `;
 
     this.categories.forEach(cat => {
+      // Skip a possible "All" category to avoid duplicate with the explicit "All Treatments" button
+      if (cat.slug === 'all') return;
       const isActive = this.activeCategorySlug === cat.slug;
       html += `
         <button data-slug="${cat.slug}" class="category-pill-btn px-5 py-2.5 rounded-full text-xs font-bold transition whitespace-nowrap ${isActive ? 'bg-[#EE6A95] text-white shadow-md shadow-pink-600/30' : 'bg-white text-slate-700 hover:bg-pink-50 border border-pink-100/90'}">
