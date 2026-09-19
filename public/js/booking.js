@@ -197,89 +197,173 @@ class BookingWizard {
     else if (this.state.step === 6) this.renderStep6(content, footer);
   }
 
-  // --- STEP 1: SELECT TREATMENT ---
+  // --- STEP 1: SELECT SERVICES & OFFERS ---
   renderStep1(content, footer) {
     const symbol = this.settings?.currency_symbol || "$";
     let html = `
       <div class="mb-4">
-        <h4 class="text-base font-serif font-bold text-gray-900">Step 1 — Choose a Treatment</h4>
-        <p class="text-xs text-slate-500 mt-0.5">Select from our signature luxury salon menu</p>
+        <h4 class="text-base font-serif font-bold text-gray-900">Step 1 — Choose Services & Offers</h4>
+        <p class="text-xs text-slate-500 mt-0.5">Select one or more items. You can combine services and offers.</p>
       </div>
 
       <div class="mb-3.5">
-        <input type="text" id="wizard-service-search" placeholder="Search treatment (e.g., Russian manicure, BIAB, Volume Lashes...)"
+        <input type="text" id="wizard-service-search" placeholder="Search treatment or offer..."
           class="w-full text-xs px-4 py-2.5 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-500 bg-pink-50/20" />
       </div>
 
       <div id="wizard-services-list" class="space-y-2.5 max-h-[360px] overflow-y-auto pr-1">
     `;
 
-    this.services.forEach(s => {
-      const isSelected = this.state.selectedService?.id === s.id;
-      const displayPrice = s.discount_price || s.price;
-      html += `
-        <div data-id="${s.id}" class="wizard-service-item p-3.5 rounded-2xl border cursor-pointer transition flex items-center justify-between ${isSelected ? 'border-pink-600 bg-pink-50/70 ring-2 ring-pink-500/20' : 'border-pink-100 hover:border-pink-300 hover:bg-pink-50/30'}">
-          <div class="flex items-center gap-3">
-            <div class="w-12 h-12 rounded-xl bg-pink-100 overflow-hidden flex-shrink-0 border border-pink-200/80">
-              <img src="${s.image_url || ''}" alt="${escapeHtml(s.name)}" class="w-full h-full object-cover" />
-            </div>
-            <div>
-              <h5 class="text-sm font-bold text-gray-900">${escapeHtml(s.name)}</h5>
-              <div class="flex items-center gap-2 mt-0.5 text-xs text-slate-500">
-                <span>⏱ ${formatDuration(s.duration_minutes)}</span>
-                <span>•</span>
-                <span class="text-pink-700 font-semibold">${escapeHtml(s.category_name || '')}</span>
+    // Services
+    if (this.services && this.services.length) {
+      html += `<div class="mb-3"><h5 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Services</h5></div>`;
+      this.services.forEach(s => {
+        const isSelected = this.state.selectedServiceIds.includes(s.id);
+        const displayPrice = s.discount_price || s.price;
+        html += `
+          <div data-type="service" data-id="${s.id}" class="wizard-item p-3.5 rounded-2xl border cursor-pointer transition flex items-center justify-between ${isSelected ? 'border-pink-600 bg-pink-50/70 ring-2 ring-pink-500/20' : 'border-pink-100 hover:border-pink-300 hover:bg-pink-50/30'}">
+            <div class="flex items-center gap-3">
+              <input type="checkbox" class="w-4 h-4 accent-pink-600" ${isSelected ? 'checked' : ''} />
+              <div class="w-12 h-12 rounded-xl bg-pink-100 overflow-hidden flex-shrink-0 border border-pink-200/80">
+                <img src="${s.image_url || ''}" alt="${escapeHtml(s.name)}" class="w-full h-full object-cover" />
+              </div>
+              <div>
+                <h5 class="text-sm font-bold text-gray-900">${escapeHtml(s.name)}</h5>
+                <div class="flex items-center gap-2 mt-0.5 text-xs text-slate-500">
+                  <span>⏱ ${formatDuration(s.duration_minutes)}</span>
+                  <span>•</span>
+                  <span class="text-pink-700 font-semibold">${escapeHtml(s.category_name || '')}</span>
+                </div>
               </div>
             </div>
+            <div class="text-right">
+              <div class="text-sm font-bold text-pink-700">${formatPrice(displayPrice, symbol)}</div>
+              ${s.discount_price ? `<div class="text-[10px] text-slate-400 line-through">${formatPrice(s.price, symbol)}</div>` : ''}
+            </div>
           </div>
-          <div class="text-right">
-            <div class="text-sm font-bold text-pink-700">${formatPrice(displayPrice, symbol)}</div>
-            ${s.discount_price ? `<div class="text-[10px] text-slate-400 line-through">${formatPrice(s.price, symbol)}</div>` : ''}
+        `;
+      });
+    }
+
+    // Offers
+    if (this.offers && this.offers.length) {
+      html += `<div class="mb-3 mt-4"><h5 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Offers & Packages</h5></div>`;
+      this.offers.forEach(o => {
+        const isSelected = this.state.selectedOfferIds.includes(o.id);
+        const displayPrice = o.discount_price || o.price;
+        html += `
+          <div data-type="offer" data-id="${o.id}" class="wizard-item p-3.5 rounded-2xl border cursor-pointer transition flex items-center justify-between ${isSelected ? 'border-pink-600 bg-pink-50/70 ring-2 ring-pink-500/20' : 'border-pink-100 hover:border-pink-300 hover:bg-pink-50/30'}">
+            <div class="flex items-center gap-3">
+              <input type="checkbox" class="w-4 h-4 accent-pink-600" ${isSelected ? 'checked' : ''} />
+              <div class="w-12 h-12 rounded-xl bg-emerald-100 overflow-hidden flex-shrink-0 border border-emerald-200/80">
+                <img src="${o.image_url || ''}" alt="${escapeHtml(o.name)}" class="w-full h-full object-cover" />
+              </div>
+              <div>
+                <h5 class="text-sm font-bold text-gray-900">${escapeHtml(o.name)}</h5>
+                <div class="flex items-center gap-2 mt-0.5 text-xs text-slate-500">
+                  <span>⏱ ${formatDuration(o.duration_minutes)}</span>
+                  <span>•</span>
+                  <span class="text-emerald-700 font-semibold">${escapeHtml(o.category_name || 'Offer')}</span>
+                </div>
+              </div>
+            </div>
+            <div class="text-right">
+              <div class="text-sm font-bold text-emerald-700">${formatPrice(displayPrice, symbol)}</div>
+              ${o.discount_price ? `<div class="text-[10px] text-slate-400 line-through">${formatPrice(o.price, symbol)}</div>` : ''}
+            </div>
           </div>
-        </div>
-      `;
-    });
+        `;
+      });
+    }
 
     html += `</div>`;
     content.innerHTML = html;
 
-    // Search filter
+    // Search filter (works for both services and offers)
     const searchInput = document.getElementById("wizard-service-search");
     searchInput.addEventListener("input", (e) => {
       const term = e.target.value.toLowerCase().trim();
-      document.querySelectorAll(".wizard-service-item").forEach(item => {
+      document.querySelectorAll(".wizard-item").forEach(item => {
         const id = parseInt(item.dataset.id);
-        const s = this.services.find(srv => srv.id === id);
-        if (!s) return;
-        const match = s.name.toLowerCase().includes(term) || (s.description && s.description.toLowerCase().includes(term));
+        const type = item.dataset.type;
+        const list = type === 'service' ? this.services : this.offers;
+        const obj = list.find(x => x.id === id);
+        if (!obj) return;
+        const match = obj.name.toLowerCase().includes(term) || (obj.description && obj.description.toLowerCase().includes(term));
         item.style.display = match ? "flex" : "none";
       });
     });
 
-    // Selection
-    document.querySelectorAll(".wizard-service-item").forEach(item => {
-      item.addEventListener("click", () => {
-        const id = parseInt(item.dataset.id);
-        this.state.selectedService = this.services.find(s => s.id === id);
-        this.state.step = 2;
-        this.renderCurrentStep();
+    // Checkbox handling
+    document.querySelectorAll(".wizard-item").forEach(item => {
+      const checkbox = item.querySelector('input[type="checkbox"]');
+      const id = parseInt(item.dataset.id);
+      const type = item.dataset.type;
+
+      // Click on whole row toggles checkbox
+      item.addEventListener("click", (e) => {
+        if (e.target === checkbox) return; // let native checkbox handle
+        checkbox.checked = !checkbox.checked;
+        this.toggleSelection(type, id);
+      });
+      checkbox.addEventListener("change", () => {
+        this.toggleSelection(type, id);
       });
     });
 
-    // Footer
+    // Footer with continue button enabled only when at least one selected
+    const hasSelection = this.state.selectedServiceIds.length > 0 || this.state.selectedOfferIds.length > 0;
     footer.innerHTML = `
-      <div class="text-xs text-slate-500 font-medium">Select any service to proceed</div>
-      <button id="step1-next-btn" ${this.state.selectedService ? '' : 'disabled'} class="btn-primary ${this.state.selectedService ? '' : 'opacity-50 cursor-not-allowed'} px-6 py-2.5 rounded-xl text-xs font-bold">
+      <div class="text-xs text-slate-500 font-medium mb-2">Select at least one service or offer to proceed</div>
+      <button id="step1-next-btn" ${hasSelection ? '' : 'disabled'} class="btn-primary ${hasSelection ? '' : 'opacity-50 cursor-not-allowed'} px-6 py-2.5 rounded-xl text-xs font-bold">
         Continue →
       </button>
     `;
 
-    if (this.state.selectedService) {
+    if (hasSelection) {
       document.getElementById("step1-next-btn").addEventListener("click", () => {
         this.state.step = 2;
         this.renderCurrentStep();
       });
     }
+  }
+
+  // Helper: toggle selection and recompute totals
+  toggleSelection(type, id) {
+    if (type === 'service') {
+      const idx = this.state.selectedServiceIds.indexOf(id);
+      if (idx === -1) this.state.selectedServiceIds.push(id);
+      else this.state.selectedServiceIds.splice(idx, 1);
+    } else if (type === 'offer') {
+      const idx = this.state.selectedOfferIds.indexOf(id);
+      if (idx === -1) this.state.selectedOfferIds.push(id);
+      else this.state.selectedOfferIds.splice(idx, 1);
+    }
+    this.recalcTotals();
+    this.renderCurrentStep(); // re-render to update checkboxes and totals
+  }
+
+  recalcTotals() {
+    let totalPrice = 0;
+    let totalDuration = 0;
+    // services
+    this.state.selectedServiceIds.forEach(id => {
+      const s = this.services.find(x => x.id === id);
+      if (s) {
+        totalPrice += s.discount_price || s.price;
+        totalDuration += s.duration_minutes;
+      }
+    });
+    // offers
+    this.state.selectedOfferIds.forEach(id => {
+      const o = this.offers.find(x => x.id === id);
+      if (o) {
+        totalPrice += o.discount_price || o.price;
+        totalDuration += o.duration_minutes;
+      }
+    });
+    this.state.totalPrice = totalPrice;
+    this.state.totalDuration = totalDuration;
   }
 
   // --- STEP 2: SELECT LOCATION ---
@@ -290,23 +374,37 @@ class BookingWizard {
       return;
     }
 
-    const s = this.state.selectedService;
     const symbol = this.settings?.currency_symbol || "$";
-    const price = s.discount_price || s.price;
+    const totalPrice = this.state.totalPrice;
+    const totalDuration = this.state.totalDuration;
+
+    // Build recap list
+    let recapHtml = '';
+    this.state.selectedServiceIds.forEach(id => {
+      const s = this.services.find(x => x.id === id);
+      if (s) {
+        const p = s.discount_price || s.price;
+        recapHtml += `<div class="flex justify-between text-xs"><span>${escapeHtml(s.name)}</span><span class="font-semibold">${formatDuration(s.duration_minutes)} • ${formatPrice(p, symbol)}</span></div>`;
+      }
+    });
+    this.state.selectedOfferIds.forEach(id => {
+      const o = this.offers.find(x => x.id === id);
+      if (o) {
+        const p = o.discount_price || o.price;
+        recapHtml += `<div class="flex justify-between text-xs"><span>${escapeHtml(o.name)}</span><span class="font-semibold">${formatDuration(o.duration_minutes)} • ${formatPrice(p, symbol)}</span></div>`;
+      }
+    });
 
     let html = `
-      <!-- Service Recap Pill -->
-      <div class="mb-5 p-3 rounded-2xl bg-pink-50/70 border border-pink-200 flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <span class="text-xl">✨</span>
-          <div>
-            <h5 class="text-xs font-bold text-gray-900">${escapeHtml(s.name)}</h5>
-            <p class="text-[11px] text-pink-700 font-semibold">${formatDuration(s.duration_minutes)} • ${formatPrice(price, symbol)}</p>
-          </div>
+      <!-- Selection Recap -->
+      <div class="mb-5 p-3 rounded-2xl bg-pink-50/70 border border-pink-200">
+        <div class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Your Selection</div>
+        ${recapHtml}
+        <div class="border-t border-pink-200 mt-2 pt-2 flex justify-between text-sm font-bold">
+          <span>Total</span>
+          <span>${formatDuration(totalDuration)} • ${formatPrice(totalPrice, symbol)}</span>
         </div>
-        <button id="wizard-change-service-btn" class="text-[11px] text-pink-700 hover:text-pink-900 font-bold underline">
-          Change
-        </button>
+        <button id="wizard-change-service-btn" class="text-[11px] text-pink-700 hover:text-pink-900 font-bold underline mt-2 block text-center">Change Services / Offers</button>
       </div>
 
       <div class="mb-4">
@@ -358,20 +456,26 @@ class BookingWizard {
         item.classList.add("border-pink-600", "bg-pink-50/70", "ring-2", "ring-pink-500/20");
         const dot = item.querySelector("span.ml-auto");
         if (dot) { dot.classList.add("border-pink-600", "bg-pink-600"); dot.innerHTML = '<span class="text-white text-[10px]">✓</span>'; }
+        // Enable next button
+        const nextBtn = document.getElementById("step2-next-btn");
+        if (nextBtn) { nextBtn.disabled = false; nextBtn.classList.remove("opacity-50", "cursor-not-allowed"); }
       });
     });
 
-    // Footer
+    // Footer with disabled next until location selected
+    const locSelected = !!this.state.selectedLocation;
     footer.innerHTML = `
-      <button id="step2-next-btn" class="btn-primary px-6 py-2.5 rounded-xl text-xs font-bold">
+      <button id="step2-next-btn" ${locSelected ? '' : 'disabled'} class="btn-primary ${locSelected ? '' : 'opacity-50 cursor-not-allowed'} px-6 py-2.5 rounded-xl text-xs font-bold">
         Next: Choose Date →
       </button>
     `;
 
-    document.getElementById("step2-next-btn").addEventListener("click", () => {
-      this.state.step = 3;
-      this.renderCurrentStep();
-    });
+    if (locSelected) {
+      document.getElementById("step2-next-btn").addEventListener("click", () => {
+        this.state.step = 3;
+        this.renderCurrentStep();
+      });
+    }
   }
 
   // --- STEP 3: SELECT DATE ---
@@ -498,20 +602,39 @@ class BookingWizard {
 
   // --- STEP 4: SELECT TIME SLOT ---
   async renderStep4(content, footer) {
-    const s = this.state.selectedService;
     const loc = this.state.selectedLocation;
     const dateStr = this.state.selectedDate;
+    const totalDuration = this.state.totalDuration;
+    const totalPrice = this.state.totalPrice;
+    const symbol = this.settings?.currency_symbol || "$";
+
+    // Build recap list
+    let recapHtml = '';
+    this.state.selectedServiceIds.forEach(id => {
+      const s = this.services.find(x => x.id === id);
+      if (s) {
+        const p = s.discount_price || s.price;
+        recapHtml += `<div class="flex justify-between text-xs"><span>${escapeHtml(s.name)}</span><span class="font-semibold">${formatDuration(s.duration_minutes)} • ${formatPrice(p, symbol)}</span></div>`;
+      }
+    });
+    this.state.selectedOfferIds.forEach(id => {
+      const o = this.offers.find(x => x.id === id);
+      if (o) {
+        const p = o.discount_price || o.price;
+        recapHtml += `<div class="flex justify-between text-xs"><span>${escapeHtml(o.name)}</span><span class="font-semibold">${formatDuration(o.duration_minutes)} • ${formatPrice(p, symbol)}</span></div>`;
+      }
+    });
 
     let html = `
-      <!-- Date & Service Pill -->
-      <div class="mb-5 p-3 rounded-2xl bg-pink-50/70 border border-pink-200 flex items-center justify-between">
-        <div>
-          <div class="text-xs font-bold text-gray-900">${escapeHtml(s.name)}${loc ? ` • 📍 ${escapeHtml(loc.name)}` : ''}</div>
-          <div class="text-[11px] text-pink-700 font-semibold font-mono">${formatDatePretty(dateStr)} • ${formatDuration(s.duration_minutes)}</div>
+      <!-- Selection Recap -->
+      <div class="mb-5 p-3 rounded-2xl bg-pink-50/70 border border-pink-200">
+        <div class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Your Selection</div>
+        ${recapHtml}
+        <div class="border-t border-pink-200 mt-2 pt-2 flex justify-between text-sm font-bold">
+          <span>Total</span>
+          <span>${formatDuration(totalDuration)} • ${formatPrice(totalPrice, symbol)}${loc ? ` • 📍 ${escapeHtml(loc.name)}` : ''}</span>
         </div>
-        <button id="wizard-back-to-date" class="text-[11px] text-pink-700 hover:text-pink-900 font-bold underline">
-          Change Date
-        </button>
+        <button id="wizard-back-to-date" class="text-[11px] text-pink-700 hover:text-pink-900 font-bold underline mt-2 block text-center">Change Date</button>
       </div>
 
       <div class="mb-4">
@@ -565,7 +688,7 @@ class BookingWizard {
     if (!wrapper) return;
 
     try {
-      let url = `/api/availability/slots?date=${this.state.selectedDate}&service_id=${this.state.selectedService.id}`;
+      let url = `/api/availability/slots?date=${this.state.selectedDate}&duration=${this.state.totalDuration}`;
       if (this.state.selectedLocation) {
         url += `&location_id=${this.state.selectedLocation.id}`;
       }
@@ -679,19 +802,37 @@ class BookingWizard {
 
   // --- STEP 5: GUEST INFORMATION ---
   renderStep5(content, footer) {
-    const s = this.state.selectedService;
     const loc = this.state.selectedLocation;
     const symbol = this.settings?.currency_symbol || "$";
-    const price = s.discount_price || s.price;
+    const totalDuration = this.state.totalDuration;
+    const totalPrice = this.state.totalPrice;
+
+    // Build recap list
+    let recapHtml = '';
+    this.state.selectedServiceIds.forEach(id => {
+      const s = this.services.find(x => x.id === id);
+      if (s) {
+        const p = s.discount_price || s.price;
+        recapHtml += `<div class="flex justify-between text-xs"><span>${escapeHtml(s.name)}</span><span class="font-semibold">${formatDuration(s.duration_minutes)} • ${formatPrice(p, symbol)}</span></div>`;
+      }
+    });
+    this.state.selectedOfferIds.forEach(id => {
+      const o = this.offers.find(x => x.id === id);
+      if (o) {
+        const p = o.discount_price || o.price;
+        recapHtml += `<div class="flex justify-between text-xs"><span>${escapeHtml(o.name)}</span><span class="font-semibold">${formatDuration(o.duration_minutes)} • ${formatPrice(p, symbol)}</span></div>`;
+      }
+    });
 
     let html = `
       <!-- Complete Recap Card -->
       <div class="mb-5 p-4 rounded-2xl bg-gradient-to-br from-[#FDEDE8] to-[#F6D9D0] border border-pink-200 shadow-xs">
         <h5 class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Appointment Summary</h5>
         <div class="space-y-1.5 text-xs">
-          <div class="flex justify-between">
-            <span class="text-slate-500">Service:</span>
-            <strong class="text-gray-900">${escapeHtml(s.name)}</strong>
+          ${recapHtml}
+          <div class="border-t border-pink-200 mt-1 pt-1 flex justify-between text-sm font-bold">
+            <span>Total</span>
+            <span>${formatDuration(totalDuration)} • ${formatPrice(totalPrice, symbol)}</span>
           </div>
           <div class="flex justify-between">
             <span class="text-slate-500">Location:</span>
@@ -700,10 +841,6 @@ class BookingWizard {
           <div class="flex justify-between">
             <span class="text-slate-500">Schedule:</span>
             <strong class="text-pink-700">${formatDatePretty(this.state.selectedDate)} at ${formatTimeDisplay(this.state.selectedTime)}</strong>
-          </div>
-          <div class="flex justify-between">
-            <span class="text-slate-500">Duration & Investment:</span>
-            <strong class="text-pink-800">${formatDuration(s.duration_minutes)} • ${formatPrice(price, symbol)}</strong>
           </div>
         </div>
       </div>
@@ -814,7 +951,9 @@ class BookingWizard {
 
     try {
       const payload = {
-        service_id: this.state.selectedService.id,
+        service_ids: this.state.selectedServiceIds,
+        offer_ids: this.state.selectedOfferIds,
+        location_id: this.state.selectedLocation ? this.state.selectedLocation.id : null,
         customer_name: name,
         customer_phone: phone,
         customer_email: email || null,
@@ -822,9 +961,6 @@ class BookingWizard {
         appointment_date: this.state.selectedDate,
         appointment_time: this.state.selectedTime
       };
-      if (this.state.selectedLocation) {
-        payload.location_id = this.state.selectedLocation.id;
-      }
 
       const booking = await apiFetch("/api/bookings", {
         method: "POST",
