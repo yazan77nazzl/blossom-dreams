@@ -54,23 +54,53 @@ def create_booking(booking_in: BookingCreate):
         # Serialize concurrent writes for this date — the lock is held until commit.
         _acquire_write_lock(conn, cursor, booking_in.appointment_date)
 
-        # 1. Fetch service info
-        cursor.execute("SELECT id, name, price, discount_price, duration_minutes, is_active FROM services WHERE id = ?", (booking_in.service_id,))
-        service = cursor.fetchone()
-        if not service or not service["is_active"]:
-            raise HTTPException(status_code=400, detail="The selected service is not currently available.")
+        # 1. Validate items
+        service_ids = booking_in.service_ids or []
+        offer_ids = booking_in.offer_ids or []
+        if not service_ids and not offer_ids:
+            raise HTTPException(status_code=400, detail="Please select at least one service or offer.")
 
-        service_name = service["name"]
-        price = service["discount_price"] if service["discount_price"] and service["discount_price"] > 0 else service["price"]
-        duration = service["duration_minutes"]
+        # Fetch services
+        services = []
+        total_price = 0.0
+        total_duration = 0
+        if service_ids:
+            placeholders = ','.join(['?'] * len(service_ids))
+            cursor.execute(f"SELECT id, name, price, discount_price, duration_minutes, is_active FROM services WHERE id IN ({placeholders})", tuple(service_ids))
+            rows = cursor.fetchall()
+            if len(rows) != len(service_ids):
+                raise HTTPException(status_code=400, detail="One or more selected services not found.")
+            for svc in rows:
+                if not svc["is_active"]:
+                    raise HTTPException(status_code=400, detail=f"Service {svc['name']} is not currently available.")
+                svc_price = svc["discount_price"] if svc["discount_price"] and svc["discount_price"] > 0 else svc["price"]
+                total_price += svc_price
+                total_duration += svc["duration_minutes"]
+                services.append(svc)
 
-        # 1b. Validate the requested location (optional, backward compatible)
+        # Fetch offers
+        offers = []
+        if offer_ids:
+            placeholders = ','.join(['?'] * len(offer_ids))
+            cursor.execute(f"SELECT id, title, discounted_price, duration_minutes, is_active FROM offers WHERE id IN ({placeholders})", tuple(offer_ids))
+            rows = cursor.fetchall()
+            if len(rows) != len(offer_ids):
+                raise HTTPException(status_code=400, detail="One or more selected offers not found.")
+            for off in rows:
+                if not off["is_active"]:
+                    raise HTTPException(status_code=400, detail=f"Offer {off['title']} is not currently available.")
+                total_price += off["discounted_price"]
+                total_duration += off.get("duration_minutes", 0) or 0
+                offers.append(off)
+
+        # 1b. Validate required location
         location_id = booking_in.location_id
-        if location_id is not None:
-            cursor.execute("SELECT id, name FROM locations WHERE id = ? AND is_active = TRUE", (location_id,))
-            loc_row = cursor.fetchone()
-            if not loc_row:
-                raise HTTPException(status_code=400, detail="The selected location is not available.")
+        if location_id is None:
+            raise HTTPException(status_code=400, detail="Location is required.")
+        cursor.execute("SELECT id, name FROM locations WHERE id = ? AND is_active = TRUE", (location_id,))
+        loc_row = cursor.fetchone()
+        if not loc_row:
+            raise HTTPException(status_code=400, detail="The selected location is not available.")
 
         # 2. Atomically validate the slot against schedule, closed days,
         #    past dates and existing bookings — inside the SAME locked transaction
@@ -79,7 +109,7 @@ def create_booking(booking_in: BookingCreate):
             cursor,
             booking_in.appointment_date,
             booking_in.appointment_time,
-            duration,
+            total_duration,
             location_id
         )
         if not available:
@@ -124,7 +154,10 @@ def create_booking(booking_in: BookingCreate):
             booking_code = generate_booking_code()
             cursor.execute("SELECT id FROM bookings WHERE booking_code = ?", (booking_code,))
 
-        # 5. Insert booking
+        # Determine primary service_id for booking row (first service if any, else first offer)
+        primary_service_id = service_ids[0] if service_ids else (offer_ids[0] if offer_ids else None)
+
+        # 5. Insert booking with aggregated totals
         cursor.execute("""
         INSERT INTO bookings (
             booking_code, service_id, location_id, customer_name, customer_phone,
@@ -132,13 +165,29 @@ def create_booking(booking_in: BookingCreate):
             duration_minutes, status, price
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'confirmed', ?)
         """, (
-            booking_code, booking_in.service_id, location_id, customer_name,
+            booking_code, primary_service_id, location_id, customer_name,
             customer_phone, booking_in.customer_email.strip() if booking_in.customer_email else None,
             booking_in.notes.strip() if booking_in.notes else None,
             booking_in.appointment_date, booking_in.appointment_time,
-            duration, price
+            total_duration, total_price
         ))
         booking_id = cursor.lastrowid
+
+        # 5b. Insert booking_items for each selected service
+        for svc in services:
+            svc_price = svc["discount_price"] if svc["discount_price"] and svc["discount_price"] > 0 else svc["price"]
+            cursor.execute("""
+                INSERT INTO booking_items (booking_id, item_type, item_id, price, duration_minutes)
+                VALUES (?, 'service', ?, ?, ?)
+            """, (booking_id, svc["id"], svc_price, svc["duration_minutes"]))
+
+        # 5c. Insert booking_items for each selected offer
+        for off in offers:
+            off_duration = off.get("duration_minutes", 0) or 0
+            cursor.execute("""
+                INSERT INTO booking_items (booking_id, item_type, item_id, price, duration_minutes)
+                VALUES (?, 'offer', ?, ?, ?)
+            """, (booking_id, off["id"], off["discounted_price"], off_duration))
 
         cursor.execute("""
         SELECT b.*, s.name as service_name, s.duration_minutes as service_duration, l.name as location_name
