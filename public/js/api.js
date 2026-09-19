@@ -79,55 +79,72 @@ export async function apiFetch(endpoint, options = {}) {
   }
 }
 
-// Toast Notification System
+// Toast Notification System - Professional reusable component
 export function showToast(message, type = "success") {
   let container = document.getElementById("toast-container");
   if (!container) {
     container = document.createElement("div");
     container.id = "toast-container";
+    container.className = "fixed top-4 right-4 z-[9999] flex flex-col gap-2 pointer-events-none";
     document.body.appendChild(container);
   }
 
   const toast = document.createElement("div");
-  toast.className = "toast-msg";
+  toast.className = "pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg min-w-[280px] max-w-md animate-slide-in transform transition-all duration-300";
+  toast.setAttribute("role", "alert");
+  toast.setAttribute("aria-live", "polite");
 
-  const isSuccess = type === "success";
-  const isError = type === "error";
+  const icons = {
+    success: `<svg class="w-5 h-5 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>`,
+    error: `<svg class="w-5 h-5 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>`,
+    warning: `<svg class="w-5 h-5 text-amber-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>`,
+    info: `<svg class="w-5 h-5 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`
+  };
 
-  if (isSuccess) {
-    toast.style.background = "#1E293B";
-    toast.style.color = "#F8FAFC";
-    toast.style.borderLeft = "4px solid #10B981";
-    toast.innerHTML = `
-      <span style="color:#10B981; font-size:1.2rem;">✓</span>
-      <span>${escapeHtml(message)}</span>
-    `;
-  } else if (isError) {
-    toast.style.background = "#1E293B";
-    toast.style.color = "#F8FAFC";
-    toast.style.borderLeft = "4px solid #EF4444";
-    toast.innerHTML = `
-      <span style="color:#EF4444; font-size:1.2rem;">✕</span>
-      <span>${escapeHtml(message)}</span>
-    `;
-  } else {
-    toast.style.background = "#1E293B";
-    toast.style.color = "#F8FAFC";
-    toast.style.borderLeft = "4px solid #F59E0B";
-    toast.innerHTML = `
-      <span style="color:#F59E0B; font-size:1.2rem;">ℹ</span>
-      <span>${escapeHtml(message)}</span>
-    `;
-  }
+  const colors = {
+    success: "bg-white border-l-4 border-emerald-500 text-slate-800",
+    error: "bg-white border-l-4 border-red-500 text-slate-800",
+    warning: "bg-white border-l-4 border-amber-500 text-slate-800",
+    info: "bg-white border-l-4 border-blue-500 text-slate-800"
+  };
+
+  toast.className += ` ${colors[type] || colors.success}`;
+  toast.innerHTML = `
+    ${icons[type] || icons.success}
+    <span class="text-sm font-medium flex-1">${escapeHtml(message)}</span>
+    <button type="button" class="text-slate-400 hover:text-slate-600 flex-shrink-0 ml-2" aria-label="Dismiss">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
+  `;
+
+  const dismissBtn = toast.querySelector("button");
+  dismissBtn.addEventListener("click", () => dismissToast(toast));
 
   container.appendChild(toast);
 
-  setTimeout(() => {
-    toast.style.opacity = "0";
-    toast.style.transform = "translateY(10px)";
-    toast.style.transition = "all 0.3s ease";
-    setTimeout(() => toast.remove(), 300);
-  }, 4000);
+  // Auto dismiss after 5s for success/info, 8s for error/warning
+  const delay = (type === "error" || type === "warning") ? 8000 : 5000;
+  setTimeout(() => dismissToast(toast), delay);
+}
+
+function dismissToast(toast) {
+  toast.style.opacity = "0";
+  toast.style.transform = "translateX(100%)";
+  setTimeout(() => toast.remove(), 300);
+}
+
+// Add keyframe for slide-in animation (injected once)
+if (!document.getElementById("toast-anim-style")) {
+  const style = document.createElement("style");
+  style.id = "toast-anim-style";
+  style.textContent = `
+    @keyframes slide-in {
+      from { opacity: 0; transform: translateX(100%); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    .animate-slide-in { animation: slide-in 0.3s cubic-bezier(0.16,1,0.3,1) forwards; }
+  `;
+  document.head.appendChild(style);
 }
 
 export function escapeHtml(str) {
