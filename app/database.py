@@ -210,6 +210,19 @@ def init_db():
                 print(f"[DB INIT] FAILED: {e}", flush=True)
                 print(f"[DB INIT] SQL: {statement}", flush=True)
                 raise
+
+        # Migration: ensure offers.duration_minutes column exists and is populated
+        cursor.execute("ALTER TABLE offers ADD COLUMN IF NOT EXISTS duration_minutes INTEGER")
+        cursor.execute("""
+            UPDATE offers
+            SET duration_minutes = COALESCE((
+                SELECT duration_minutes FROM services WHERE services.id = offers.service_id
+            ), 60)
+            WHERE duration_minutes IS NULL
+        """)
+        cursor.execute("ALTER TABLE offers ALTER COLUMN duration_minutes SET NOT NULL")
+        cursor.execute("ALTER TABLE offers ALTER COLUMN duration_minutes SET DEFAULT 60")
+
         cursor.execute_no_org(
             "SELECT set_config('app.organization_id', %s, false)",
             (organization_id,),

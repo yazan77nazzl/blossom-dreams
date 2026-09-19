@@ -15,6 +15,14 @@ def format_offer_row(row) -> dict:
         d["discount_percent"] = round(((orig - disc) / orig) * 100)
     else:
         d["discount_percent"] = 0
+    # Ensure duration_minutes is present
+    dur = d.get("duration_minutes")
+    if dur is None:
+        # fallback to linked service duration, else 60
+        dur = d.get("service_duration")
+    if dur is None:
+        dur = 60
+    d["duration_minutes"] = int(dur)
     return d
 
 @router.get("", response_model=List[OfferResponse])
@@ -23,7 +31,7 @@ def get_offers(include_inactive: bool = False, featured_only: bool = False):
     with get_db() as conn:
         cursor = conn.cursor()
         query = """
-        SELECT o.*, s.name as service_name
+        SELECT o.*, s.name as service_name, s.duration_minutes as service_duration
         FROM offers o
         LEFT JOIN services s ON o.service_id = s.id
         WHERE 1=1
@@ -48,7 +56,7 @@ def get_offer(offer_id: int):
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute("""
-        SELECT o.*, s.name as service_name
+        SELECT o.*, s.name as service_name, s.duration_minutes as service_duration
         FROM offers o
         LEFT JOIN services s ON o.service_id = s.id
         WHERE o.id = ?
@@ -83,7 +91,7 @@ def create_offer(off: OfferCreate, current_admin: dict = Depends(get_current_adm
         new_id = cursor.lastrowid
 
         cursor.execute("""
-        SELECT o.*, s.name as service_name
+        SELECT o.*, s.name as service_name, s.duration_minutes as service_duration
         FROM offers o
         LEFT JOIN services s ON o.service_id = s.id
         WHERE o.id = ?
@@ -143,7 +151,7 @@ def update_offer(offer_id: int, off: OfferUpdate, current_admin: dict = Depends(
             cursor.execute(f"UPDATE offers SET {', '.join(updates)} WHERE id = ?", params)
 
         cursor.execute("""
-        SELECT o.*, s.name as service_name
+        SELECT o.*, s.name as service_name, s.duration_minutes as service_duration
         FROM offers o
         LEFT JOIN services s ON o.service_id = s.id
         WHERE o.id = ?
