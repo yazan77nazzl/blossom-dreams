@@ -173,10 +173,11 @@ class BlossomApp {
     if (!this.settings) return;
     const s = this.settings;
 
-    // Announcement text
+    // Welcome / Hero text (top banner)
     const banner = document.getElementById("announcement-banner-text");
-    if (banner && s.announcement_text) {
-      banner.innerText = s.announcement_text;
+    const welcomeText = s.welcome_text || s.announcement_text;
+    if (banner && welcomeText) {
+      banner.innerText = welcomeText;
     }
 
     // Salon branding

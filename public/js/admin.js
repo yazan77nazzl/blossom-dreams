@@ -1623,6 +1623,7 @@ openGalleryEditModal(image) {
     document.getElementById("set-address").value = s.address || "";
     document.getElementById("set-hours").value = s.opening_hours_text || "";
     document.getElementById("set-announcement").value = s.announcement_text || "";
+document.getElementById("set-welcome").value = s.welcome_text || "";
   }
 
   async saveSettings() {
@@ -1638,6 +1639,7 @@ openGalleryEditModal(image) {
       address: document.getElementById("set-address").value.trim(),
       opening_hours_text: document.getElementById("set-hours").value.trim(),
       announcement_text: document.getElementById("set-announcement").value.trim()
+welcome_text: document.getElementById("set-welcome").value.trim()
     };
 
     try {

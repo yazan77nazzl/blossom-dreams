@@ -276,6 +276,7 @@ class SalonSettingsUpdate(BaseModel):
     opening_hours_text: Optional[str] = None
     currency_symbol: Optional[str] = None
     announcement_text: Optional[str] = None
+    welcome_text: Optional[str] = None
 
 class SalonSettingsResponse(BaseModel):
     id: int
@@ -291,3 +292,4 @@ class SalonSettingsResponse(BaseModel):
     opening_hours_text: Optional[str] = None
     currency_symbol: Optional[str] = None
     announcement_text: Optional[str] = None
+    welcome_text: Optional[str] = None
