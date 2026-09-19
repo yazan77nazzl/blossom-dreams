@@ -3,128 +3,119 @@
 Idempotent startup migration for generic subcategories.
 Runs automatically on application startup (before uvicorn serves requests).
 Safe to run multiple times.
+Uses the project's existing database layer (psycopg v3) via app.database.get_db().
 """
-import os
-import psycopg2
-from psycopg2.extras import RealDictCursor
 
-
-def run_startup_migration(database_url: str) -> None:
+def run_startup_migration() -> None:
     """Create subcategories table, add column, migrate data, backfill services."""
-    print("[STARTUP MIGRATION] Connecting to database...")
-    conn = psycopg2.connect(database_url, cursor_factory=RealDictCursor)
-    conn.autocommit = False
-    try:
-        with conn.cursor() as cur:
-            print("[STARTUP MIGRATION] Ensuring subcategories table exists...")
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS subcategories (
-                    id              SERIAL PRIMARY KEY,
-                    organization_id UUID NOT NULL,
-                    category_id     INT NOT NULL,
-                    name            VARCHAR(120) NOT NULL,
-                    slug            VARCHAR(140) NOT NULL,
-                    description     TEXT,
-                    display_order   INT NOT NULL DEFAULT 0,
-                    is_active       BOOLEAN NOT NULL DEFAULT TRUE,
-                    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
-                    updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
-                    UNIQUE (organization_id, category_id, slug)
-                );
-            """)
-            # Enable RLS (idempotent)
-            cur.execute("ALTER TABLE subcategories ENABLE ROW LEVEL SECURITY")
-            cur.execute("ALTER TABLE subcategories FORCE ROW LEVEL SECURITY")
-            cur.execute("DROP POLICY IF EXISTS organization_isolation ON subcategories")
-            cur.execute("""
-                CREATE POLICY organization_isolation
-                ON subcategories
-                USING (organization_id::text = current_setting('app.organization_id', true))
-                WITH CHECK (organization_id::text = current_setting('app.organization_id', true))
-            """)
-            print("[STARTUP MIGRATION] subcategories table and RLS ready.")
+    from app.database import get_db
 
-            # Migrate existing nail_subcategories into subcategories linked to Nails category
-            cur.execute("""
-                INSERT INTO subcategories (organization_id, category_id, name, slug, description, display_order, is_active, created_at, updated_at)
-                SELECT nsc.organization_id,
-                       c.id,
-                       nsc.name,
-                       nsc.slug,
-                       NULL::text,
-                       nsc.display_order,
-                       nsc.is_active,
-                       nsc.created_at,
-                       nsc.updated_at
-                FROM nail_subcategories nsc
-                JOIN categories c
-                  ON c.organization_id = nsc.organization_id
-                 AND c.slug = 'nails'
-                ON CONFLICT (organization_id, category_id, slug) DO NOTHING;
-            """)
-            print("[STARTUP MIGRATION] Existing nail subcategories copied to generic table.")
+    print("[STARTUP MIGRATION] Running migration via app database layer...")
+    with get_db() as conn:
+        cur = conn.cursor()
 
-            # Add subcategory_id column to services if not exists
-            cur.execute("""
-                DO $$
-                BEGIN
-                    IF NOT EXISTS (
-                        SELECT 1 FROM information_schema.columns
-                        WHERE table_name='services' AND column_name='subcategory_id'
-                    ) THEN
-                        ALTER TABLE services ADD COLUMN subcategory_id INT;
-                    END IF;
-                END $$;
-            """)
-            print("[STARTUP MIGRATION] subcategory_id column ensured on services.")
+        print("[STARTUP MIGRATION] Ensuring subcategories table exists...")
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS subcategories (
+                id              SERIAL PRIMARY KEY,
+                organization_id UUID NOT NULL,
+                category_id     INT NOT NULL,
+                name            VARCHAR(120) NOT NULL,
+                slug            VARCHAR(140) NOT NULL,
+                description     TEXT,
+                display_order   INT NOT NULL DEFAULT 0,
+                is_active       BOOLEAN NOT NULL DEFAULT TRUE,
+                created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+                updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+                UNIQUE (organization_id, category_id, slug)
+            );
+        """)
+        # Enable RLS (idempotent)
+        cur.execute("ALTER TABLE subcategories ENABLE ROW LEVEL SECURITY")
+        cur.execute("ALTER TABLE subcategories FORCE ROW LEVEL SECURITY")
+        cur.execute("DROP POLICY IF EXISTS organization_isolation ON subcategories")
+        cur.execute("""
+            CREATE POLICY organization_isolation
+            ON subcategories
+            USING (organization_id::text = current_setting('app.organization_id', true))
+            WITH CHECK (organization_id::text = current_setting('app.organization_id', true))
+        """)
+        print("[STARTUP MIGRATION] subcategories table and RLS ready.")
 
-            # Add foreign key constraint for subcategory_id (if not exists)
-            cur.execute("""
-                DO $$
-                BEGIN
-                    IF NOT EXISTS (
-                        SELECT 1 FROM pg_constraint WHERE conname = 'services_subcategory_id_fkey'
-                    ) THEN
-                        ALTER TABLE services
-                        ADD CONSTRAINT services_subcategory_id_fkey
-                        FOREIGN KEY (subcategory_id)
-                        REFERENCES subcategories(id)
-                        ON DELETE SET NULL;
-                    END IF;
-                END $$;
-            """)
-            print("[STARTUP MIGRATION] FK constraint added for subcategory_id.")
+        # Migrate existing nail_subcategories into subcategories linked to Nails category
+        cur.execute("""
+            INSERT INTO subcategories (organization_id, category_id, name, slug, description, display_order, is_active, created_at, updated_at)
+            SELECT nsc.organization_id,
+                   c.id,
+                   nsc.name,
+                   nsc.slug,
+                   NULL::text,
+                   nsc.display_order,
+                   nsc.is_active,
+                   nsc.created_at,
+                   nsc.updated_at
+            FROM nail_subcategories nsc
+            JOIN categories c
+              ON c.organization_id = nsc.organization_id
+             AND c.slug = 'nails'
+            ON CONFLICT (organization_id, category_id, slug) DO NOTHING;
+        """)
+        print("[STARTUP MIGRATION] Existing nail subcategories copied to generic table.")
 
-            # Backfill services.subcategory_id from nail_subcategory_id via name+slug match
-            cur.execute("""
-                UPDATE services s
-                SET subcategory_id = sub.id
-                FROM subcategories sub
-                JOIN nail_subcategories nsc
-                  ON sub.organization_id = nsc.organization_id
-                 AND sub.name = nsc.name
-                 AND sub.slug = nsc.slug
-                WHERE s.nail_subcategory_id = nsc.id
-                  AND s.subcategory_id IS NULL;
-            """)
-            print("[STARTUP MIGRATION] Services backfilled with generic subcategory_id.")
+        # Add subcategory_id column to services if not exists
+        cur.execute("""
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_name='services' AND column_name='subcategory_id'
+                ) THEN
+                    ALTER TABLE services ADD COLUMN subcategory_id INT;
+                END IF;
+            END $$;
+        """)
+        print("[STARTUP MIGRATION] subcategory_id column ensured on services.")
 
-            # Create indexes for faster lookups
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_subcategories_category_id ON subcategories (category_id);")
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_services_subcategory_id ON services (subcategory_id);")
-            print("[STARTUP MIGRATION] Indexes created.")
+        # Add foreign key constraint for subcategory_id (if not exists)
+        cur.execute("""
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM pg_constraint WHERE conname = 'services_subcategory_id_fkey'
+                ) THEN
+                    ALTER TABLE services
+                    ADD CONSTRAINT services_subcategory_id_fkey
+                    FOREIGN KEY (subcategory_id)
+                    REFERENCES subcategories(id)
+                    ON DELETE SET NULL;
+                END IF;
+            END $$;
+        """)
+        print("[STARTUP MIGRATION] FK constraint added for subcategory_id.")
 
-        conn.commit()
+        # Backfill services.subcategory_id from nail_subcategory_id via name+slug match
+        cur.execute("""
+            UPDATE services s
+            SET subcategory_id = sub.id
+            FROM subcategories sub
+            JOIN nail_subcategories nsc
+              ON sub.organization_id = nsc.organization_id
+             AND sub.name = nsc.name
+             AND sub.slug = nsc.slug
+            WHERE s.nail_subcategory_id = nsc.id
+              AND s.subcategory_id IS NULL;
+        """)
+        print("[STARTUP MIGRATION] Services backfilled with generic subcategory_id.")
+
+        # Create indexes for faster lookups
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_subcategories_category_id ON subcategories (category_id);")
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_services_subcategory_id ON services (subcategory_id);")
+        print("[STARTUP MIGRATION] Indexes created.")
+
+        # commit handled by get_db context manager
         print("[STARTUP MIGRATION] Migration completed successfully.")
-    except Exception as e:
-        conn.rollback()
-        print(f"[STARTUP MIGRATION] ERROR: {e}")
-        raise
-    finally:
-        conn.close()
 
 
 if __name__ == "__main__":
     # Allow running manually for testing
-    from app.config import settings
-    run_startup_migration(settings.DATABASE_URL)
+    run_startup_migration()

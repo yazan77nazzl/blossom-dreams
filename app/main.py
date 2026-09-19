@@ -25,7 +25,7 @@ async def lifespan(app: FastAPI):
     print("[Server] Initializing database...")
     init_db()
     print("[Server] Running startup migration for subcategories...")
-    run_startup_migration(settings.DATABASE_URL)
+    run_startup_migration()
     print("[Server] Checking seed data...")
     seed_database()
     # Diagnostic: confirm admin password is configured (do not log the password itself)
