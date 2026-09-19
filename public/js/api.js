@@ -33,11 +33,9 @@ export async function apiFetch(endpoint, options = {}) {
 
   // Attach auth token if available
   const token = getAuthToken();
-  console.log(`[apiFetch] ${options.method || 'GET'} ${endpoint} token present:`, !!token);
   if (token && !headers["Authorization"]) {
     headers["Authorization"] = `Bearer ${token}`;
   }
-  console.log(`[apiFetch] ${options.method || 'GET'} ${endpoint} Authorization header:`, headers["Authorization"] ? 'SET' : 'MISSING');
 
   // If body is an object and not FormData, stringify it
   if (options.body && !(options.body instanceof FormData) && typeof options.body === "object") {

@@ -65,10 +65,10 @@ async def add_security_headers(request: Request, call_next):
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
         "script-src 'self' https://cdn.tailwindcss.com; "
-        "style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; "
+        "style-src 'self' https://cdn.tailwindcss.com https://fonts.googleapis.com; "
         "img-src 'self' data: https:; "
-        "font-src 'self' data:; "
-        "connect-src 'self'; "
+        "font-src 'self' data: https://fonts.gstatic.com; "
+        "connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; "
         "frame-ancestors 'self'; "
         "form-action 'self'"
     )
