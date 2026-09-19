@@ -10,7 +10,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from app.config import settings
 from app.database import init_db
 from app.seed_data import seed_database
-from app.routers import auth, services, categories, offers, bookings, availability, gallery, settings as salon_settings_router, upload, locations, nail_subcategories, subcategories
+from app.routers import auth, services, categories, offers, bookings, availability, gallery, settings as salon_settings_router, upload, locations, subcategories
 
 logging.basicConfig(level=logging.INFO)
 
@@ -67,7 +67,6 @@ app.include_router(locations.router)
 app.include_router(gallery.router)
 app.include_router(salon_settings_router.router)
 app.include_router(upload.router)
-app.include_router(nail_subcategories.router)
 app.include_router(subcategories.router)
 
 # Mount Static Files (/static points to public directory)
