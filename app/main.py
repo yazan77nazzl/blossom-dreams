@@ -11,6 +11,7 @@ from app.config import settings
 from app.database import init_db
 from app.seed_data import seed_database
 from app.routers import auth, services, categories, offers, bookings, availability, gallery, settings as salon_settings_router, upload, locations, subcategories
+from app.routers.bookings import admin_router
 from app.startup_migration import run_startup_migration
 
 logging.basicConfig(level=logging.INFO)
@@ -71,6 +72,7 @@ app.include_router(gallery.router)
 app.include_router(salon_settings_router.router)
 app.include_router(upload.router)
 app.include_router(subcategories.router)
+app.include_router(admin_router)
 
 # Mount Static Files (/static points to public directory)
 app.mount("/static", StaticFiles(directory=str(PUBLIC_DIR)), name="static")

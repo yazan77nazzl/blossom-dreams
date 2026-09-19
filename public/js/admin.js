@@ -290,6 +290,7 @@ class AdminApp {
     const titles = {
       overview: "Dashboard Overview & Analytics",
       bookings: "Bookings & Calendar",
+      calendar: "Manual Calendar",
       services: "Services & Treatments",
       categories: "Manage Service Categories",
       offers: "Special Offers",
@@ -311,6 +312,7 @@ class AdminApp {
   renderCurrentTab() {
     if (this.currentTab === "overview") this.renderOverview();
     else if (this.currentTab === "bookings") this.renderBookingsTab();
+    else if (this.currentTab === "calendar") this.renderCalendarTab();
     else if (this.currentTab === "services") this.renderServicesTab();
     else if (this.currentTab === "categories") this.renderCategoriesTab();
     else if (this.currentTab === "offers") this.renderOffersTab();
