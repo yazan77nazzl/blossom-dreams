@@ -470,12 +470,12 @@ class BookingWizard {
       </button>
     `;
 
-    if (locSelected) {
-      document.getElementById("step2-next-btn").addEventListener("click", () => {
-        this.state.step = 3;
-        this.renderCurrentStep();
-      });
-    }
+    // Always attach listener; it will check for selected location
+    document.getElementById("step2-next-btn").addEventListener("click", () => {
+      if (!this.state.selectedLocation) return;
+      this.state.step = 3;
+      this.renderCurrentStep();
+    });
   }
 
   // --- STEP 3: SELECT DATE ---
