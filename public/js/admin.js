@@ -1474,8 +1474,8 @@ class AdminApp {
             </div>
 
             <div>
-              <label class="block font-bold text-slate-700 uppercase tracking-wider mb-1">Slug *</label>
-              <input type="text" id="subcat-slug" required value="${escapeHtml(existing?.slug || "")}" placeholder="e.g. classic-manicure"
+              <label class="block font-bold text-slate-700 uppercase tracking-wider mb-1">Slug</label>
+              <input type="text" id="subcat-slug" value="${escapeHtml(existing?.slug || "")}" placeholder="e.g. classic-manicure"
                 class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-pink-500 font-semibold" />
               <p class="text-[10px] text-slate-400 mt-1">URL-friendly identifier (lowercase, hyphens only)</p>
             </div>
@@ -1504,6 +1504,14 @@ class AdminApp {
     const close = () => { root.innerHTML = ""; };
     root.querySelector("#close-subcat-modal").addEventListener("click", close);
     root.querySelector("#cancel-subcat-btn").addEventListener("click", close);
+
+    // Auto-generate slug from name while typing
+    const nameEl = root.querySelector("#subcat-name");
+    const slugEl = root.querySelector("#subcat-slug");
+    nameEl.addEventListener("input", () => {
+      const raw = nameEl.value.trim().toLowerCase();
+      slugEl.value = raw.replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+    });
 
     root.querySelector("#subcategory-form").addEventListener("submit", async (e) => {
       e.preventDefault();

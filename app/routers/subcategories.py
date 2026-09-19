@@ -11,6 +11,26 @@ def slugify(text: str) -> str:
     text = text.lower().strip()
     return re.sub(r'[\s\W-]+', '-', text).strip('-')
 
+def _unique_slug(base: str, organization_id: str, category_id: int, cursor, exclude_id: int = None) -> str:
+    """Return a slug that is unique within the same organization+category."""
+    slug = base
+    counter = 1
+    while True:
+        if exclude_id is not None:
+            cursor.execute(
+                "SELECT 1 FROM subcategories WHERE organization_id = %s AND category_id = %s AND slug = %s AND id <> %s",
+                (organization_id, category_id, slug, exclude_id)
+            )
+        else:
+            cursor.execute(
+                "SELECT 1 FROM subcategories WHERE organization_id = %s AND category_id = %s AND slug = %s",
+                (organization_id, category_id, slug)
+            )
+        if not cursor.fetchone():
+            return slug
+        slug = f"{base}-{counter}"
+        counter += 1
+
 @router.get("", response_model=List[SubcategoryResponse])
 def list_subcategories(
     category_id: Optional[int] = Query(None),
@@ -140,13 +160,18 @@ def delete_subcategory(sub_id: int, current_admin: dict = Depends(get_current_ad
 
 @router.post("", response_model=SubcategoryResponse)
 def create_subcategory(payload: SubcategoryCreate, current_admin: dict = Depends(get_current_admin)):
-    slug = payload.slug or slugify(payload.name)
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT id FROM categories WHERE id = %s", (payload.category_id,))
+        # verify parent category exists and belongs to same org
+        cursor.execute("SELECT id, organization_id FROM categories WHERE id = %s", (payload.category_id,))
         cat = cursor.fetchone()
         if not cat:
             raise HTTPException(status_code=400, detail="Parent category not found")
+        org_id = str(cat["organization_id"])
+
+        base_slug = payload.slug or slugify(payload.name)
+        slug = _unique_slug(base_slug, org_id, payload.category_id, cursor)
+
         try:
             cursor.execute("""
                 INSERT INTO subcategories (organization_id, category_id, name, slug, description, display_order, is_active)
