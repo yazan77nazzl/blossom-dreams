@@ -40,9 +40,7 @@ def get_current_admin(credentials: Optional[HTTPAuthorizationCredentials] = Depe
         detail="Could not validate admin credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    print(f"[AUTH DEBUG] credentials: {credentials}")
     if not credentials or not credentials.credentials:
-        print("[AUTH DEBUG] missing credentials")
         raise credentials_exception
 
     token = credentials.credentials
