@@ -162,6 +162,10 @@ class BookingCreate(BaseModel):
     appointment_date: str = Field(..., pattern=r"^\d{4}-\d{2}-\d{2}$", description="YYYY-MM-DD")
     appointment_time: str = Field(..., pattern=r"^\d{2}:\d{2}$", description="HH:MM (24h)")
 
+class ManualBookingCreate(BookingCreate):
+    """Schema for admin-created manual bookings. Inherits all fields; is_manual forced true on insert."""
+    pass
+
 class BookingStatusUpdate(BaseModel):
     status: Literal["pending", "confirmed", "completed", "cancelled", "no_show"]
 
@@ -183,6 +187,7 @@ class BookingResponse(BaseModel):
     status: str
     price: float
     created_at: str
+    is_manual: bool = False
 
 # --- Location Schemas ---
 class LocationBase(BaseModel):

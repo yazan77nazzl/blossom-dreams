@@ -112,6 +112,20 @@ def run_startup_migration() -> None:
         cur.execute("CREATE INDEX IF NOT EXISTS idx_services_subcategory_id ON services (subcategory_id);")
         print("[STARTUP MIGRATION] Indexes created.")
 
+        # Ensure bookings table has is_manual column
+        cur.execute("""
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_name='bookings' AND column_name='is_manual'
+                ) THEN
+                    ALTER TABLE bookings ADD COLUMN is_manual BOOLEAN NOT NULL DEFAULT FALSE;
+                END IF;
+            END $$;
+        """)
+        print("[STARTUP MIGRATION] is_manual column ensured on bookings.")
+
         # commit handled by get_db context manager
         print("[STARTUP MIGRATION] Migration completed successfully.")
 
