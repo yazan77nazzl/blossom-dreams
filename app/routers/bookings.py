@@ -55,10 +55,10 @@ def create_booking(booking_in: BookingCreate):
         _acquire_write_lock(conn, cursor, booking_in.appointment_date)
 
         # 1. Validate items
-        service_ids = booking_in.service_ids or []
+        service_ids = primary_service_ids or []
         offer_ids = booking_in.offer_ids or []
-        if not service_ids and not offer_ids:
-            raise HTTPException(status_code=400, detail="Please select at least one service or offer.")
+        if not service_ids:
+            raise HTTPException(status_code=400, detail="Please select at least one service.")
 
         # Fetch services
         services = []
@@ -102,6 +102,9 @@ def create_booking(booking_in: BookingCreate):
         if not loc_row:
             raise HTTPException(status_code=400, detail="The selected location is not available.")
 
+        # Primary service id for booking row (first selected service)
+        primary_service_id = service_ids[0]
+
         # 2. Atomically validate the slot against schedule, closed days,
         #    past dates and existing bookings — inside the SAME locked transaction
         #    that performs the insert (prevents the double-booking race).
@@ -134,7 +137,7 @@ def create_booking(booking_in: BookingCreate):
             duplicate_sql.format(recent_window=recent_window),
             (
                 customer_phone,
-                booking_in.service_id,
+                primary_service_id,
                 booking_in.appointment_date,
                 booking_in.appointment_time,
                 location_id,
@@ -153,9 +156,6 @@ def create_booking(booking_in: BookingCreate):
         while cursor.fetchone():
             booking_code = generate_booking_code()
             cursor.execute("SELECT id FROM bookings WHERE booking_code = ?", (booking_code,))
-
-        # Determine primary service_id for booking row (first service if any, else first offer)
-        primary_service_id = service_ids[0] if service_ids else (offer_ids[0] if offer_ids else None)
 
         # 5. Insert booking with aggregated totals
         cursor.execute("""
