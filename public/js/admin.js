@@ -64,6 +64,8 @@ class AdminApp {
       this.showDashboardView();
       await this.loadAllData();
       this.renderCurrentTab();
+      this.updatePendingBadge();
+      this.showPendingNotification();
     } catch (e) {
       clearAuthToken();
       this.showLoginView();
@@ -474,6 +476,7 @@ class AdminApp {
   // --- 2. BOOKINGS TAB ---
   async renderBookingsTab() {
     this.bookings = await apiFetch("/api/bookings");
+    this.updatePendingBadge();
     this.renderBookingsTable();
   }
 
@@ -2049,6 +2052,52 @@ document.getElementById("set-homepage-welcome").value = s.homepage_welcome_text 
     });
   }
 
+  // --- PENDING BOOKINGS HELPERS ---
+  updatePendingBadge() {
+    const count = this.bookings.filter(b => b.status === 'pending').length;
+    const badge = document.getElementById('pending-bookings-badge');
+    if (badge) {
+      badge.textContent = count;
+      if (count > 0) badge.classList.remove('hidden');
+      else badge.classList.add('hidden');
+    }
+  }
+
+  showPendingNotification() {
+    const count = this.bookings.filter(b => b.status === 'pending').length;
+    if (count > 0) {
+      showToast(`🔔 New Booking Request\nYou have ${count} pending booking${count > 1 ? 's' : ''} waiting for approval.`, 'info');
+    }
+  }
+
+  async confirmBooking(id) {
+    try {
+      await apiFetch(`/api/bookings/${id}/status`, {
+        method: 'PATCH',
+        body: { status: 'confirmed' }
+      });
+      showToast('✓ Booking confirmed successfully.', 'success');
+      await this.loadAllData();
+      this.renderCurrentTab();
+    } catch (e) {
+      showToast(e.message, 'error');
+    }
+  }
+
+  async rejectBooking(id) {
+    try {
+      await apiFetch(`/api/bookings/${id}/status`, {
+        method: 'PATCH',
+        body: { status: 'rejected' }
+      });
+      showToast('✓ Booking request rejected.', 'success');
+      await this.loadAllData();
+      this.renderCurrentTab();
+    } catch (e) {
+      showToast(e.message, 'error');
+    }
+  }
+
   // --- BOOKING DETAIL MODAL ---
   openBookingDetailModal(b) {
     const root = document.getElementById("admin-modal-root");
@@ -2390,6 +2439,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const adminApp = new AdminApp();
   adminApp.init();
 });
+
 
 
 
