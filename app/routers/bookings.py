@@ -2,11 +2,12 @@ import random
 import string
 from datetime import datetime
 from typing import List, Optional, Dict, Any
-from fastapi import APIRouter, HTTPException, Depends, Query, status
+from fastapi import APIRouter, HTTPException, Depends, Query, status, Request
 from app.database import get_db, IS_POSTGRES
 from app.auth import get_current_admin
 from app.availability_engine import is_slot_available_for_booking, time_str_to_minutes, local_now
 from app.models import BookingCreate, BookingResponse, BookingStatusUpdate
+from app.main import limiter
 
 router = APIRouter(prefix="/api/bookings", tags=["bookings"])
 
@@ -37,7 +38,8 @@ def _acquire_write_lock(conn, cursor, date_str: str) -> None:
     cursor.execute("SELECT pg_advisory_xact_lock(hashtext(?))", (f"blossom_booking:{date_str}",))
 
 @router.post("", response_model=BookingResponse, status_code=status.HTTP_201_CREATED)
-def create_booking(booking_in: BookingCreate):
+@limiter.limit("30/minute")
+def create_booking(request: Request, booking_in: BookingCreate):
     # 0. Basic customer info sanitation before any DB work
     customer_name = (booking_in.customer_name or "").strip()
     customer_phone = (booking_in.customer_phone or "").strip()

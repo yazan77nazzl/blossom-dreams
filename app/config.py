@@ -42,12 +42,12 @@ class Settings:
         self.ALGORITHM: str = "HS256"
         self.ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
 
-        # CORS Origins (comma-separated or '*' for public access)
+        # CORS Origins (comma-separated). In production a wildcard is not allowed.
         cors_raw = os.environ.get("CORS_ORIGINS", "*")
-        if cors_raw.strip() == "*":
-            self.CORS_ORIGINS: List[str] = ["*"]
-        else:
-            self.CORS_ORIGINS: List[str] = [origin.strip() for origin in cors_raw.split(",") if origin.strip()]
+        origins = [origin.strip() for origin in cors_raw.split(",") if origin.strip()]
+        if self.IS_PRODUCTION and ("*" in origins or not origins):
+            raise RuntimeError("CORS_ORIGINS must be set to explicit origins in production (no wildcard).")
+        self.CORS_ORIGINS: List[str] = origins
         # Browsers reject allow_credentials=True together with origin "*".
         self.CORS_ALLOW_CREDENTIALS: bool = "*" not in self.CORS_ORIGINS
 

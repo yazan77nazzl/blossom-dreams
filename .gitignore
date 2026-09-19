@@ -18,6 +18,9 @@ venv/
 # Local user uploads (dev only; production uses Supabase Storage)
 public/uploads/*
 
+# Temporary / debug files
+tmp.py
+
 # OS / editor
 .DS_Store
 Thumbs.db

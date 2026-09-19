@@ -19,7 +19,7 @@ from app.startup_migration import run_startup_migration
 
 logging.basicConfig(level=logging.INFO)
 
-# Rate limiter
+# Rate limiter (exported for routers)
 limiter = Limiter(key_func=get_remote_address, default_limits=["200 per minute"])
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -45,7 +45,8 @@ app = FastAPI(
     title="Blossom Dreams API",
     description="Luxury Beauty Salon Booking & Management Platform for Blossom Dreams",
     version="1.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
+    debug=not settings.IS_PRODUCTION,
 )
 
 # Attach limiter to app state for use in routers
@@ -59,6 +60,7 @@ async def add_security_headers(request: Request, call_next):
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "SAMEORIGIN"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
     # Content Security Policy – adjust as needed for your assets
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "

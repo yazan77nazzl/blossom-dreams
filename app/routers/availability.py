@@ -1,14 +1,17 @@
 from typing import List, Optional
-from fastapi import APIRouter, HTTPException, Depends, Query
+from fastapi import APIRouter, HTTPException, Depends, Query, Request
 from app.database import get_db
 from app.auth import get_current_admin
 from app.availability_engine import get_available_slots_for_date
 from app.models import AvailabilityConfigResponse, AvailabilityConfigUpdate, DaySchedule, ClosedDateItem
+from app.main import limiter
 
 router = APIRouter(prefix="/api/availability", tags=["availability"])
 
 @router.get("/slots")
+@limiter.limit("60/minute")
 def get_slots(
+    request: Request,
     date: str = Query(..., description="YYYY-MM-DD"),
     service_id: Optional[int] = None,
     duration: Optional[int] = None,
