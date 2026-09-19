@@ -21,7 +21,7 @@ class BlossomApp {
     try {
       this.setupIntersectionObserver();
       await this.loadInitialData();
-      bookingWizard.init(this.services, this.settings, this.locations);
+      bookingWizard.init(this.services, this.settings, this.locations, this.offers);
       this.bindEvents();
       this.render();
       this.startOfferCountdowns();
