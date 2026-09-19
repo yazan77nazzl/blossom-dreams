@@ -126,8 +126,32 @@ def run_startup_migration() -> None:
         """)
         print("[STARTUP MIGRATION] is_manual column ensured on bookings.")
 # Ensure salon_settings has welcome_text column
-        cur.execute(\"\"\"\n            DO $$\n            BEGIN\n                IF NOT EXISTS (\n                    SELECT 1 FROM information_schema.columns\n                    WHERE table_name='salon_settings' AND column_name='welcome_text'\n                ) THEN\n                    ALTER TABLE salon_settings ADD COLUMN welcome_text TEXT;\n                END IF;\n            END $$;\n        \"\"\")
-        print(\"[STARTUP MIGRATION] welcome_text column ensured on salon_settings.\")
+        cur.execute("""
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_name='salon_settings' AND column_name='welcome_text'
+                ) THEN
+                    ALTER TABLE salon_settings ADD COLUMN welcome_text TEXT;
+                END IF;
+            END $$;
+        """)
+        print("[STARTUP MIGRATION] welcome_text column ensured on salon_settings.")
+
+        # Ensure salon_settings has homepage_welcome_text column
+        cur.execute("""
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_name='salon_settings' AND column_name='homepage_welcome_text'
+                ) THEN
+                    ALTER TABLE salon_settings ADD COLUMN homepage_welcome_text TEXT;
+                END IF;
+            END $$;
+        """)
+        print("[STARTUP MIGRATION] homepage_welcome_text column ensured on salon_settings.")
 
         # commit handled by get_db context manager
         print("[STARTUP MIGRATION] Migration completed successfully.")

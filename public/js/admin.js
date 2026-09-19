@@ -1623,7 +1623,7 @@ openGalleryEditModal(image) {
     document.getElementById("set-address").value = s.address || "";
     document.getElementById("set-hours").value = s.opening_hours_text || "";
     document.getElementById("set-announcement").value = s.announcement_text || "";
-document.getElementById("set-welcome").value = s.welcome_text || "";
+document.getElementById("set-homepage-welcome").value = s.homepage_welcome_text || "";
   }
 
   async saveSettings() {
@@ -1638,8 +1638,8 @@ document.getElementById("set-welcome").value = s.welcome_text || "";
       tiktok_url: document.getElementById("set-tiktok").value.trim(),
       address: document.getElementById("set-address").value.trim(),
       opening_hours_text: document.getElementById("set-hours").value.trim(),
-      announcement_text: document.getElementById("set-announcement").value.trim()
-welcome_text: document.getElementById("set-welcome").value.trim()
+      announcement_text: document.getElementById("set-announcement").value.trim(),
+      homepage_welcome_text: document.getElementById("set-homepage-welcome").value.trim()
     };
 
     try {

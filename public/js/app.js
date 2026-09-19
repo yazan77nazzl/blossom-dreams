@@ -173,10 +173,11 @@ class BlossomApp {
     if (!this.settings) return;
     const s = this.settings;
 
-    // Welcome / Hero text (top banner)
+    // Homepage Welcome Message (top banner)
     const banner = document.getElementById("announcement-banner-text");
-    const welcomeText = s.welcome_text || s.announcement_text;
-    if (banner && welcomeText) {
+    const defaultWelcome = "✨ Welcome to Blossom Dreams. Pamper yourself with our signature treatments. Book online today!";
+    const welcomeText = s.homepage_welcome_text || defaultWelcome;
+    if (banner) {
       banner.innerText = welcomeText;
     }
 

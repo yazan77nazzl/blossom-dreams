@@ -277,6 +277,7 @@ class SalonSettingsUpdate(BaseModel):
     currency_symbol: Optional[str] = None
     announcement_text: Optional[str] = None
     welcome_text: Optional[str] = None
+    homepage_welcome_text: Optional[str] = None
 
 class SalonSettingsResponse(BaseModel):
     id: int
@@ -293,3 +294,4 @@ class SalonSettingsResponse(BaseModel):
     currency_symbol: Optional[str] = None
     announcement_text: Optional[str] = None
     welcome_text: Optional[str] = None
+    homepage_welcome_text: Optional[str] = None
