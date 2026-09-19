@@ -149,7 +149,7 @@ class BookingCreate(BaseModel):
     offer_ids: List[int] = Field(default_factory=list, description="List of offer IDs")
     # Backward compatibility single service_id (optional)
     service_id: Optional[int] = None
-    location_id: Optional[int] = None
+    location_id: int = Field(..., description="Salon location ID (required)")
     customer_name: str = Field(..., min_length=2, max_length=120, description="Full name of the client")
     customer_phone: str = Field(..., min_length=5, max_length=30, description="Phone / WhatsApp number")
     customer_email: Optional[str] = Field(
