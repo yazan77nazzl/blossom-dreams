@@ -386,10 +386,10 @@ class BlossomApp {
       if (cat) activeCatId = cat.id;
     }
 
-    // Filter subcategories for this category (including the "All" placeholder)
+    // Filter subcategories for this category (excluding the global "All" placeholder)
     const relevant = this.subcategories.filter(sc => sc.category_id === activeCatId);
-    // If only the generic "All" option exists, hide the bar
-    if (relevant.length <= 1) {
+    // If no subcategories for this category, hide the bar
+    if (relevant.length === 0) {
       container.innerHTML = "";
       container.classList.add("hidden");
       return;
@@ -399,6 +399,16 @@ class BlossomApp {
 
     let html = `
       <div class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory" role="tablist" aria-label="Treatment subcategories">
+    `;
+
+    // "All" subcategory button to reset filter
+    const allActive = this.activeSubcategorySlug === "all";
+    html += `
+      <button data-subcategory="all"
+        class="subcat-btn px-4 py-2 rounded-full text-[11px] font-semibold transition whitespace-nowrap snap-start ${allActive ? 'bg-[#EE6A95] text-white shadow-sm shadow-pink-600/20' : 'bg-white text-slate-600 hover:bg-pink-50 border border-pink-100/90'}"
+        role="tab" aria-selected="${allActive}">
+        All
+      </button>
     `;
 
     relevant.forEach(subcat => {
