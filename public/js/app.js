@@ -10,9 +10,9 @@ class BlossomApp {
     this.offers = [];
     this.gallery = [];
     this.locations = [];
-    this.nailSubcategories = [];
+    this.subcategories = [];
     this.activeCategorySlug = "all";
-    this.activeNailSubcategory = "all";
+    this.activeSubcategorySlug = "all";
     this.searchQuery = "";
     this.countdownTimer = null;
   }
@@ -80,7 +80,7 @@ class BlossomApp {
   }
 
   async loadInitialData() {
-    const [settings, categories, services, offers, gallery, locations, availability, nailSubcategories] = await Promise.all([
+    const [settings, categories, services, offers, gallery, locations, availability, subcategories] = await Promise.all([
       apiFetch("/api/settings"),
       apiFetch("/api/categories"),
       apiFetch("/api/services"),
@@ -88,7 +88,7 @@ class BlossomApp {
       apiFetch("/api/gallery"),
       apiFetch("/api/locations"),
       apiFetch("/api/availability/config"),
-      apiFetch("/api/nail-subcategories"),
+      apiFetch("/api/subcategories"),
     ]);
 
     this.settings = settings;
@@ -97,10 +97,10 @@ class BlossomApp {
     this.offers = offers;
     this.gallery = gallery;
     this.locations = locations;
-this.availability = availability;
-    this.nailSubcategories = nailSubcategories || [];
+    this.availability = availability;
+    this.subcategories = subcategories || [];
     // Add "All" option at the beginning
-    this.nailSubcategories = [{ slug: "all", name: "All Nails" }, ...this.nailSubcategories];
+    this.subcategories = [{ slug: "all", name: "All", category_id: null }, ...this.subcategories];
     this.renderOperatingSchedule();
   }
 
@@ -363,17 +363,15 @@ this.availability = availability;
     container.querySelectorAll(".category-pill-btn").forEach(btn => {
       btn.addEventListener("click", () => {
         this.activeCategorySlug = btn.dataset.slug;
-        // Reset nail subcategory when switching main categories
-        if (this.activeCategorySlug !== "nails") {
-          this.activeNailSubcategory = "all";
-        }
+        // Reset subcategory filter when switching main categories
+        this.activeSubcategorySlug = "all";
         this.renderCategoryPills();
         this.renderServicesList();
       });
     });
 
-    // Render secondary nail subcategory pills if Nails is selected
-    this.renderNailSubcategoryPills();
+    // Render secondary subcategory pills for selected category
+    this.renderSubcategoryPills();
   }
 
   // --- Nail Subcategory Filter ---
@@ -428,11 +426,11 @@ this.availability = availability;
       const matchCat = this.activeCategorySlug === "all" || 
         (this.categories.find(c => c.slug === this.activeCategorySlug)?.id === s.category_id);
 
-      // Filter by nail subcategory when Nails category is selected
+      // Filter by generic subcategory when a category is selected
       const matchSubcat = (
-        this.activeCategorySlug !== "nails" ||
-        this.activeNailSubcategory === "all" ||
-        (s.nail_subcategory_id && this.nailSubcategories.find(ns => ns.slug === this.activeNailSubcategory)?.id === s.nail_subcategory_id)
+        this.activeCategorySlug === "all" ||
+        this.activeSubcategorySlug === "all" ||
+        (s.subcategory_id && this.subcategories.find(sc => sc.slug === this.activeSubcategorySlug)?.id === s.subcategory_id)
       )
 
       const matchSearch = !this.searchQuery || 

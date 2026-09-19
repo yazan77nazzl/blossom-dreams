@@ -25,8 +25,8 @@ def format_service_row(row) -> dict:
 def get_services(
     category_id: Optional[int] = None,
     category_slug: Optional[str] = None,
-    nail_subcategory_id: Optional[int] = None,
-    subcategory: Optional[str] = None,  # Legacy, kept for backward compatibility
+    subcategory_id: Optional[int] = None,
+    subcategory_slug: Optional[str] = None,
     search: Optional[str] = None,
     featured_only: bool = False,
     include_inactive: bool = False
@@ -34,10 +34,10 @@ def get_services(
     with get_db() as conn:
         cursor = conn.cursor()
         query = """
-        SELECT s.*, c.name as category_name, nsc.name as nail_subcategory_name, nsc.slug as nail_subcategory_slug
+        SELECT s.*, c.name as category_name, sc.name as subcategory_name, sc.slug as subcategory_slug
         FROM services s
         JOIN categories c ON s.category_id = c.id
-        LEFT JOIN nail_subcategories nsc ON s.nail_subcategory_id = nsc.id
+        LEFT JOIN subcategories sc ON s.subcategory_id = sc.id
         WHERE 1=1
         """
         params = []
@@ -46,31 +46,31 @@ def get_services(
             query += " AND s.is_active = TRUE AND c.is_active = TRUE"
 
         if category_id:
-            query += " AND s.category_id = ?"
+            query += " AND s.category_id = %s"
             params.append(category_id)
 
         if category_slug:
-            query += " AND c.slug = ?"
+            query += " AND c.slug = %s"
             params.append(category_slug)
 
-        if nail_subcategory_id:
-            query += " AND s.nail_subcategory_id = ?"
-            params.append(nail_subcategory_id)
+        if subcategory_id:
+            query += " AND s.subcategory_id = %s"
+            params.append(subcategory_id)
 
-        if subcategory:
-            query += " AND s.subcategory = ?"
-            params.append(subcategory)
+        if subcategory_slug:
+            query += " AND sc.slug = %s"
+            params.append(subcategory_slug)
 
         if featured_only:
             query += " AND s.is_featured = TRUE"
 
         if search:
-            query += " AND (s.name ILIKE ? OR s.description ILIKE ?)"
+            query += " AND (s.name ILIKE %s OR s.description ILIKE %s)"
             term = f"%{search}%"
             params.extend([term, term])
 
         query += " ORDER BY c.display_order ASC, s.is_featured DESC, s.name ASC"
-        cursor.execute(query, params)
+        cursor.execute(query, tuple(params))
         rows = cursor.fetchall()
         return [format_service_row(r) for r in rows]
 
@@ -79,11 +79,11 @@ def get_service(service_id: int):
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute("""
-        SELECT s.*, c.name as category_name, nsc.name as nail_subcategory_name, nsc.slug as nail_subcategory_slug
+        SELECT s.*, c.name as category_name, sc.name as subcategory_name, sc.slug as subcategory_slug
         FROM services s
         JOIN categories c ON s.category_id = c.id
-        LEFT JOIN nail_subcategories nsc ON s.nail_subcategory_id = nsc.id
-        WHERE s.id = ?
+        LEFT JOIN subcategories sc ON s.subcategory_id = sc.id
+        WHERE s.id = %s
         """, (service_id,))
         row = cursor.fetchone()
         if not row:
@@ -123,62 +123,65 @@ def create_service(srv: ServiceCreate, current_admin: dict = Depends(get_current
 def update_service(service_id: int, srv: ServiceUpdate, current_admin: dict = Depends(get_current_admin)):
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT id FROM services WHERE id = ?", (service_id,))
-        if not cursor.fetchone():
+        cursor.execute("SELECT * FROM services WHERE id = %s", (service_id,))
+        existing = cursor.fetchone()
+        if not existing:
             raise HTTPException(status_code=404, detail="Service not found")
 
         updates = []
         params = []
         if srv.category_id is not None:
-            updates.append("category_id = ?")
+            updates.append("category_id = %s")
             params.append(srv.category_id)
         if srv.name is not None:
-            updates.append("name = ?")
+            updates.append("name = %s")
             params.append(srv.name)
-            if not srv.slug:
-                updates.append("slug = ?")
+            if srv.slug is None:
+                updates.append("slug = %s")
                 params.append(slugify(srv.name))
         if srv.slug is not None:
-            updates.append("slug = ?")
+            updates.append("slug = %s")
             params.append(slugify(srv.slug))
         if srv.description is not None:
-            updates.append("description = ?")
+            updates.append("description = %s")
             params.append(srv.description)
         if srv.duration_minutes is not None:
-            updates.append("duration_minutes = ?")
+            updates.append("duration_minutes = %s")
             params.append(srv.duration_minutes)
         if srv.price is not None:
-            updates.append("price = ?")
+            updates.append("price = %s")
             params.append(srv.price)
         if srv.discount_price is not None:
-            updates.append("discount_price = ?")
+            updates.append("discount_price = %s")
             params.append(srv.discount_price if srv.discount_price > 0 else None)
         if srv.image_url is not None:
-            updates.append("image_url = ?")
+            updates.append("image_url = %s")
             params.append(srv.image_url)
         if srv.is_active is not None:
-            updates.append("is_active = ?")
+            updates.append("is_active = %s")
             params.append(srv.is_active)
         if srv.is_featured is not None:
-            updates.append("is_featured = ?")
+            updates.append("is_featured = %s")
             params.append(srv.is_featured)
-        if srv.nail_subcategory_id is not None:
-            updates.append("nail_subcategory_id = ?")
-            params.append(srv.nail_subcategory_id)
-        if srv.subcategory is not None:
-            updates.append("subcategory = ?")
-            params.append(srv.subcategory)
+        if srv.subcategory_id is not None:
+            target_category = srv.category_id if srv.category_id is not None else existing["category_id"]
+            cursor.execute("SELECT category_id FROM subcategories WHERE id = %s", (srv.subcategory_id,))
+            sc = cursor.fetchone()
+            if not sc or sc["category_id"] != target_category:
+                raise HTTPException(status_code=400, detail="Subcategory does not belong to the selected category")
+            updates.append("subcategory_id = %s")
+            params.append(srv.subcategory_id)
 
         if updates:
             params.append(service_id)
-            cursor.execute(f"UPDATE services SET {', '.join(updates)} WHERE id = ?", params)
+            cursor.execute(f"UPDATE services SET {', '.join(updates)} WHERE id = %s", params)
 
         cursor.execute("""
-        SELECT s.*, c.name as category_name, nsc.name as nail_subcategory_name, nsc.slug as nail_subcategory_slug
+        SELECT s.*, c.name as category_name, sc.name as subcategory_name, sc.slug as subcategory_slug
         FROM services s
         JOIN categories c ON s.category_id = c.id
-        LEFT JOIN nail_subcategories nsc ON s.nail_subcategory_id = nsc.id
-        WHERE s.id = ?
+        LEFT JOIN subcategories sc ON s.subcategory_id = sc.id
+        WHERE s.id = %s
         """, (service_id,))
         return format_service_row(cursor.fetchone())
 
@@ -186,7 +189,7 @@ def update_service(service_id: int, srv: ServiceUpdate, current_admin: dict = De
 def delete_service(service_id: int, current_admin: dict = Depends(get_current_admin)):
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT id FROM services WHERE id = ?", (service_id,))
+        cursor.execute("SELECT id FROM services WHERE id = %s", (service_id,))
         if not cursor.fetchone():
             raise HTTPException(status_code=404, detail="Service not found")
 
@@ -194,7 +197,7 @@ def delete_service(service_id: int, current_admin: dict = Depends(get_current_ad
         # hard delete would violate the foreign key. Show a clear error instead
         # of hiding it — real client history must never be silently removed.
         cursor.execute(
-            "SELECT COUNT(*) as count FROM bookings WHERE service_id = ?",
+            "SELECT COUNT(*) as count FROM bookings WHERE service_id = %s",
             (service_id,)
         )
         booking_count = cursor.fetchone()["count"]
@@ -211,7 +214,7 @@ def delete_service(service_id: int, current_admin: dict = Depends(get_current_ad
         # Safe to delete: offers reference services with ON DELETE SET NULL, so
         # they simply lose their service link (no unrelated records are removed).
         try:
-            cursor.execute("DELETE FROM services WHERE id = ?", (service_id,))
+            cursor.execute("DELETE FROM services WHERE id = %s", (service_id,))
         except Exception as e:
             raise HTTPException(
                 status_code=400,

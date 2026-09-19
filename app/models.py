@@ -46,24 +46,28 @@ class CategoryUpdate(BaseModel):
 class CategoryResponse(CategoryBase):
     id: int
 
-# --- Nail Subcategory Schemas ---
-class NailSubcategoryBase(BaseModel):
+# --- Subcategory Schemas (generic, belongs to a Main Category) ---
+class SubcategoryBase(BaseModel):
+    category_id: int                     # required – parent Main Category
     name: str
     slug: Optional[str] = None
+    description: Optional[str] = None
     display_order: Optional[int] = 0
     is_active: Optional[bool] = True
 
-class NailSubcategoryCreate(NailSubcategoryBase):
+class SubcategoryCreate(SubcategoryBase):
     pass
 
-class NailSubcategoryUpdate(BaseModel):
+class SubcategoryUpdate(BaseModel):
     name: Optional[str] = None
     slug: Optional[str] = None
+    description: Optional[str] = None
     display_order: Optional[int] = None
     is_active: Optional[bool] = None
 
-class NailSubcategoryResponse(NailSubcategoryBase):
+class SubcategoryResponse(SubcategoryBase):
     id: int
+    category_name: Optional[str] = None   # joined for UI convenience
     services_count: Optional[int] = 0
     created_at: Optional[str] = None
     updated_at: Optional[str] = None
@@ -80,7 +84,7 @@ class ServiceBase(BaseModel):
     image_url: Optional[str] = None
     is_active: Optional[bool] = True
     is_featured: Optional[bool] = False
-    nail_subcategory_id: Optional[int] = None
+    subcategory_id: Optional[int] = None
 
 class ServiceCreate(ServiceBase):
     pass
@@ -96,13 +100,13 @@ class ServiceUpdate(BaseModel):
     image_url: Optional[str] = None
     is_active: Optional[bool] = None
     is_featured: Optional[bool] = None
-    nail_subcategory_id: Optional[int] = None
+    subcategory_id: Optional[int] = None
 
 class ServiceResponse(ServiceBase):
     id: int
     category_name: Optional[str] = None
-    nail_subcategory_name: Optional[str] = None
-    nail_subcategory_slug: Optional[str] = None
+    subcategory_name: Optional[str] = None
+    subcategory_slug: Optional[str] = None
     discount_percent: Optional[int] = None
 
 # --- Offer Schemas ---

@@ -71,14 +71,14 @@ class AdminApp {
   }
 
   async loadAllData() {
-    const [settings, categories, services, offers, bookings, locations, nailSubcategories] = await Promise.all([
+    const [settings, categories, services, offers, bookings, locations, subcategories] = await Promise.all([
       apiFetch("/api/settings").catch(() => null),
       apiFetch("/api/categories?include_inactive=true").catch(() => []),
       apiFetch("/api/services?include_inactive=true").catch(() => []),
       apiFetch("/api/offers?include_inactive=true").catch(() => []),
       apiFetch("/api/bookings").catch(() => []),
       apiFetch("/api/locations").catch(() => []),
-      apiFetch("/api/nail-subcategories?include_inactive=true").catch(() => [])
+      apiFetch("/api/subcategories?include_inactive=true").catch(() => [])
     ]);
 
     this.settings = settings;
@@ -87,7 +87,7 @@ class AdminApp {
     this.offers = offers;
     this.bookings = bookings;
     this.locations = locations;
-    this.nailSubcategories = nailSubcategories || [];
+    this.subcategories = subcategories || [];
   }
 
   bindGlobalEvents() {
@@ -317,7 +317,7 @@ class AdminApp {
     else if (this.currentTab === "offers") this.renderOffersTab();
     else if (this.currentTab === "availability") this.renderAvailabilityTab();
     else if (this.currentTab === "gallery") this.renderGalleryTab();
-    else if (this.currentTab === "nail-subcategories") this.renderNailSubcategoriesTab();
+    else if (this.currentTab === "subcategories") this.renderSubcategoriesTab();
     else if (this.currentTab === "settings") this.renderSettingsTab();
   }
 
@@ -950,6 +950,91 @@ class AdminApp {
     });
   }
 
+  // --- SUBCATEGORIES MANAGEMENT (GENERIC) ---
+  async renderSubcategoriesTab() {
+    const container = document.getElementById("tab-subcategories");
+    if (!container) return;
+
+    const subcategories = this.subcategories || [];
+
+    let html = `
+      <div class="space-y-4">
+        <div class="flex items-center justify-between">
+          <h3 class="font-serif font-bold text-slate-900 text-base">Subcategories</h3>
+          <button id="btn-add-subcategory" class="px-4 py-2 text-xs font-bold rounded-xl bg-pink-600 text-white hover:bg-pink-700 transition flex items-center gap-2">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            Add Subcategory
+          </button>
+        </div>
+        <div id="subcategories-grid" class="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+    `;
+
+    if (subcategories.length === 0) {
+      html += `
+        <div class="col-span-full py-12 text-center text-slate-400 text-xs font-serif italic border-2 border-dashed border-slate-200 rounded-2xl">
+          No subcategories created yet. Click "Add Subcategory" to create your first one.
+        </div>
+      </div>
+      `;
+    } else {
+      subcategories.forEach(sc => {
+        const cat = this.categories.find(c => c.id === sc.category_id);
+        const catName = cat ? cat.name : "Unknown";
+        html += `
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs hover:shadow-sm transition">
+            <div class="flex items-start justify-between mb-3">
+              <div>
+                <h4 class="font-bold text-slate-800 text-sm">${escapeHtml(sc.name)}</h4>
+                <p class="text-[10px] text-slate-400 font-medium mt-0.5">Category: ${escapeHtml(catName)}</p>
+                <p class="text-[10px] text-slate-400 font-medium mt-0.5">ID: ${sc.id}</p>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <button data-id="${sc.id}" class="btn-edit-subcat p-1.5 rounded-lg text-slate-400 hover:text-pink-700 hover:bg-pink-50 transition" title="Edit">
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </button>
+                <button data-id="${sc.id}" class="btn-delete-subcat p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition" title="Delete">
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                </button>
+              </div>
+            </div>
+            <div class="text-[10px] text-slate-500 font-medium uppercase tracking-wider">${escapeHtml(sc.slug)}</div>
+            ${sc.description ? '<div class="mt-2 text-xs text-slate-600 line-clamp-2">' + escapeHtml(sc.description) + '</div>' : ''}
+          </div>
+        `;
+      });
+      html += `
+        </div>
+      </div>
+      `;
+    }
+
+    container.innerHTML = html;
+
+    document.getElementById("btn-add-subcategory")?.addEventListener("click", () => this.openSubcategoryModal());
+    container.querySelectorAll(".btn-edit-subcat").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const id = parseInt(btn.dataset.id);
+        const sc = subcategories.find(item => item.id === id);
+        if (sc) this.openSubcategoryModal(sc);
+      });
+    });
+    container.querySelectorAll(".btn-delete-subcat").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const id = parseInt(btn.dataset.id);
+        this.showConfirmDialog("Delete Subcategory", "Are you sure you want to delete this subcategory? This action cannot be undone.", async () => {
+          try {
+            await apiFetch(`/api/subcategories/${id}`, { method: "DELETE" });
+            showToast("Subcategory deleted.");
+            this.subcategories = await apiFetch("/api/subcategories");
+            this.renderSubcategoriesTab();
+          } catch (e) {
+            showToast(e.message, "error");
+          }
+        });
+      });
+    });
+  }
+
   // --- CATEGORIES MANAGEMENT ---
   async renderCategoriesTab() {
     this.categories = await apiFetch("/api/categories?include_inactive=true");
@@ -1517,6 +1602,97 @@ class AdminApp {
     });
   }
 
+  // --- GENERIC SUBCATEGORY MODAL ---
+  openSubcategoryModal(existing = null) {
+    const isEdit = !!existing;
+    const root = document.getElementById("admin-modal-root");
+    // Build category options for the subcategory's parent category
+    let catOptions = this.categories.map(c => `
+      <option value="${c.id}" ${existing && existing.category_id === c.id ? "selected" : ""}>${escapeHtml(c.name)}</option>
+    `).join("");
+
+    root.innerHTML = `
+      <div class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay">
+        <div class="relative w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl modal-content-anim border border-slate-200">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+            <h4 class="font-serif font-bold text-slate-900 text-base">${isEdit ? "Edit Subcategory" : "Add Subcategory"}</h4>
+            <button id="close-subcat-modal" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:text-slate-800">✕</button>
+          </div>
+
+          <form id="subcategory-form" class="py-4 space-y-3.5 text-xs">
+            <div>
+              <label class="block font-bold text-slate-700 uppercase tracking-wider mb-1">Category *</label>
+              <select id="subcat-category" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-pink-500 font-semibold">
+                ${catOptions}
+              </select>
+            </div>
+
+            <div>
+              <label class="block font-bold text-slate-700 uppercase tracking-wider mb-1">Name *</label>
+              <input type="text" id="subcat-name" required value="${escapeHtml(existing?.name || "")}" placeholder="e.g. Classic Manicure"
+                class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-pink-500 font-semibold" />
+            </div>
+
+            <div>
+              <label class="block font-bold text-slate-700 uppercase tracking-wider mb-1">Slug *</label>
+              <input type="text" id="subcat-slug" required value="${escapeHtml(existing?.slug || "")}" placeholder="e.g. classic-manicure"
+                class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-pink-500 font-semibold" />
+              <p class="text-[10px] text-slate-400 mt-1">URL-friendly identifier (lowercase, hyphens only)</p>
+            </div>
+
+            <div>
+              <label class="block font-bold text-slate-700 uppercase tracking-wider mb-1">Description</label>
+              <textarea id="subcat-description" rows="2" class="w-full px-3.5 py-2 rounded-xl border border-slate-200">${escapeHtml(existing?.description || "")}</textarea>
+            </div>
+
+            <div class="flex items-center gap-3 pt-2">
+              <label class="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
+                <input type="checkbox" id="subcat-active" ${existing?.is_active ? "checked" : "checked"}>
+                <span class="text-sm">Active</span>
+              </label>
+            </div>
+
+            <div class="flex gap-2 pt-4 border-t border-slate-100">
+              <button type="button" id="cancel-subcat-btn" class="flex-1 py-2.5 text-center text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition">Cancel</button>
+              <button type="submit" class="flex-1 py-2.5 text-center text-xs font-bold bg-pink-600 hover:bg-pink-700 text-white rounded-xl transition">${isEdit ? "Save Changes" : "Create Subcategory"}</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+
+    const close = () => { root.innerHTML = ""; };
+    root.querySelector("#close-subcat-modal").addEventListener("click", close);
+    root.querySelector("#cancel-subcat-btn").addEventListener("click", close);
+
+    root.querySelector("#subcategory-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const payload = {
+        category_id: parseInt(root.querySelector("#subcat-category").value),
+        name: root.querySelector("#subcat-name").value.trim(),
+        slug: root.querySelector("#subcat-slug").value.trim().toLowerCase(),
+        description: root.querySelector("#subcat-description").value.trim(),
+        is_active: root.querySelector("#subcat-active").checked
+      };
+
+      try {
+        if (isEdit) {
+          await apiFetch(`/api/subcategories/${existing.id}`, { method: "PUT", body: payload });
+          showToast("Subcategory updated!");
+        } else {
+          await apiFetch("/api/subcategories", { method: "POST", body: payload });
+          showToast("Subcategory created!");
+        }
+        close();
+        this.subcategories = await apiFetch("/api/subcategories");
+        this.renderSubcategoriesTab();
+        if (this.currentTab === "services") this.renderServicesTab();
+      } catch (err) {
+        showToast(err.message, "error");
+      }
+    });
+  }
+
 openGalleryEditModal(image) {
     const root = document.getElementById("admin-modal-root");
     root.innerHTML = `
@@ -1688,14 +1864,10 @@ openGalleryEditModal(image) {
       <option value="${c.id}" ${existing && existing.category_id === c.id ? 'selected' : ''}>${escapeHtml(c.name)}</option>
     `).join('');
 
-    // Build nail subcategory options
-    let nailSubcatOptions = '<option value="">-- Select Nail Subcategory --</option>' + (this.nailSubcategories || []).map(nsc => `
-      <option value="${nsc.id}" ${existing && existing.nail_subcategory_id === nsc.id ? 'selected' : ''}>${escapeHtml(nsc.name)}</option>
+    // Build generic subcategory options (all)
+    let subcatOptionsAll = '<option value="">-- Select Subcategory (optional) --</option>' + (this.subcategories || []).map(sc => `
+      <option value="${sc.id}" data-category="${sc.category_id}" ${existing && existing.subcategory_id === sc.id ? 'selected' : ''}>${escapeHtml(sc.name)}</option>
     `).join('');
-
-    // Find the Nails category ID to show/hide nail subcategory dropdown
-    const nailsCategory = this.categories.find(c => c.slug === 'nails' || c.name.toLowerCase() === 'nails');
-    const nailsCategoryId = nailsCategory ? nailsCategory.id : null;
 
     root.innerHTML = `
       <div class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay">
@@ -1726,14 +1898,14 @@ openGalleryEditModal(image) {
               </div>
             </div>
 
-            <!-- Nail Subcategory (only for Nails category) -->
-            <div id="nail-subcategory-field" class="grid grid-cols-2 gap-3" style="display: ${nailsCategoryId && existing?.category_id === nailsCategoryId ? 'grid' : 'none'};">
+            <!-- Subcategory (optional) -->
+            <div id="subcategory-field" class="grid grid-cols-2 gap-3">
               <div class="col-span-2">
-                <label class="block font-bold text-slate-700 uppercase tracking-wider mb-1">Nail Subcategory</label>
-                <select id="srv-nail-subcategory" class="w-full px-3 py-2 rounded-xl border border-slate-200 font-semibold">
-                  ${nailSubcatOptions}
+                <label class="block font-bold text-slate-700 uppercase tracking-wider mb-1">Subcategory (optional)</label>
+                <select id="srv-subcategory" class="w-full px-3 py-2 rounded-xl border border-slate-200 font-semibold">
+                  ${subcatOptionsAll}
                 </select>
-                <p class="text-xs text-slate-500 mt-1">Optional: Choose a specific nail service type (e.g., Manicure, Pedicure, Extensions)</p>
+                <p class="text-xs text-slate-500 mt-1">Optional: Choose a subcategory for this treatment</p>
               </div>
             </div>
 
@@ -1793,19 +1965,29 @@ openGalleryEditModal(image) {
     root.querySelector("#close-srv-modal").addEventListener("click", close);
     root.querySelector("#cancel-srv-btn").addEventListener("click", close);
 
-    // Show/hide nail subcategory field based on category selection
+    // Filter subcategory options based on selected category
     const categorySelect = root.querySelector("#srv-category");
-    const nailSubcatField = root.querySelector("#nail-subcategory-field");
-    if (categorySelect && nailSubcatField && nailsCategoryId) {
-      categorySelect.addEventListener("change", () => {
+    const subcatSelect = root.querySelector("#srv-subcategory");
+    if (categorySelect && subcatSelect) {
+      const filterOptions = () => {
         const selectedCatId = parseInt(categorySelect.value);
-        nailSubcatField.style.display = selectedCatId === nailsCategoryId ? "grid" : "none";
-        // Clear nail subcategory when not Nails category
-        if (selectedCatId !== nailsCategoryId) {
-          const nailSubcatSelect = root.querySelector("#srv-nail-subcategory");
-          if (nailSubcatSelect) nailSubcatSelect.value = "";
+        Array.from(subcatSelect.options).forEach(opt => {
+          if (opt.value === "") return; // keep placeholder
+          const catId = parseInt(opt.dataset.category);
+          opt.style.display = catId === selectedCatId ? "" : "none";
+        });
+        // Reset selection if current not matching
+        const currentVal = subcatSelect.value;
+        if (currentVal) {
+          const currentOpt = subcatSelect.querySelector(`option[value="${currentVal}"]`);
+          if (currentOpt && currentOpt.style.display === "none") {
+            subcatSelect.value = "";
+          }
         }
-      });
+      };
+      categorySelect.addEventListener("change", filterOptions);
+      // Initial filter
+      filterOptions();
     }
 
     const fileInput = root.querySelector("#srv-file-input");
@@ -1837,7 +2019,7 @@ openGalleryEditModal(image) {
         image_url: root.querySelector("#srv-image").value.trim(),
         is_active: root.querySelector("#srv-active").checked,
         is_featured: root.querySelector("#srv-featured").checked,
-        nail_subcategory_id: root.querySelector("#srv-nail-subcategory")?.value ? parseInt(root.querySelector("#srv-nail-subcategory").value) : null
+        subcategory_id: root.querySelector("#srv-subcategory")?.value ? parseInt(root.querySelector("#srv-subcategory").value) : null
       };
 
       console.log("SENDING POST /api/services", payload);
